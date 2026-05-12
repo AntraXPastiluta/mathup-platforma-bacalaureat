@@ -11,33 +11,18 @@ import {
   ArrowLeft,
   Target,
   FileText,
-  Ghost,
-  Cat,
-  Dog,
-  Zap,
-  Brain,
-  Rocket,
-  Star,
   GraduationCap
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
-import { PROFILES, getProfileMeta } from '../../lessons/profiles'
-import { getProfilesFromMetadata, normalizeProfile } from '../../../services/profileService'
+import { UserAvatar } from '../../../shared/ui/UserAvatar'
+import { getProfileMeta } from '../../lessons/profiles'
+import { getProfilesFromMetadata, normalizeProfile, normalizeTargetGrade, constrainTargetGradeInput } from '../../../services/profileService'
 import { getSelectablePrograms } from '../../../services/premiumAccessService'
-
-const AVATAR_ICONS = [
-  { id: 'user', icon: User, color: 'bg-blue-500' },
-  { id: 'ghost', icon: Ghost, color: 'bg-purple-500' },
-  { id: 'cat', icon: Cat, color: 'bg-orange-500' },
-  { id: 'dog', icon: Dog, color: 'bg-amber-600' },
-  { id: 'zap', icon: Zap, color: 'bg-yellow-500' },
-  { id: 'brain', icon: Brain, color: 'bg-pink-500' },
-  { id: 'rocket', icon: Rocket, color: 'bg-indigo-500' },
-  { id: 'star', icon: Star, color: 'bg-emerald-500' },
-]
+import { uploadProfilePhoto } from '../../../services/profilePhotoService'
+import { AVATAR_PRESETS } from '../avatarPresets'
 
 export function ProfilePage() {
   const { user } = useAuth()
@@ -49,6 +34,7 @@ export function ProfilePage() {
 
 function ProfilePageContent({ metadata }) {
   const {
+    user,
     updateUserMetadata,
     profileSaving,
     successMessage,
@@ -66,9 +52,11 @@ function ProfilePageContent({ metadata }) {
 
   const [fullName, setFullName] = useState(metadata.full_name || '')
   const [selectedProfile, setSelectedProfile] = useState(() => getProfilesFromMetadata(metadata)[0])
-  const [targetGrade, setTargetGrade] = useState(metadata.target_grade || '10.00')
+  const [targetGrade, setTargetGrade] = useState(() => normalizeTargetGrade(metadata.target_grade))
   const [bio, setBio] = useState(metadata.bio || '')
   const [selectedAvatar, setSelectedAvatar] = useState(metadata.avatar_id || 'user')
+  const [avatarPhotoUrl, setAvatarPhotoUrl] = useState(metadata.avatar_photo_url || '')
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('checkout') === 'success') {
@@ -94,19 +82,42 @@ function ProfilePageContent({ metadata }) {
         full_name: fullName.trim() || 'Elev',
         profiles: [program],
         profile: program,
-        target_grade: targetGrade.trim() || '10.00',
+        target_grade: normalizeTargetGrade(targetGrade),
         bio: bio.trim(),
-        avatar_id: selectedAvatar
+        avatar_id: selectedAvatar,
+        avatar_photo_url: avatarPhotoUrl || null,
       })
     } catch (error) {
       console.error('Failed to update profile:', error)
     }
   }
 
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file || !user?.id) return
+
+    setPhotoUploading(true)
+    setErrorMessage('')
+    try {
+      const url = await uploadProfilePhoto(file, user.id)
+      setAvatarPhotoUrl(url)
+      await updateUserMetadata({ avatar_photo_url: url })
+      setSuccessMessage('Fotografia de profil a fost actualizată.')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Nu am putut încărca fotografia.')
+    } finally {
+      setPhotoUploading(false)
+      event.target.value = ''
+    }
+  }
+
   const registeredProfiles = useMemo(() => getProfilesFromMetadata(metadata), [metadata])
   const selectablePrograms = getSelectablePrograms(isPremium, registeredProfiles)
-  const CurrentAvatarIcon = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.icon || User
-  const currentAvatarColor = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.color || 'bg-primary'
+  const previewMetadata = useMemo(
+    () => ({ ...metadata, avatar_id: selectedAvatar, avatar_photo_url: avatarPhotoUrl }),
+    [metadata, selectedAvatar, avatarPhotoUrl],
+  )
+  const targetGradeProgress = Math.min(100, (Number.parseFloat(normalizeTargetGrade(targetGrade)) || 0) * 10)
 
   return (
     <div className="min-h-screen text-slate-900 dark:text-slate-50 transition-colors duration-500 pb-20">
@@ -158,12 +169,23 @@ function ProfilePageContent({ metadata }) {
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="relative inline-block mb-6">
-                  <div className={`size-32 rounded-[2.5rem] ${currentAvatarColor} flex items-center justify-center text-white shadow-2xl relative z-10 border-4 border-white dark:border-slate-800`}>
-                    <CurrentAvatarIcon className="size-16" />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 size-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg z-20 border-2 border-white dark:border-slate-800">
+                  <UserAvatar
+                    metadata={previewMetadata}
+                    size="lg"
+                    className="relative z-10 border-4 border-white shadow-2xl dark:border-slate-800"
+                    imageClassName="rounded-[2.5rem]"
+                    fallbackClassName="rounded-[2.5rem]"
+                  />
+                  <label className="absolute -bottom-2 -right-2 z-20 flex size-10 cursor-pointer items-center justify-center rounded-xl border-2 border-white bg-primary text-white shadow-lg dark:border-slate-800">
                     <Camera className="size-5" />
-                  </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={photoUploading || profileSaving}
+                    />
+                  </label>
                 </div>
                 
                 <h2 className="text-xl font-black tracking-tight mb-1">{fullName || 'Elev ScholarBAC'}</h2>
@@ -177,7 +199,7 @@ function ProfilePageContent({ metadata }) {
                       <span className="font-black text-primary">{targetGrade}</span>
                    </div>
                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: `${(parseFloat(targetGrade) || 0) * 10}%` }} />
+                      <div className="h-full bg-primary" style={{ width: `${targetGradeProgress}%` }} />
                    </div>
                 </div>
               </motion.div>
@@ -200,15 +222,21 @@ function ProfilePageContent({ metadata }) {
                     <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                       <User className="size-4" />
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest">Alege Avatar</h3>
+                    <h3 className="text-sm font-black uppercase tracking-widest">Avatar sau fotografie</h3>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Poți încărca o fotografie personală din cardul din stânga sau poți alege un avatar presetat.
+                  </p>
                   <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-                    {AVATAR_ICONS.map((avatar) => {
+                    {AVATAR_PRESETS.map((avatar) => {
                       const Icon = avatar.icon
                       return (
                         <button
                           key={avatar.id}
-                          onClick={() => setSelectedAvatar(avatar.id)}
+                          onClick={() => {
+                            setSelectedAvatar(avatar.id)
+                            setAvatarPhotoUrl('')
+                          }}
                           className={`relative size-12 rounded-xl flex items-center justify-center transition-all ${avatar.color} text-white shadow-sm ${selectedAvatar === avatar.id ? 'ring-4 ring-primary ring-offset-4 dark:ring-offset-slate-900 scale-110' : 'opacity-60 hover:opacity-100 hover:scale-105'}`}
                         >
                           <Icon className="size-6" />
@@ -244,11 +272,14 @@ function ProfilePageContent({ metadata }) {
                     </label>
                     <input
                       type="text"
+                      inputMode="decimal"
                       className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-800 dark:text-white"
                       value={targetGrade}
-                      onChange={(e) => setTargetGrade(e.target.value)}
+                      onChange={(e) => setTargetGrade(constrainTargetGradeInput(e.target.value))}
+                      onBlur={() => setTargetGrade(normalizeTargetGrade(targetGrade))}
                       placeholder="Ex: 9.50"
                     />
+                    <p className="text-xs text-muted-foreground ml-1">Nota țintă poate fi cel mult 10.</p>
                   </section>
                 </div>
 

@@ -7,11 +7,11 @@ import {
   Moon, 
   LayoutDashboard, 
   LogOut, 
-  User,
   Crown,
 } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
 import { Button } from './Button'
+import { UserAvatar } from './UserAvatar'
 
 export function Navbar() {
   const navigate = useNavigate()
@@ -80,7 +80,7 @@ export function Navbar() {
                    className="rounded-full hover:bg-slate-100 dark:hover:bg-white/5"
                    title="Profile Settings"
                  >
-                   <User className="size-5 text-slate-600 dark:text-slate-400" />
+                   <UserAvatar metadata={user.user_metadata} size="sm" />
                  </Button>
 
                  {isAdmin && (

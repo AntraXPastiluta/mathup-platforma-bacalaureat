@@ -35,6 +35,35 @@ export function getProfilesFromMetadata(metadata) {
   return [normalizeProfile(metadata.profile)]
 }
 
+const TARGET_GRADE_MAX = 10
+const TARGET_GRADE_MIN = 0
+
+export function normalizeTargetGrade(value, fallback = '10.00') {
+  const cleaned = String(value ?? '').trim().replace(',', '.')
+  if (!cleaned) return fallback
+
+  const parsed = Number.parseFloat(cleaned)
+  if (!Number.isFinite(parsed)) return fallback
+
+  const clamped = Math.min(TARGET_GRADE_MAX, Math.max(TARGET_GRADE_MIN, parsed))
+  return clamped.toFixed(2)
+}
+
+export function constrainTargetGradeInput(value) {
+  const cleaned = String(value ?? '').replace(',', '.').replace(/[^\d.]/g, '')
+  const [whole, ...fraction] = cleaned.split('.')
+  const normalized = fraction.length > 0 ? `${whole}.${fraction.join('')}` : whole
+
+  if (!normalized || normalized === '.') return normalized
+
+  const parsed = Number.parseFloat(normalized)
+  if (!Number.isFinite(parsed)) return normalized
+  if (parsed > TARGET_GRADE_MAX) return String(TARGET_GRADE_MAX)
+  if (parsed < TARGET_GRADE_MIN) return String(TARGET_GRADE_MIN)
+
+  return normalized
+}
+
 export async function updateUserProfile(profileKey) {
   const safeProfile = normalizeProfile(profileKey)
   const { data, error } = await supabase.auth.updateUser({

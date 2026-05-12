@@ -142,3 +142,11 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Updated scholar-bac/src/App.jsx to route only to /maintenance when VITE_MAINTENANCE_MODE is true.
 - Vercel production toggle: set MAINTENANCE_MODE=true, redeploy, then set it back to false when the platform is live again.
 - Local preview toggle: set VITE_MAINTENANCE_MODE=true in .env.local and restart npm run dev.
+
+
+15. Custom profile photos
+-------------------------
+- Added scholar-bac/src/services/profilePhotoService.js to upload profile images into Supabase Storage under profile-photos/{userId}/.
+- Added scholar-bac/src/features/profile/avatarPresets.js and scholar-bac/src/shared/ui/UserAvatar.jsx for preset or custom photo rendering.
+- Updated scholar-bac/src/features/profile/pages/ProfilePage.jsx with photo upload from the camera control and avatar_photo_url in user metadata.
+- Updated scholar-bac/src/shared/ui/Navbar.jsx to show the uploaded profile photo in the header profile button.
