@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { 
@@ -20,7 +20,7 @@ import {
   canAccessQuiz,
   canTrackLessonCompletion,
 } from '../../../services/premiumAccessService'
-import { normalizeProfilesList } from '../../../services/profileService'
+import { getProfilesFromMetadata } from '../../../services/profileService'
 import { resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
@@ -30,7 +30,10 @@ import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 export function LessonPage() {
   const { lessonId } = useParams()
   const { user, isPremium, openPremiumModal } = useAuth()
-  const activeProfiles = normalizeProfilesList(user?.user_metadata?.profiles ?? user?.user_metadata?.profile)
+  const activeProfiles = useMemo(
+    () => getProfilesFromMetadata(user?.user_metadata),
+    [user?.user_metadata],
+  )
   const [lesson, setLesson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
