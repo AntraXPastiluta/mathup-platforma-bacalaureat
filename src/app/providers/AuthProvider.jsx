@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { supabase } from '../../supabaseClient'
 import { requestPasswordReset as sendPasswordResetEmail, updatePassword as applyPasswordUpdate } from '../../services/authService'
-import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as createCheckout } from '../../services/billingService'
+import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as createCheckout, cancelPremiumSubscription as cancelSubscription } from '../../services/billingService'
 import { checkCurrentUserIsAdmin } from '../../services/curriculumAdminService'
 import { normalizeProfile, normalizeProfilesList } from '../../services/profileService'
 import {
@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
   const [entitlement, setEntitlement] = useState(null)
   const [entitlementLoading, setEntitlementLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [cancelPremiumLoading, setCancelPremiumLoading] = useState(false)
   const [premiumModalOpen, setPremiumModalOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminLoading, setAdminLoading] = useState(true)
@@ -167,6 +168,25 @@ export function AuthProvider({ children }) {
       setCheckoutLoading(false)
     }
   }, [])
+
+  const cancelPremiumSubscription = useCallback(async () => {
+    setCancelPremiumLoading(true)
+    setErrorMessage('')
+    try {
+      const result = await cancelSubscription()
+      await syncEntitlementForUser(user)
+      setSuccessMessage(
+        result?.message || 'Abonamentul Premium se anulează la sfârșitul perioadei curente.',
+      )
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Abonamentul Premium nu a putut fi anulat.'
+      setErrorMessage(message)
+      throw error
+    } finally {
+      setCancelPremiumLoading(false)
+    }
+  }, [syncEntitlementForUser, user])
 
   const register = async ({ email, password, fullName, profile, profiles }) => {
     setLoading(true)
@@ -348,11 +368,13 @@ export function AuthProvider({ children }) {
     premiumExpiresAt,
     refreshEntitlement,
     checkoutLoading,
+    cancelPremiumLoading,
     premiumModalOpen,
     openPremiumModal,
     closePremiumModal,
     requirePremium,
     startPremiumCheckout,
+    cancelPremiumSubscription,
   }), [
     user,
     session,
@@ -378,11 +400,13 @@ export function AuthProvider({ children }) {
     premiumExpiresAt,
     refreshEntitlement,
     checkoutLoading,
+    cancelPremiumLoading,
     premiumModalOpen,
     openPremiumModal,
     closePremiumModal,
     requirePremium,
     startPremiumCheckout,
+    cancelPremiumSubscription,
   ])
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

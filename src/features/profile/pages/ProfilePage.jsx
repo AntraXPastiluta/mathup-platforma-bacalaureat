@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Target,
   FileText,
-  GraduationCap
+  GraduationCap,
+  Crown,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -43,8 +44,11 @@ function ProfilePageContent({ metadata }) {
     setErrorMessage,
     isPremium,
     premiumExpiresAt,
+    entitlement,
     startPremiumCheckout,
+    cancelPremiumSubscription,
     checkoutLoading,
+    cancelPremiumLoading,
     refreshEntitlement,
   } = useAuth()
   const navigate = useNavigate()
@@ -118,6 +122,22 @@ function ProfilePageContent({ metadata }) {
     [metadata, selectedAvatar, avatarPhotoUrl],
   )
   const targetGradeProgress = Math.min(100, (Number.parseFloat(normalizeTargetGrade(targetGrade)) || 0) * 10)
+  const hasManagedPremiumSubscription = Boolean(entitlement?.stripe_subscription_id)
+  const canCancelPremiumSubscription = hasManagedPremiumSubscription && !entitlement?.cancel_at_period_end
+
+  const handleCancelPremium = async () => {
+    const confirmed = window.confirm(
+      'Abonamentul Premium se anulează la sfârșitul perioadei curente. Păstrezi accesul până atunci. Continui?',
+    )
+    if (!confirmed) return
+
+    setErrorMessage('')
+    try {
+      await cancelPremiumSubscription()
+    } catch (error) {
+      console.error('Failed to cancel premium subscription:', error)
+    }
+  }
 
   return (
     <div className="min-h-screen text-slate-900 dark:text-slate-50 transition-colors duration-500 pb-20">
@@ -143,21 +163,70 @@ function ProfilePageContent({ metadata }) {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-primary/20 bg-primary/5 p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Abonament Premium</p>
-              <p className="text-lg font-black text-slate-800 dark:text-white">
-                {isPremium ? 'Ai acces la roadmap și la toate programele' : 'Deblochează roadmap-ul de studiu și programele suplimentare'}
-              </p>
-              {isPremium && premiumExpiresAt ? (
-                <p className="text-sm text-muted-foreground">Activ până la {new Date(premiumExpiresAt).toLocaleDateString('ro-RO')}</p>
+          <div className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-white/80 p-6 shadow-xl shadow-primary/10 dark:bg-slate-900/80 dark:shadow-primary/5 md:p-7">
+            <div className="pointer-events-none absolute -right-10 -top-10 size-44 rounded-full bg-primary/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-12 left-0 size-36 rounded-full bg-indigo-500/10 blur-3xl" />
+            <div className="relative z-10 flex flex-col gap-6">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-1 items-start gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-lg shadow-primary/25">
+                    <Crown className="size-6" />
+                  </div>
+                  <motion.div layout className="space-y-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">ScholarBAC Premium</p>
+                      <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                        {isPremium ? 'Ai acces la roadmap și la toate programele' : 'Deblochează roadmap-ul de studiu'}
+                      </h2>
+                    </div>
+                    {isPremium ? (
+                      <div className="space-y-2">
+                        <motion.div layout className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                          <Check className="size-3.5" />
+                          {premiumExpiresAt
+                            ? `Activ până la ${new Date(premiumExpiresAt).toLocaleDateString('ro-RO')}`
+                            : 'Premium activ'}
+                        </motion.div>
+                        {entitlement?.cancel_at_period_end ? (
+                          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                            Abonamentul nu se va reînnoi la sfârșitul perioadei curente.
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400">
+                        Acces la roadmap-ul de studiu, variante rezolvate și toate programele liceale.
+                      </p>
+                    )}
+                  </motion.div>
+                </div>
+                {!isPremium ? (
+                  <Button
+                    onClick={startPremiumCheckout}
+                    disabled={checkoutLoading}
+                    className="h-14 w-full shrink-0 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-8 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 lg:w-auto"
+                  >
+                    <Sparkles className="size-4" />
+                    {checkoutLoading ? 'Redirecționare...' : 'Cumpără Premium'}
+                  </Button>
+                ) : null}
+              </div>
+              {canCancelPremiumSubscription ? (
+                <div className="flex flex-col gap-3 border-t border-primary/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Poți anula oricând. Accesul rămâne până la sfârșitul perioadei plătite.
+                  </p>
+                  <Button
+                    onClick={handleCancelPremium}
+                    disabled={cancelPremiumLoading}
+                    variant="ghost"
+                    className="h-11 shrink-0 rounded-2xl border border-slate-200 px-5 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+                  >
+                    {cancelPremiumLoading ? 'Se anulează...' : 'Anulează abonamentul'}
+                  </Button>
+                </div>
               ) : null}
             </div>
-            {!isPremium ? (
-              <Button onClick={startPremiumCheckout} disabled={checkoutLoading} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
-                {checkoutLoading ? 'Redirecționare...' : 'Cumpără Premium'}
-              </Button>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

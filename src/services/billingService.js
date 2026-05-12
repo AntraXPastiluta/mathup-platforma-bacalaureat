@@ -8,7 +8,7 @@ export async function getPremiumEntitlement(userId) {
 
   const { data, error } = await supabase
     .from('premium_entitlements')
-    .select('status,expires_at,purchased_at,amount_paid,currency')
+    .select('status,expires_at,purchased_at,amount_paid,currency,stripe_subscription_id,cancel_at_period_end')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -90,4 +90,64 @@ export async function startPremiumCheckout() {
 
   const checkoutUrl = await invokeCheckoutSession(session.access_token)
   window.location.assign(checkoutUrl)
+}
+
+function parseCancelPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Nu am putut anula abonamentul Premium.')
+  }
+  if (payload.error) throw new Error(payload.error)
+  return payload
+}
+
+async function invokeCancelPremiumSubscription(accessToken) {
+  const { data, error } = await supabase.functions.invoke('cancel-premium-subscription', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!error) return parseCancelPayload(data)
+
+  const message = error.message || ''
+  const contextStatus = error?.context?.status
+  if (contextStatus === 404) {
+    throw new Error('Funcția cancel-premium-subscription nu este publicată pe Supabase.')
+  }
+
+  const shouldRetryWithFetch =
+    message.includes('Failed to send a request to the Edge Function') ||
+    message.includes('Failed to fetch') ||
+    message.includes('NetworkError')
+
+  if (!shouldRetryWithFetch || !supabaseUrl || !supabaseAnonKey) {
+    throw new Error(message || 'Nu am putut anula abonamentul Premium.')
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/cancel-premium-subscription`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    if (response.status === 404 || payload?.code === 'NOT_FOUND') {
+      throw new Error('Funcția cancel-premium-subscription nu este publicată pe Supabase.')
+    }
+    throw new Error(payload?.error || payload?.message || 'Nu am putut anula abonamentul Premium.')
+  }
+
+  return parseCancelPayload(payload)
+}
+
+export async function cancelPremiumSubscription() {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  if (!session?.access_token) {
+    throw new Error('Trebuie să fii autentificat pentru a gestiona abonamentul Premium.')
+  }
+
+  return invokeCancelPremiumSubscription(session.access_token)
 }

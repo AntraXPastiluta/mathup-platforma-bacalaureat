@@ -1,11 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import Stripe from 'npm:stripe@17.7.0'
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY') ?? ''
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? ''
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') ?? ''
 
 function seasonEndIso() {
   const configured = Deno.env.get('PREMIUM_SEASON_END')
@@ -31,7 +31,7 @@ function entitlementStatusFromSubscription(subscription: Stripe.Subscription) {
 }
 
 function subscriptionPeriodEndIso(subscription: Stripe.Subscription) {
-  const periodEnd = subscription.items.data[0]?.current_period_end
+  const periodEnd = subscription.current_period_end
   if (!periodEnd) {
     throw new Error('Subscription missing current period end.')
   }
@@ -48,6 +48,7 @@ async function upsertEntitlement({
   currency,
   expiresAt,
   status,
+  cancelAtPeriodEnd,
 }: {
   userId: string
   sessionId: string | null
@@ -58,6 +59,7 @@ async function upsertEntitlement({
   currency: string | null
   expiresAt: string
   status: 'active' | 'refunded'
+  cancelAtPeriodEnd: boolean
 }) {
   const supabase = createClient(supabaseUrl, serviceRoleKey)
   const now = new Date().toISOString()
@@ -73,6 +75,7 @@ async function upsertEntitlement({
     expires_at: expiresAt,
     amount_paid: amountPaid,
     currency,
+    cancel_at_period_end: cancelAtPeriodEnd,
     updated_at: now,
   }, { onConflict: 'user_id' })
 
@@ -112,6 +115,7 @@ async function syncSubscriptionEntitlement(subscription: Stripe.Subscription) {
     currency: subscription.currency ?? null,
     expiresAt: subscriptionPeriodEndIso(subscription),
     status: entitlementStatusFromSubscription(subscription),
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   })
 }
 
@@ -155,6 +159,7 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session, stripe: Str
     currency: fullSession.currency,
     expiresAt: subscriptionPeriodEndIso(fullSubscription),
     status: entitlementStatusFromSubscription(fullSubscription),
+    cancelAtPeriodEnd: fullSubscription.cancel_at_period_end,
   })
 }
 
@@ -173,7 +178,7 @@ Deno.serve(async (req) => {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Invalid webhook signature.'
     return new Response(message, { status: 400 })
@@ -188,6 +193,7 @@ Deno.serve(async (req) => {
     }
 
     if (
+      event.type === 'customer.subscription.created' ||
       event.type === 'customer.subscription.updated' ||
       event.type === 'customer.subscription.deleted'
     ) {
@@ -195,7 +201,7 @@ Deno.serve(async (req) => {
       await syncSubscriptionEntitlement(subscription)
     }
 
-    if (event.type === 'invoice.paid') {
+    if (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
       const invoice = event.data.object as Stripe.Invoice
       const subscriptionId = typeof invoice.subscription === 'string'
         ? invoice.subscription
@@ -232,6 +238,7 @@ Deno.serve(async (req) => {
           currency: charge.currency,
           expiresAt: new Date().toISOString(),
           status: 'refunded',
+          cancelAtPeriodEnd: false,
         })
       }
     }

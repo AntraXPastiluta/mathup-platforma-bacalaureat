@@ -6,13 +6,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["@types/deno"],
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "../..",
-    "paths": {
-      "@supabase/supabase-js": ["node_modules/@supabase/supabase-js/dist/module/index.d.ts"],
-      "stripe": ["node_modules/stripe/types/index.d.ts"]
-    }
+    "types": ["@types/deno"]
   },
   "include": ["./**/*.ts", "./**/*.d.ts"]
 }
