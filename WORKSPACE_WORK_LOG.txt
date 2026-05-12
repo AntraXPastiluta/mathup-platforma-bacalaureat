@@ -1,0 +1,83 @@
+ScholarBAC — workspace work log
+Last updated: 12 May 2026
+
+This file summarizes changes made in the ScholarBAC project during recent agent sessions in this workspace.
+
+
+1. Roadmap ownership model
+--------------------------
+- Roadmap creation and editing are admin-only.
+- Premium students can view published roadmaps only; they cannot create, edit, or delete roadmaps.
+- The previous student personal roadmap flow on /roadmap was replaced with a read-only viewer for admin-published roadmaps.
+- The legacy user_study_roadmaps tables remain in the schema but are no longer used by the app UI; writes are restricted to curriculum admins in the database.
+
+
+2. Canvas roadmap editor (admin)
+--------------------------------
+- Added a shared canvas component at scholar-bac/src/features/roadmap/components/RoadmapCanvas.jsx.
+- Added canvas helpers at scholar-bac/src/features/roadmap/utils/canvasLayout.js.
+- Admin roadmap editing in scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx now includes a canvas workspace.
+- Canvas features:
+  - draggable subject cards and note cards
+  - importance grades for BAC subjects (Scazuta to Critica)
+  - color selection for cards
+  - arrow connections between nodes
+  - delete selected node or edge
+- Canvas layout is stored on study_roadmaps.canvas_layout as JSON with nodes and edges.
+
+
+3. Premium student roadmap viewing
+----------------------------------
+- Route /roadmap now shows admin-published roadmaps for the student program.
+- Access is gated behind Premium in the UI.
+- Dashboard entry points were updated to open the viewer instead of a personal builder.
+- Non-premium users see an upgrade prompt instead of roadmap content.
+
+
+4. Database migrations
+----------------------
+- scholar-bac/supabase/migrations/20260512_user_roadmap_workspace.sql
+  - Added user_study_roadmaps and user_study_roadmap_subjects for the earlier personal-roadmap experiment.
+- scholar-bac/supabase/migrations/20260513_admin_premium_access.sql
+  - Curriculum admins are treated as Premium in has_active_premium().
+  - Added or updated is_curriculum_admin().
+- scholar-bac/supabase/migrations/20260514_study_roadmap_canvas.sql
+  - Added study_roadmaps.canvas_layout.
+  - Restricted study_roadmaps and study_roadmap_steps SELECT access to Premium users and admins.
+  - Restricted legacy user roadmap tables to admin-only writes.
+- These migrations still need to be applied to the Supabase project if they have not been run yet.
+
+
+5. Application services and routing
+-----------------------------------
+- scholar-bac/src/services/roadmapService.js remains the source for admin and student roadmap loading.
+- scholar-bac/src/services/userRoadmapService.js exists from the earlier personal-roadmap experiment and is no longer used by the current UI.
+- scholar-bac/src/App.jsx exposes protected route /roadmap.
+- scholar-bac/src/features/roadmap/pages/RoadmapWorkspacePage.jsx is the Premium student viewer.
+- scholar-bac/src/features/dashboard/pages/DashboardPage.jsx loads roadmaps only for Premium users and links to the viewer.
+
+
+6. Premium and admin access
+---------------------------
+- scholar-bac/src/app/providers/AuthProvider.jsx treats the curriculum admin account as Premium in the client.
+- Admin accounts can access Premium-gated UI without a paid entitlement row.
+- Server-side Premium checks rely on has_active_premium(), which also returns true for curriculum admins after migration 20260513.
+
+
+7. Verification
+---------------
+- npm run build completed successfully after the roadmap ownership and canvas changes.
+- No linter issues were reported on the touched application files at the time of the latest implementation pass.
+
+
+8. Related existing project context
+-----------------------------------
+- Before this roadmap work, the project already included premium membership, Stripe checkout integration, entitlement handling, lesson paywalls, and admin curriculum management.
+- The roadmap system now sits on top of that structure as an admin-authored, Premium-viewable study artifact.
+
+
+9. Not completed in this workspace pass
+---------------------------------------
+- Supabase migrations were not applied from the agent environment.
+- No git commit or pull request was created.
+- The admin roadmap step list UI still exists alongside the canvas editor for lesson-linked steps.
