@@ -173,28 +173,28 @@ export function DashboardPage() {
             <>
               {/* Ultra-Premium Progress Card */}
               <motion.div 
-                className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-8 md:p-12 shadow-2xl shadow-primary/20"
+                className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-xl shadow-slate-200/70 dark:border-transparent dark:bg-slate-900 dark:text-white dark:shadow-2xl dark:shadow-primary/20 md:p-12"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
                 {/* Abstract backgrounds */}
-                <div className="absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl" />
-                <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-indigo-500/20 blur-3xl" />
+                <div className="absolute -top-24 -right-24 size-64 rounded-full bg-primary/10 blur-3xl dark:bg-primary/20" />
+                <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/20" />
                 
                 <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center">
                    <div className="flex-1 space-y-4">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur-md">
-                         <Award className="size-3 text-yellow-400" />
+                      <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary backdrop-blur-md dark:bg-white/10 dark:text-white">
+                         <Award className="size-3 text-yellow-500 dark:text-yellow-400" />
                          Performanță Actuală
                       </div>
-                      <h3 className="text-3xl font-black text-white">Ești pe drumul cel bun!</h3>
-                      <p className="text-slate-300 max-w-lg leading-relaxed">
-                        Ai stăpânit deja <span className="font-bold text-white text-lg">{overallProgress.completed}</span> capitole. 
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white">Ești pe drumul cel bun!</h3>
+                      <p className="max-w-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                        Ai stăpânit deja <span className="text-lg font-bold text-slate-900 dark:text-white">{overallProgress.completed}</span> capitole. 
                         Cu acest ritm, vei finaliza materia pentru <span className="text-primary font-bold">{programsSummary}</span> în timp record.
                         {isPremium && averageQuizScore !== null && (
-                          <span className="mt-3 block text-sm text-indigo-200">
-                            Scor mediu la quiz-uri: <span className="font-black text-white">{averageQuizScore}%</span>
+                          <span className="mt-3 block text-sm text-slate-600 dark:text-indigo-200">
+                            Scor mediu la quiz-uri: <span className="font-black text-slate-900 dark:text-white">{averageQuizScore}%</span>
                           </span>
                         )}
                       </p>
@@ -202,7 +202,7 @@ export function DashboardPage() {
                    <div className="flex flex-col items-center gap-4 w-full md:w-80">
                       <div className="relative size-40 flex items-center justify-center">
                          <svg className="size-full transform -rotate-90">
-                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-white/10" />
+                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-slate-200 dark:text-white/10" />
                             <motion.circle 
                               cx="80" cy="80" r="70" fill="transparent" stroke="url(#progressGradient)" strokeWidth="12" strokeLinecap="round"
                               initial={{ strokeDasharray: "440", strokeDashoffset: "440" }}
@@ -216,9 +216,9 @@ export function DashboardPage() {
                               </linearGradient>
                             </defs>
                          </svg>
-                         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                         <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-900 dark:text-white">
                             <span className="text-4xl font-black tracking-tighter">{overallProgress.progressPercent}%</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finalizat</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Finalizat</span>
                          </div>
                       </div>
                    </div>
@@ -309,7 +309,7 @@ export function DashboardPage() {
                   return (
                     <motion.article
                       key={subject.value}
-                      className="group relative flex flex-col rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 shadow-sm hover:shadow-xl transition-all duration-300"
+                      className="platform-surface-hover group relative flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/50"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * index + 0.4 }}
@@ -328,7 +328,7 @@ export function DashboardPage() {
                       </div>
 
                       <div className="mb-6 space-y-2">
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-muted-foreground">
                           <span>Progres Subiect</span>
                           <span>{subjectProgress}%</span>
                         </div>
@@ -352,7 +352,11 @@ export function DashboardPage() {
                                 <div key={lesson.id} className="space-y-1">
                                   <motion.button
                                     type="button"
-                                    className={`group/item relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isCompleted ? 'opacity-60' : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm'}`}
+                                    className={`group/item platform-surface-hover relative flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
+                                      isCompleted
+                                        ? 'platform-surface-hover-subtle border-transparent opacity-60'
+                                        : 'border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900'
+                                    }`}
                                     onClick={() => {
                                       if (locked) {
                                         openPremiumModal()
@@ -379,7 +383,7 @@ export function DashboardPage() {
                                   {lesson.lesson_parts && lesson.lesson_parts.length > 0 && !isCompleted && (
                                     <div className="ml-9 border-l-2 border-slate-100 dark:border-slate-800 pl-4 py-1 space-y-2">
                                       {lesson.lesson_parts.map((part, pIdx) => (
-                                        <div key={part.id} className="flex items-center gap-2 group/part cursor-pointer" onClick={() => navigate(`/lessons/${lesson.id}`)}>
+                                        <div key={part.id} className="platform-surface-hover-subtle flex items-center gap-2 rounded-lg border border-transparent px-2 py-1 transition-all group/part cursor-pointer" onClick={() => navigate(`/lessons/${lesson.id}`)}>
                                           <div className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-700 group-hover/part:bg-primary transition-colors" />
                                           <span className="text-[10px] font-bold text-muted-foreground group-hover/part:text-primary transition-colors uppercase tracking-tight">
                                             Partea {pIdx + 1}: {part.title}
