@@ -37,6 +37,21 @@ export async function addCurriculumAdminEmail(email) {
     throw new Error('Introdu o adresă de email validă.')
   }
 
+  const { data: userExists, error: lookupError } = await supabase.rpc('auth_user_email_exists', {
+    p_email: normalized,
+  })
+
+  if (lookupError) {
+    if (lookupError.code === 'PGRST202' || lookupError.code === '42883') {
+      throw new Error('Verificarea emailului nu este disponibilă. Aplică migrarea pentru administratori în Supabase.')
+    }
+    throw lookupError
+  }
+
+  if (!userExists) {
+    throw new Error('Nu există un cont înregistrat cu acest email.')
+  }
+
   const { data, error } = await supabase
     .from('curriculum_admin_emails')
     .insert([{ email: normalized }])
@@ -54,6 +69,13 @@ export async function addCurriculumAdminEmail(email) {
 }
 
 export async function removeCurriculumAdminEmail(id, email) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  if (!isPrimaryAdminEmail(user?.email)) {
+    throw new Error('Doar administratorul principal poate elimina administratori.')
+  }
+
   if (isPrimaryAdminEmail(email)) {
     throw new Error('Administratorul principal nu poate fi eliminat.')
   }

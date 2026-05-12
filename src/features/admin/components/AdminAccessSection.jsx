@@ -71,7 +71,14 @@ export function AdminAccessSection() {
     }
   }
 
+  const canRemoveAdmins = isPrimaryAdminEmail(user?.email)
+
   const handleRemoveAdmin = async (adminRow) => {
+    if (!canRemoveAdmins) {
+      setError('Doar administratorul principal poate elimina administratori.')
+      return
+    }
+
     if (isPrimaryAdminEmail(adminRow.email)) {
       setError('Administratorul principal nu poate fi eliminat.')
       return
@@ -106,7 +113,7 @@ export function AdminAccessSection() {
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-white">Administratori</h2>
           <p className="text-sm text-muted-foreground">
-            Conturile cu aceste emailuri pot accesa panoul de administrare și sunt tratate ca Premium.
+            Conturile cu aceste emailuri pot accesa panoul de administrare și sunt tratate ca Premium. Doar administratorul principal poate elimina administratori.
           </p>
         </div>
       </div>
@@ -149,7 +156,7 @@ export function AdminAccessSection() {
                 <tr>
                   <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4">Adăugat</th>
-                  <th className="px-6 py-4 text-right">Acțiuni</th>
+                  {canRemoveAdmins ? <th className="px-6 py-4 text-right">Acțiuni</th> : null}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -176,16 +183,18 @@ export function AdminAccessSection() {
                       <td className="px-6 py-5 text-sm text-slate-500">
                         {new Date(adminRow.created_at).toLocaleDateString('ro-RO')}
                       </td>
-                      <td className="px-6 py-5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAdmin(adminRow)}
-                          disabled={saving || admins.length <= 1 || isPrimaryAdmin}
-                          className="rounded-lg border border-destructive/20 bg-destructive/10 p-2 text-destructive transition-all hover:bg-destructive/20 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </td>
+                      {canRemoveAdmins ? (
+                        <td className="px-6 py-5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAdmin(adminRow)}
+                            disabled={saving || isPrimaryAdmin}
+                            className="rounded-lg border border-destructive/20 bg-destructive/10 p-2 text-destructive transition-all hover:bg-destructive/20 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   )
                 })}
