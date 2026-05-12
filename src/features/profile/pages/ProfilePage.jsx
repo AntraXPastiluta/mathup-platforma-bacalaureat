@@ -22,6 +22,7 @@ import { UserAvatar } from '../../../shared/ui/UserAvatar'
 import { getProfileMeta } from '../../lessons/profiles'
 import { getProfilesFromMetadata, normalizeProfile, normalizeTargetGrade, constrainTargetGradeInput } from '../../../services/profileService'
 import { getSelectablePrograms } from '../../../services/premiumAccessService'
+import { isEntitlementActive } from '../../../services/billingService'
 import { uploadProfilePhoto } from '../../../services/profilePhotoService'
 import { AVATAR_PRESETS } from '../avatarPresets'
 
@@ -123,7 +124,10 @@ function ProfilePageContent({ metadata }) {
   )
   const targetGradeProgress = Math.min(100, (Number.parseFloat(normalizeTargetGrade(targetGrade)) || 0) * 10)
   const hasManagedPremiumSubscription = Boolean(entitlement?.stripe_subscription_id)
-  const canCancelPremiumSubscription = hasManagedPremiumSubscription && !entitlement?.cancel_at_period_end
+  const canCancelPremiumSubscription =
+    hasManagedPremiumSubscription &&
+    isEntitlementActive(entitlement) &&
+    !entitlement?.cancel_at_period_end
 
   const handleCancelPremium = async () => {
     const confirmed = window.confirm(
