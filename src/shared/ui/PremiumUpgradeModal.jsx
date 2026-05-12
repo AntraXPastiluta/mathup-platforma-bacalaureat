@@ -47,15 +47,16 @@ export function PremiumUpgradeModal() {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">ScholarBAC Premium</p>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Deblochează pregătirea completă
+                  Deblochează roadmap-ul de studiu
                 </h2>
               </div>
             </div>
 
             <ul className="mb-8 space-y-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <li>Roadmap de studiu publicat de profesor</li>
+              <li>Acces la variante deja rezolvate</li>
               <li>Acces la toate programele liceale și Subiectul III</li>
-              <li>Lecții complete, quiz-uri, fișiere și materiale rezolvate</li>
-              <li>Roadmap de studiu și progres complet până la finalul sezonului BAC</li>
+              <li>Lecțiile, quiz-urile și materialele rămân disponibile în programul ales la cont gratuit</li>
             </ul>
 
             {errorMessage ? <AlertMessage message={errorMessage} className="mb-6" /> : null}

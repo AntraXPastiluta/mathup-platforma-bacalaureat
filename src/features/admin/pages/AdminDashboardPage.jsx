@@ -51,6 +51,7 @@ import { Navbar } from '../../../shared/ui/Navbar'
 import { PROFILES, SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
 import { RoadmapCanvas } from '../../roadmap/components/RoadmapCanvas'
+import { AdminSolvedVariantsSection } from '../components/AdminSolvedVariantsSection'
 import { createEmptyLayout, normalizeLayout } from '../../roadmap/utils/canvasLayout'
 
 export function AdminDashboardPage() {
@@ -59,7 +60,7 @@ export function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState('content') // content, parts, quiz, files
+  const [activeTab, setActiveTab] = useState('content') // content, parts, quiz, files, variants
   const [isCreating, setIsCreating] = useState(false)
 
   // Form states for existing lesson
@@ -73,12 +74,15 @@ export function AdminDashboardPage() {
     placement: { type: 'end', partId: '' },
   })
   const [files, setFiles] = useState([])
+  const regularFiles = useMemo(
+    () => files.filter((file) => !file.is_solved_content),
+    [files],
+  )
   const [parts, setParts] = useState([])
   const [newPart, setNewPart] = useState({ title: '', content: '', video_url: '', image_url: '' })
   const [editingPartId, setEditingPartId] = useState(null)
   const [isEditingMetadata, setIsEditingMetadata] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [uploadIsSolvedContent, setUploadIsSolvedContent] = useState(false)
   const [adminSection, setAdminSection] = useState('curriculum')
   const [roadmaps, setRoadmaps] = useState([])
   const [selectedRoadmapId, setSelectedRoadmapId] = useState(null)
@@ -433,8 +437,8 @@ export function AdminDashboardPage() {
     }
   }
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0]
     if (!file) return
     setUploading(true)
     try {
@@ -444,15 +448,15 @@ export function AdminDashboardPage() {
         file_name: uploaded.name,
         file_url: uploaded.url,
         file_type: uploaded.type,
-        is_solved_content: uploadIsSolvedContent,
+        is_solved_content: false,
       })
-      setUploadIsSolvedContent(false)
       setFiles([...files, savedFile])
       setSuccess('Fișier încărcat cu succes!')
     } catch (err) {
       setError(err.message)
     } finally {
       setUploading(false)
+      event.target.value = ''
     }
   }
 
@@ -717,6 +721,13 @@ export function AdminDashboardPage() {
           >
             Roadmaps de studiu
           </button>
+          <button
+            type="button"
+            onClick={() => setAdminSection('variants')}
+            className={`rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all ${adminSection === 'variants' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'}`}
+          >
+            Variante rezolvate
+          </button>
         </motion.div>
 
         {adminSection === 'roadmaps' ? (
@@ -900,6 +911,8 @@ export function AdminDashboardPage() {
               ) : null}
             </div>
           </div>
+        ) : adminSection === 'variants' ? (
+          <AdminSolvedVariantsSection />
         ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           
@@ -1304,7 +1317,7 @@ export function AdminDashboardPage() {
                           { id: 'content', label: 'Conținut', icon: FileText },
                           { id: 'parts', label: 'Părți', icon: Layers },
                           { id: 'quiz', label: 'Quiz', icon: HelpCircle },
-                          { id: 'files', label: 'Fișiere', icon: UploadCloud }
+                          { id: 'files', label: 'Fișiere', icon: UploadCloud },
                         ].map(tab => (
                           <button
                             key={tab.id}
@@ -1737,15 +1750,6 @@ export function AdminDashboardPage() {
 
                         {activeTab === 'files' && (
                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-                            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
-                              <input
-                                type="checkbox"
-                                checked={uploadIsSolvedContent}
-                                onChange={(e) => setUploadIsSolvedContent(e.target.checked)}
-                              />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Marchează fișierul ca material rezolvat (Premium)</span>
-                            </label>
-                            {/* Upload Zone */}
                             <div className="relative group">
                               <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-indigo-600/10 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition-opacity" />
                               <div className="relative p-10 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2rem] bg-slate-50/50 dark:bg-white/2 text-center group-hover:bg-white dark:group-hover:bg-white/5 transition-all shadow-inner">
@@ -1786,8 +1790,8 @@ export function AdminDashboardPage() {
 
                             {/* Files Table */}
                             <div className="space-y-6">
-                              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2">Documente Atașate ({files.length})</h3>
-                              {files.length === 0 ? (
+                              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2">Materiale suport ({regularFiles.length})</h3>
+                              {regularFiles.length === 0 ? (
                                 <div className="p-12 text-center border border-slate-200 dark:border-white/5 rounded-3xl bg-slate-50 dark:bg-white/2 shadow-sm">
                                   <p className="text-sm text-slate-500 font-medium italic">Nu există fișiere pentru această lecție.</p>
                                 </div>
@@ -1798,12 +1802,11 @@ export function AdminDashboardPage() {
                                       <tr>
                                         <th className="px-6 py-4">Nume Fișier</th>
                                         <th className="px-6 py-4">Tip</th>
-                                        <th className="px-6 py-4">Rezolvat</th>
                                         <th className="px-6 py-4 text-right">Acțiuni</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                                      {files.map(file => (
+                                      {regularFiles.map(file => (
                                         <tr key={file.id} className="group/row hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
                                           <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
@@ -1816,11 +1819,6 @@ export function AdminDashboardPage() {
                                           <td className="px-6 py-5">
                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 shadow-sm">
                                               {file.file_type?.split('/')[1] || 'DOC'}
-                                            </span>
-                                          </td>
-                                          <td className="px-6 py-5">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                              {file.is_solved_content ? 'Da' : 'Nu'}
                                             </span>
                                           </td>
                                           <td className="px-6 py-5 text-right">
@@ -1842,6 +1840,7 @@ export function AdminDashboardPage() {
                             </div>
                           </motion.div>
                         )}
+
                       </div>
                     )}
                   </div>

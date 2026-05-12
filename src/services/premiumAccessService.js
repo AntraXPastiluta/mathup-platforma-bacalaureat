@@ -1,10 +1,8 @@
 import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
 import { normalizeProfilesList } from './profileService'
 
-export function isLessonPremium(lesson) {
-  if (!lesson) return false
-  if (lesson.is_premium) return true
-  return (lesson.subject_part ?? 1) === 3
+export function isLessonPremium() {
+  return false
 }
 
 export function canAccessLessonForUser(lesson, isPremium, activeProfiles) {
@@ -32,28 +30,30 @@ export function getPreviewPartCount(lesson) {
   return count
 }
 
-export function canAccessLessonContent(lesson, isPremium) {
-  return isPremium || !isLessonPremium(lesson)
-}
-
-export function canAccessLessonPart(lesson, partIndex, isPremium) {
-  if (isPremium) return true
-  if (isLessonPremium(lesson)) return partIndex < getPreviewPartCount(lesson)
+export function canAccessLessonContent() {
   return true
 }
 
-export function canAccessQuiz(_lesson, isPremium) {
-  return isPremium
+export function canAccessLessonPart() {
+  return true
 }
 
-export function canAccessLessonFiles(_lesson, isPremium) {
-  return isPremium
+export function canAccessQuiz() {
+  return true
+}
+
+export function canAccessLessonFiles() {
+  return true
+}
+
+export function canAccessSolvedVariants(isPremium) {
+  return Boolean(isPremium)
 }
 
 export function canDownloadSolvedContent(isPremium) {
-  return isPremium
+  return Boolean(isPremium)
 }
 
-export function canTrackLessonCompletion(lesson, isPremium) {
-  return isPremium || !isLessonPremium(lesson)
+export function canTrackLessonCompletion() {
+  return true
 }

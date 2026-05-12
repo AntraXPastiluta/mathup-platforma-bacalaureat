@@ -12,6 +12,7 @@ import { supabase } from '../supabaseClient'
  *   question_text text NOT NULL,
  *   options jsonb NOT NULL, -- Array of strings
  *   correct_option_index integer NOT NULL,
+ *   image_url text,
  *   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
  * );
  * 
@@ -22,6 +23,7 @@ import { supabase } from '../supabaseClient'
  *   file_name text NOT NULL,
  *   file_url text NOT NULL,
  *   file_type text,
+ *   is_solved_content boolean NOT NULL DEFAULT false,
  *   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
  * );
  */
@@ -92,6 +94,18 @@ export async function addQuizQuestion(question) {
   return data
 }
 
+export async function updateQuizQuestion(id, updates) {
+  const { data, error } = await supabase
+    .from('quiz_questions')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function deleteQuizQuestion(id) {
   const { error } = await supabase
     .from('quiz_questions')
@@ -126,6 +140,41 @@ export async function addLessonFile(fileData) {
 export async function deleteLessonFile(id) {
   const { error } = await supabase
     .from('lesson_files')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function getProgramSolvedVariants(profile) {
+  let query = supabase
+    .from('program_solved_variants')
+    .select('id, profile, file_name, file_url, file_type, created_at')
+    .order('created_at', { ascending: false })
+
+  if (profile) {
+    query = query.eq('profile', profile)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+export async function addProgramSolvedVariant(variant) {
+  const { data, error } = await supabase
+    .from('program_solved_variants')
+    .insert([variant])
+    .select('id, profile, file_name, file_url, file_type, created_at')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteProgramSolvedVariant(id) {
+  const { error } = await supabase
+    .from('program_solved_variants')
     .delete()
     .eq('id', id)
 

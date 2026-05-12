@@ -14,6 +14,7 @@ import { ProfilePage } from './features/profile/pages/ProfilePage'
 import { LessonPage } from './features/lessons/pages/LessonPage'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
 import { RoadmapWorkspacePage } from './features/roadmap/pages/RoadmapWorkspacePage'
+import { SolvedVariantsPage } from './features/variants/pages/SolvedVariantsPage'
 import { MaintenancePage } from './features/maintenance/pages/MaintenancePage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
@@ -71,6 +72,14 @@ export default function App() {
             element={(
               <ProtectedRoute>
                 <RoadmapWorkspacePage />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/variante-rezolvate"
+            element={(
+              <ProtectedRoute>
+                <SolvedVariantsPage />
               </ProtectedRoute>
             )}
           />

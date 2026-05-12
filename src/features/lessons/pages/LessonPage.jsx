@@ -14,15 +14,6 @@ import {
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
 import { markLessonCompleted } from '../../../services/progressService'
-import {
-  canAccessLessonFiles,
-  canAccessLessonPart,
-  canAccessQuiz,
-  canDownloadSolvedContent,
-  canTrackLessonCompletion,
-  getPreviewPartCount,
-  isLessonPremium,
-} from '../../../services/premiumAccessService'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -30,7 +21,7 @@ import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
 export function LessonPage() {
   const { lessonId } = useParams()
-  const { user, isPremium, openPremiumModal } = useAuth()
+  const { user } = useAuth()
   const [lesson, setLesson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,11 +65,7 @@ export function LessonPage() {
   }, [quizFeedback])
 
   const handleComplete = async () => {
-    if (!user?.id || !lesson?.id) return
-    if (!canTrackLessonCompletion(lesson, isPremium)) {
-      openPremiumModal()
-      return
-    }
+    if (!user?.id || !lesson?.id || !canCompleteLesson) return
     setSaving(true)
     try {
       const score = quizQuestions.length > 0
@@ -95,12 +82,7 @@ export function LessonPage() {
 
   const handleNextPart = () => {
     if (!lesson?.lesson_parts || currentPartIndex >= lesson.lesson_parts.length - 1) return
-    const nextIndex = currentPartIndex + 1
-    if (!canAccessLessonPart(lesson, nextIndex, isPremium)) {
-      openPremiumModal()
-      return
-    }
-    setCurrentPartIndex(nextIndex)
+    setCurrentPartIndex(currentPartIndex + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -117,7 +99,9 @@ export function LessonPage() {
   const profileMeta = lesson ? getProfileMeta(lesson.profile) : null
 
   const parts = lesson?.lesson_parts || []
+  const supplementaryFiles = (lesson?.lesson_files || []).filter((file) => !file.is_solved_content)
   const hasParts = parts.length > 0
+  const canCompleteLesson = hasParts || Boolean(lesson?.content?.trim())
   const currentPart = hasParts ? parts[currentPartIndex] : null
   const isLastPart = hasParts ? currentPartIndex === parts.length - 1 : true
   const isFirstPart = currentPartIndex === 0
@@ -148,7 +132,7 @@ export function LessonPage() {
     })
   }
   const renderQuizSection = (title = 'Chestionar') => {
-    if (!lesson || !canAccessQuiz(lesson, isPremium)) return null
+    if (!lesson) return null
     if (visibleQuizQuestions.length === 0) return null
 
     return (
@@ -185,6 +169,13 @@ export function LessonPage() {
                   Întrebarea {questionIndex + 1}
                 </p>
                 <p className="mb-5 text-lg font-black text-slate-800 dark:text-slate-100">{question.question_text}</p>
+                {question.image_url ? (
+                  <img
+                    src={question.image_url}
+                    alt={question.question_text}
+                    className="mb-5 w-full max-h-80 rounded-2xl border border-slate-200/50 object-cover shadow-lg dark:border-white/10"
+                  />
+                ) : null}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {options.map((option, optionIndex) => {
                     const selected = selectedAnswer === optionIndex
@@ -319,15 +310,6 @@ export function LessonPage() {
                 >
                   {lesson.title}
                 </motion.h1>
-
-                {!isPremium && isLessonPremium(lesson) ? (
-                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm text-slate-600 dark:text-slate-300">
-                    Ai acces preview la primele {getPreviewPartCount(lesson)} {hasParts ? 'părți' : 'secțiuni'}.
-                    <Button variant="link" onClick={openPremiumModal} className="ml-2 px-0 text-primary">
-                      Deblochează Premium
-                    </Button>
-                  </div>
-                ) : null}
               </div>
 
               <motion.div
@@ -398,7 +380,7 @@ export function LessonPage() {
                   </div>
 
                   {/* Additional Resources Section (Images/Documents) */}
-                  {lesson.lesson_files && lesson.lesson_files.length > 0 && canAccessLessonFiles(lesson, isPremium) && (
+                  {supplementaryFiles.length > 0 && (
                     <div className="mt-16 space-y-8 border-t border-slate-200/50 dark:border-white/10 pt-10 relative z-10">
                       <div className="flex items-center gap-3">
                          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -408,9 +390,9 @@ export function LessonPage() {
                       </div>
 
                       {/* Image Gallery */}
-                      {lesson.lesson_files.filter(f => f.file_type?.startsWith('image/')).length > 0 && (
+                      {supplementaryFiles.filter(f => f.file_type?.startsWith('image/')).length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {lesson.lesson_files.filter(f => f.file_type?.startsWith('image/')).map(img => (
+                          {supplementaryFiles.filter(f => f.file_type?.startsWith('image/')).map(img => (
                             <div key={img.id} className="group relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black/20">
                               <img 
                                 src={img.file_url} 
@@ -434,20 +416,14 @@ export function LessonPage() {
                       )}
 
                       {/* Document List */}
-                      {lesson.lesson_files.filter(f => !f.file_type?.startsWith('image/')).length > 0 && (
+                      {supplementaryFiles.filter(f => !f.file_type?.startsWith('image/')).length > 0 && (
                         <div className="grid grid-cols-1 gap-3">
-                          {lesson.lesson_files.filter(f => !f.file_type?.startsWith('image/')).map(doc => (
+                          {supplementaryFiles.filter(f => !f.file_type?.startsWith('image/')).map(doc => (
                             <a 
                               key={doc.id}
                               href={doc.file_url}
                               target="_blank"
                               rel="noreferrer"
-                              onClick={(event) => {
-                                if (doc.is_solved_content && !canDownloadSolvedContent(isPremium)) {
-                                  event.preventDefault()
-                                  openPremiumModal()
-                                }
-                              }}
                               className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/30 hover:bg-white/[0.08] transition-all group/doc"
                             >
                               <div className="flex items-center gap-4 min-w-0">
@@ -467,27 +443,10 @@ export function LessonPage() {
                     </div>
                   )}
 
-                  {!isPremium && lesson.lesson_files?.length > 0 && (
-                    <div className="mt-10 rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm text-slate-600 dark:text-slate-300">
-                      Materialele și fișierele rezolvate sunt disponibile în Premium.
-                      <Button variant="link" onClick={openPremiumModal} className="ml-2 px-0 text-primary">
-                        Vezi oferta
-                      </Button>
-                    </div>
-                  )}
-
-                  {!canAccessQuiz(lesson, isPremium) && quizQuestions.length > 0 && isLastPart ? (
-                    <div className="mt-10 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5 text-sm text-slate-600 dark:text-slate-300">
-                      Chestionarul și verificarea cunoștințelor sunt incluse în Premium.
-                      <Button variant="link" onClick={openPremiumModal} className="ml-2 px-0 text-primary">
-                        Vezi oferta
-                      </Button>
-                    </div>
-                  ) : null}
 
                   {renderQuizSection(isLastPart ? 'Chestionar Final' : 'Verificare Rapidă')}
 
-                  {/* Navigation Footer */}
+                  {canCompleteLesson ? (
                   <div className="mt-16 flex flex-col items-center justify-between border-t border-slate-200/50 dark:border-white/10 pt-10 sm:flex-row gap-8 relative z-10">
                     <div className="flex flex-col items-center sm:items-start space-y-1">
                       <p className="text-sm font-black uppercase tracking-widest text-slate-500">
@@ -540,6 +499,7 @@ export function LessonPage() {
                       )}
                     </div>
                   </div>
+                  ) : null}
                 </div>
               </motion.div>
             </div>

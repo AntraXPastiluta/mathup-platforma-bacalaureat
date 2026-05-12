@@ -11,6 +11,8 @@ import {
   User,
   Crown,
   Map,
+  NotebookPen,
+  Download,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonsForProfiles } from '../../../services/lessonService'
@@ -18,9 +20,12 @@ import { getUserProgress } from '../../../services/progressService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getRoadmapsForProfile } from '../../../services/roadmapService'
 import { canAccessLessonForUser } from '../../../services/premiumAccessService'
+import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
+import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
+import { SolvedVariantDocumentIcon } from '../../../shared/ui/SolvedVariantDocumentIcon'
 import { SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 
 export function DashboardPage() {
@@ -28,6 +33,8 @@ export function DashboardPage() {
   const [progressRows, setProgressRows] = useState([])
   const [loadingData, setLoadingData] = useState(true)
   const [roadmaps, setRoadmaps] = useState([])
+  const [solvedVariants, setSolvedVariants] = useState([])
+  const [downloadingVariantId, setDownloadingVariantId] = useState(null)
   const [error, setError] = useState('')
   const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading, errorMessage } = useAuth()
   const navigate = useNavigate()
@@ -54,15 +61,17 @@ export function DashboardPage() {
       setError('')
       try {
         const primaryProfile = activeProfiles[0]
-        const [lessonsData, progressData, roadmapData] = await Promise.all([
+        const [lessonsData, progressData, roadmapData, solvedVariantsData] = await Promise.all([
           getLessonsForProfiles(activeProfiles),
           getUserProgress(user.id),
           isPremium ? getRoadmapsForProfile(primaryProfile) : Promise.resolve([]),
+          isPremium ? getSolvedVariantsForProfiles(activeProfiles) : Promise.resolve([]),
         ])
         if (!mounted) return
         setLessons(lessonsData)
         setProgressRows(progressData)
         setRoadmaps(roadmapData)
+        setSolvedVariants(solvedVariantsData)
       } catch (loadError) {
         if (!mounted) return
         setError(loadError.message)
@@ -104,6 +113,18 @@ export function DashboardPage() {
     }
     return grouped
   }, [lessons])
+
+  const handleDownloadVariant = async (variant) => {
+    setDownloadingVariantId(variant.id)
+    setError('')
+    try {
+      await downloadRemoteFile(variant.file_url, variant.file_name)
+    } catch (downloadError) {
+      setError(downloadError.message)
+    } finally {
+      setDownloadingVariantId(null)
+    }
+  }
 
 
   return (
@@ -147,7 +168,7 @@ export function DashboardPage() {
           <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">ScholarBAC Premium</p>
-              <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează lecțiile complete, quiz-urile și materialele rezolvate.</p>
+              <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează roadmap-ul de studiu</p>
             </div>
             <Button onClick={startPremiumCheckout} disabled={checkoutLoading} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
               {checkoutLoading ? 'Redirecționare...' : 'Cumpără Premium'}
@@ -234,11 +255,11 @@ export function DashboardPage() {
                       </div>
                       <div>
                         <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">Roadmap de studiu</h3>
-                        <p className="text-sm text-muted-foreground">Roadmap-ul este publicat de administrator și poate fi vizualizat de elevii Premium.</p>
+                        <p className="text-sm text-muted-foreground">Roadmap-ul este publicat de profesor.</p>
                       </div>
                     </div>
                     <Button onClick={() => navigate('/roadmap')} className="rounded-2xl">
-                      Vezi roadmap canvas
+                      Vezi roadmap
                     </Button>
                   </div>
                   <div className="space-y-6">
@@ -279,22 +300,57 @@ export function DashboardPage() {
                 </section>
               )}
 
-              {!isPremium ? (
+              {isPremium ? (
                 <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Map className="size-5" />
+                        <NotebookPen className="size-5" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">Roadmap de studiu</h3>
-                        <p className="text-sm text-muted-foreground">Elevii Premium pot vizualiza roadmap-urile publicate de administrator.</p>
+                        <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">Variante deja rezolvate</h3>
+                        <p className="text-sm text-muted-foreground">Documente publicate de profesor pentru programul tău.</p>
                       </div>
                     </div>
-                    <Button onClick={openPremiumModal} className="rounded-2xl">
-                      Deblochează roadmap-ul
+                    <Button onClick={() => navigate('/variante-rezolvate')} variant="outline" className="rounded-2xl">
+                      Vezi toate
                     </Button>
                   </div>
+
+                  {solvedVariants.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nu există variante rezolvate publicate încă.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {solvedVariants.map((variant) => (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          onClick={() => handleDownloadVariant(variant)}
+                          disabled={downloadingVariantId === variant.id}
+                          className="platform-surface-hover flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all disabled:cursor-wait disabled:opacity-70 dark:border-slate-800 dark:bg-slate-900/40"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                              {getProfileMeta(variant.profile).shortLabel}
+                            </p>
+                            <div className="mt-1 flex min-w-0 items-center gap-2">
+                              <SolvedVariantDocumentIcon compact />
+                              <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{variant.file_name}</p>
+                            </div>
+                            <p className="truncate text-xs text-muted-foreground">{getProfileMeta(variant.profile).label}</p>
+                          </div>
+                          <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                            {downloadingVariantId === variant.id ? (
+                              <span className="size-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                            ) : (
+                              <Download className="size-4" />
+                            )}
+                            Descarcă
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </section>
               ) : null}
 

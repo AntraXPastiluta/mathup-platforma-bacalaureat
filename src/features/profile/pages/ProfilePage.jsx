@@ -147,7 +147,7 @@ function ProfilePageContent({ metadata }) {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Abonament Premium</p>
               <p className="text-lg font-black text-slate-800 dark:text-white">
-                {isPremium ? 'Ai acces complet la platformă' : 'Deblochează lecțiile, quiz-urile și materialele rezolvate'}
+                {isPremium ? 'Ai acces la roadmap și la toate programele' : 'Deblochează roadmap-ul de studiu și programele suplimentare'}
               </p>
               {isPremium && premiumExpiresAt ? (
                 <p className="text-sm text-muted-foreground">Activ până la {new Date(premiumExpiresAt).toLocaleDateString('ro-RO')}</p>

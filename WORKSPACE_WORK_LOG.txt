@@ -178,4 +178,45 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Updated scholar-bac/src/services/premiumAccessService.js so isLessonPremium no longer treats every non-Mate-Info program as premium.
 - Added canAccessLessonForUser(lesson, isPremium, activeProfiles) to allow free users to open lessons for the program chosen at signup.
 - Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx to open the Premium modal only when the lesson is outside the user registered program.
-- Premium remains required for other programs, Subiectul III, lessons flagged is_premium, quizzes, files, and roadmap content.
+- Premium remains required for other programs and roadmap content.
+
+
+19. Premium limited to roadmap
+------------------------------
+- Updated scholar-bac/src/services/premiumAccessService.js so lesson preview gates always allow full lesson content, quizzes, files, solved downloads, and completion tracking.
+- Updated scholar-bac/src/features/lessons/pages/LessonPage.jsx to remove preview banners and Premium upsells on lesson parts, files, and quizzes.
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx, scholar-bac/src/features/profile/pages/ProfilePage.jsx, and scholar-bac/src/shared/ui/PremiumUpgradeModal.jsx so Premium messaging focuses on roadmap and extra programs, not lesson previews.
+- Roadmap access remains gated on dashboard, /roadmap, and roadmap steps marked requires_premium.
+
+
+20. Quiz question images
+------------------------
+- Added scholar-bac/supabase/migrations/20260517_quiz_question_images.sql to add quiz_questions.image_url.
+- Updated scholar-bac/src/services/adminService.js with updateQuizQuestion and image_url support on quiz inserts.
+- Updated scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx so admins can upload optional images when creating or editing quiz questions.
+- Updated scholar-bac/src/features/lessons/pages/LessonPage.jsx to render quiz question images for students.
+- Apply the migration in Supabase before using quiz image uploads in production.
+
+
+21. Premium modal copy
+----------------------
+- Updated scholar-bac/src/shared/ui/PremiumUpgradeModal.jsx so roadmap is described as published by the teacher, removed the canvas mention, and added access to already solved variants.
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx so the Premium banner and roadmap upsell use the same copy as the modal.
+- Simplified scholar-bac/src/features/dashboard/pages/DashboardPage.jsx roadmap copy to a single line about the teacher; detailed Premium benefits remain only in scholar-bac/src/shared/ui/PremiumUpgradeModal.jsx.
+- Removed the free-account roadmap upsell section from scholar-bac/src/features/dashboard/pages/DashboardPage.jsx.
+
+
+22. Premium solved variants
+-----------------------------
+- Added scholar-bac/supabase/migrations/20260518_lesson_files_solved_content.sql for lesson_files.is_solved_content.
+- Added scholar-bac/src/services/solvedVariantService.js and scholar-bac/src/features/variants/pages/SolvedVariantsPage.jsx for Premium students to browse solved variants by subject.
+- Registered /variante-rezolvate in scholar-bac/src/App.jsx and linked the section from scholar-bac/src/features/dashboard/pages/DashboardPage.jsx for Premium accounts.
+- Updated scholar-bac/src/features/lessons/pages/LessonPage.jsx so solved files appear only in the Premium variants area, not in regular lesson resources.
+- Updated scholar-bac/src/services/premiumAccessService.js with solved-variant access helpers.
+
+
+23. Admin solved-variant uploads
+--------------------------------
+- Updated scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx with a dedicated Variante tab for uploading solved variants per lesson.
+- Added scholar-bac/src/features/admin/components/AdminLessonVariantsTab.jsx for the solved-variant upload UI.
+- Regular lesson files and solved variants are listed separately in admin.
