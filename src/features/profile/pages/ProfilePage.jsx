@@ -26,7 +26,7 @@ import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { PROFILES, getProfileMeta } from '../../lessons/profiles'
 import { getProfilesFromMetadata, normalizeProfile } from '../../../services/profileService'
-import { canAccessProgram } from '../../../services/premiumAccessService'
+import { getSelectablePrograms } from '../../../services/premiumAccessService'
 
 const AVATAR_ICONS = [
   { id: 'user', icon: User, color: 'bg-blue-500' },
@@ -59,7 +59,6 @@ function ProfilePageContent({ metadata }) {
     premiumExpiresAt,
     startPremiumCheckout,
     checkoutLoading,
-    openPremiumModal,
     refreshEntitlement,
   } = useAuth()
   const navigate = useNavigate()
@@ -104,6 +103,7 @@ function ProfilePageContent({ metadata }) {
     }
   }
 
+  const selectablePrograms = getSelectablePrograms(isPremium)
   const CurrentAvatarIcon = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.icon || User
   const currentAvatarColor = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.color || 'bg-primary'
 
@@ -258,22 +258,18 @@ function ProfilePageContent({ metadata }) {
                     Program liceal
                   </label>
                   <p className="text-xs text-muted-foreground -mt-1 mb-1">
-                    Alege programul pentru care vrei să vezi lecțiile.
+                    {isPremium
+                      ? 'Alege programul pentru care vrei să vezi lecțiile.'
+                      : 'Contul gratuit include doar programul Mate-Info.'}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {PROFILES.map((p) => {
+                    {selectablePrograms.map((p) => {
                       const active = selectedProfile === p.key
                       return (
                         <button
                           key={p.key}
                           type="button"
-                          onClick={() => {
-                            if (!canAccessProgram(p.key, isPremium)) {
-                              openPremiumModal()
-                              return
-                            }
-                            setSelectedProfile(p.key)
-                          }}
+                          onClick={() => setSelectedProfile(p.key)}
                           className={`relative flex items-center gap-4 p-5 rounded-2xl border transition-all text-left group ${active ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'}`}
                         >
                           {active && (

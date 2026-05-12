@@ -136,7 +136,7 @@ export function RegisterPage() {
                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
                     Programe liceale (una sau mai multe)
                   </label>
-                  <p className="text-xs text-muted-foreground mb-1">Bifează toate filierele la care vrei acces la materiale.</p>
+                  <p className="text-xs text-muted-foreground mb-1">Alege filiera pentru care vrei acces la materiale.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {PROFILES.map((p) => {
                       const active = formData.profiles.includes(p.key)
@@ -144,14 +144,7 @@ export function RegisterPage() {
                         <button
                           key={p.key}
                           type="button"
-                          onClick={() =>
-                            setFormData((prev) => {
-                              const has = prev.profiles.includes(p.key)
-                              if (has && prev.profiles.length <= 1) return prev
-                              if (has) return { ...prev, profiles: prev.profiles.filter((k) => k !== p.key) }
-                              return { ...prev, profiles: [...prev.profiles, p.key] }
-                            })
-                          }
+                          onClick={() => setFormData((prev) => ({ ...prev, profiles: [p.key] }))}
                           className={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all text-left ${active ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10'}`}
                         >
                           {active && (

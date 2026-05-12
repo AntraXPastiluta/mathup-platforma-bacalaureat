@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE } from '../features/lessons/profiles'
+import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
 
 export function isLessonPremium(lesson) {
   if (!lesson) return false
@@ -10,6 +10,11 @@ export function isLessonPremium(lesson) {
 export function canAccessProgram(profileKey, isPremium) {
   if (isPremium) return true
   return profileKey === DEFAULT_PROFILE
+}
+
+export function getSelectablePrograms(isPremium) {
+  if (isPremium) return PROFILES
+  return PROFILES.filter((profile) => profile.key === DEFAULT_PROFILE)
 }
 
 export function getPreviewPartCount(lesson) {

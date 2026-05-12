@@ -29,7 +29,7 @@ export function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true)
   const [roadmaps, setRoadmaps] = useState([])
   const [error, setError] = useState('')
-  const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading } = useAuth()
+  const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading, errorMessage } = useAuth()
   const navigate = useNavigate()
 
   const activeProfiles = useMemo(
@@ -141,6 +141,7 @@ export function DashboardPage() {
         </div>
 
         {error && <AlertMessage message={error} className="mb-8" />}
+        {errorMessage && <AlertMessage message={errorMessage} className="mb-8" />}
 
         {!isPremium ? (
           <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-6 md:flex-row md:items-center md:justify-between">

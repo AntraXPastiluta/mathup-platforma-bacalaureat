@@ -137,29 +137,34 @@ export function LoginPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between py-1">
-                <div className="flex items-center space-x-3">
-                  <div className="relative flex items-center">
-                    <input 
-                      id="remember"
-                      type="checkbox" 
-                      className="size-5 rounded-lg border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 text-primary focus:ring-primary/50 cursor-pointer accent-primary"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
+              <div className="space-y-2 py-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative flex items-center">
+                      <input 
+                        id="remember"
+                        type="checkbox" 
+                        className="size-5 rounded-lg border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 text-primary focus:ring-primary/50 cursor-pointer accent-primary"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                    </div>
+                    <label htmlFor="remember" className="text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                      Ține-mă minte
+                    </label>
                   </div>
-                  <label htmlFor="remember" className="text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                    Ține-mă minte
-                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors"
+                  >
+                     Ai uitat parola?
+                  </button>
                 </div>
-                
-                <button
-                  type="button"
-                  onClick={() => navigate('/forgot-password')}
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-colors"
-                >
-                   Ai uitat parola?
-                </button>
+                <p className="text-[11px] text-muted-foreground ml-1">
+                  Salvează emailul pentru următoarea autentificare. Sesiunea rămâne activă după închiderea filei.
+                </p>
               </div>
 
               <div className="pt-2">

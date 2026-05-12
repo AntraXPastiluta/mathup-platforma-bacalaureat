@@ -130,7 +130,9 @@ export function AuthProvider({ children }) {
     try {
       await createCheckout()
     } catch (error) {
-      setErrorMessage(error.message)
+      const message = error instanceof Error ? error.message : 'Plata Premium nu a putut fi pornită.'
+      setErrorMessage(message)
+      setPremiumModalOpen(true)
       throw error
     } finally {
       setCheckoutLoading(false)

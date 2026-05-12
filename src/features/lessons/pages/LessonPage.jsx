@@ -373,6 +373,14 @@ export function LessonPage() {
                           </div>
                         )}
 
+                        {currentPart.image_url ? (
+                          <img
+                            src={currentPart.image_url}
+                            alt={currentPart.title}
+                            className="w-full rounded-[2rem] border border-slate-200/50 object-cover shadow-xl dark:border-white/10"
+                          />
+                        ) : null}
+
                         <div className="text-lg leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-medium">
                           {currentPart.content}
                         </div>

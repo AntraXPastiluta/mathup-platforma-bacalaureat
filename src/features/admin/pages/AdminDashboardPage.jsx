@@ -74,7 +74,7 @@ export function AdminDashboardPage() {
   })
   const [files, setFiles] = useState([])
   const [parts, setParts] = useState([])
-  const [newPart, setNewPart] = useState({ title: '', content: '', video_url: '' })
+  const [newPart, setNewPart] = useState({ title: '', content: '', video_url: '', image_url: '' })
   const [editingPartId, setEditingPartId] = useState(null)
   const [isEditingMetadata, setIsEditingMetadata] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -337,6 +337,7 @@ export function AdminDashboardPage() {
         title: part.title,
         content: part.content,
         video_url: part.video_url,
+        image_url: part.image_url,
         order_index: part.order_index,
       })
       partIdMap.set(part.id, clonedPart.id)
@@ -464,6 +465,31 @@ export function AdminDashboardPage() {
     }
   }
 
+  const handlePartImageUpload = async (event, target = 'new') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('Poți încărca doar imagini pentru secțiunile lecției.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const uploaded = await uploadFileToStorage(file)
+      if (target === 'new') {
+        setNewPart((prev) => ({ ...prev, image_url: uploaded.url }))
+      } else {
+        updatePartField(target, 'image_url', uploaded.url)
+      }
+      setSuccess('Imagine încărcată pentru secțiune.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+      event.target.value = ''
+    }
+  }
+
   const handleAddPart = async () => {
     if (!newPart.title || !newPart.content) {
       setError('Titlul și conținutul părții sunt obligatorii.')
@@ -475,10 +501,11 @@ export function AdminDashboardPage() {
         title: newPart.title,
         content: newPart.content,
         video_url: newPart.video_url,
+        image_url: newPart.image_url || null,
         order_index: parts.length + 1
       })
       setParts([...parts, p])
-      setNewPart({ title: '', content: '', video_url: '' })
+      setNewPart({ title: '', content: '', video_url: '', image_url: '' })
       setSuccess('Parte adăugată cu succes!')
     } catch (err) {
       setError(err.message)
@@ -1448,7 +1475,12 @@ export function AdminDashboardPage() {
                         )}
 
                         {activeTab === 'parts' && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+                              {parts.length > 0 && parts.length < 3 ? (
+                                <AlertMessage
+                                  message={`Lecția are doar ${parts.length} secțiuni. Adaugă cel puțin 3 secțiuni pentru o experiență completă.`}
+                                />
+                              ) : null}
                             {/* Add Part Card */}
                             <div className="bg-primary/5 border border-primary/10 dark:border-primary/20 rounded-3xl p-8 space-y-6 shadow-sm">
                               <div className="flex items-center gap-3">
@@ -1476,6 +1508,17 @@ export function AdminDashboardPage() {
                                   value={newPart.video_url}
                                   onChange={(e) => setNewPart({ ...newPart, video_url: e.target.value })}
                                 />
+                                <div className="space-y-3 rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Imagine secțiune (opțional)</p>
+                                  {newPart.image_url ? (
+                                    <img src={newPart.image_url} alt="Previzualizare secțiune" className="max-h-48 w-full rounded-2xl object-cover" />
+                                  ) : null}
+                                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-600 dark:border-white/10 dark:text-slate-300">
+                                    <UploadCloud className="size-4" />
+                                    Încarcă imagine
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePartImageUpload(e, 'new')} disabled={uploading} />
+                                  </label>
+                                </div>
                               </div>
                               <Button onClick={handleAddPart} className="w-full rounded-2xl h-12 bg-primary text-white hover:bg-primary/90 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
                                 Adaugă Această Parte
@@ -1541,6 +1584,17 @@ export function AdminDashboardPage() {
                                               onChange={(e) => updatePartField(part.id, 'video_url', e.target.value)}
                                               placeholder="URL Video"
                                             />
+                                            <div className="space-y-3 rounded-xl border border-dashed border-slate-200 p-4 dark:border-white/10">
+                                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Imagine secțiune</p>
+                                              {part.image_url ? (
+                                                <img src={part.image_url} alt={part.title} className="max-h-40 w-full rounded-xl object-cover" />
+                                              ) : null}
+                                              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:border-white/10 dark:text-slate-300">
+                                                <UploadCloud className="size-3.5" />
+                                                Încarcă imagine
+                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePartImageUpload(e, part.id)} disabled={uploading} />
+                                              </label>
+                                            </div>
                                           </div>
                                         ) : (
                                           <div className="relative z-10">

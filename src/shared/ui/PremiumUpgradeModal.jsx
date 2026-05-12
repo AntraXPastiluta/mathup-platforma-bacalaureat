@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Crown, Sparkles, X } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
+import { AlertMessage } from './AlertMessage'
 import { Button } from './Button'
 
 export function PremiumUpgradeModal() {
@@ -11,6 +12,7 @@ export function PremiumUpgradeModal() {
     checkoutLoading,
     premiumExpiresAt,
     isPremium,
+    errorMessage,
   } = useAuth()
 
   return (
@@ -55,6 +57,8 @@ export function PremiumUpgradeModal() {
               <li>Lecții complete, quiz-uri, fișiere și materiale rezolvate</li>
               <li>Roadmap de studiu și progres complet până la finalul sezonului BAC</li>
             </ul>
+
+            {errorMessage ? <AlertMessage message={errorMessage} className="mb-6" /> : null}
 
             {isPremium && premiumExpiresAt ? (
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-600 dark:text-emerald-400">

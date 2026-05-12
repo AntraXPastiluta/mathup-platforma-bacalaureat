@@ -117,3 +117,17 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - The admin roadmap step list UI still exists alongside the canvas editor for lesson-linked steps.
 - vercel.json for client-side route rewrites may still need to be added and pushed if direct URL navigation fails on Vercel.
 - GitHub and Vercel operational steps after the first deploy still require manual confirmation in each service dashboard.
+
+
+13. Bugfix pass from erori.txt (2026-05-12)
+--------------------------------------------
+- Premium checkout: scholar-bac/src/services/billingService.js now sends the session token, retries via fetch when invoke fails, and surfaces Romanian errors in the dashboard and Premium modal.
+- Auth session: scholar-bac/src/supabaseClient.js keeps Supabase sessions in localStorage with auto-refresh.
+- Register program: scholar-bac/src/features/auth/pages/RegisterPage.jsx uses single program selection so the chosen profile is stored correctly.
+- Profile programs: scholar-bac/src/services/premiumAccessService.js adds getSelectablePrograms(); scholar-bac/src/features/profile/pages/ProfilePage.jsx shows only Mate-Info for free users.
+- Login remember me: scholar-bac/src/features/auth/pages/LoginPage.jsx clarifies that the checkbox saves email while the session persists after closing the tab.
+- Admin lesson parts: scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx warns when a lesson has fewer than three sections and supports custom section images.
+- Student lesson view: scholar-bac/src/features/lessons/pages/LessonPage.jsx renders section images.
+- Database: scholar-bac/supabase/migrations/20260516_lesson_part_images.sql adds lesson_parts.image_url.
+- Signup trigger fix from 20260515_fix_auth_signup.sql still needs to be applied manually in Supabase if signup fails in production.
+- Edge Functions create-checkout-session and stripe-webhook must be deployed with Stripe secrets and APP_URL for checkout to work in production.
