@@ -1,4 +1,15 @@
 import { supabase } from '../supabaseClient'
+import { checkCurrentUserIsAdmin } from './curriculumAdminService'
+
+const MAX_LESSON_FILE_BYTES = 20 * 1024 * 1024
+const ALLOWED_LESSON_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'doc', 'docx'])
+
+async function requireCurriculumAdmin() {
+  const isAdmin = await checkCurrentUserIsAdmin()
+  if (!isAdmin) {
+    throw new Error('Acces neautorizat.')
+  }
+}
 
 /**
  * Admin Service for managing lessons, quizzes, and files.
@@ -41,6 +52,7 @@ export async function getAllLessonsAdmin() {
 }
 
 export async function addLesson(lesson) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('lessons')
     .insert([lesson])
@@ -52,6 +64,7 @@ export async function addLesson(lesson) {
 }
 
 export async function deleteLesson(id) {
+  await requireCurriculumAdmin()
   const { error } = await supabase
     .from('lessons')
     .delete()
@@ -61,6 +74,7 @@ export async function deleteLesson(id) {
 }
 
 export async function updateLesson(lessonId, updates) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('lessons')
     .update(updates)
@@ -84,6 +98,7 @@ export async function getQuizQuestions(lessonId) {
 }
 
 export async function addQuizQuestion(question) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('quiz_questions')
     .insert([question])
@@ -95,6 +110,7 @@ export async function addQuizQuestion(question) {
 }
 
 export async function updateQuizQuestion(id, updates) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('quiz_questions')
     .update(updates)
@@ -107,6 +123,7 @@ export async function updateQuizQuestion(id, updates) {
 }
 
 export async function deleteQuizQuestion(id) {
+  await requireCurriculumAdmin()
   const { error } = await supabase
     .from('quiz_questions')
     .delete()
@@ -127,6 +144,7 @@ export async function getLessonFiles(lessonId) {
 }
 
 export async function addLessonFile(fileData) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('lesson_files')
     .insert([fileData])
@@ -138,6 +156,7 @@ export async function addLessonFile(fileData) {
 }
 
 export async function deleteLessonFile(id) {
+  await requireCurriculumAdmin()
   const { error } = await supabase
     .from('lesson_files')
     .delete()
@@ -162,6 +181,7 @@ export async function getProgramSolvedVariants(profile) {
 }
 
 export async function addProgramSolvedVariant(variant) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('program_solved_variants')
     .insert([variant])
@@ -173,6 +193,7 @@ export async function addProgramSolvedVariant(variant) {
 }
 
 export async function deleteProgramSolvedVariant(id) {
+  await requireCurriculumAdmin()
   const { error } = await supabase
     .from('program_solved_variants')
     .delete()
@@ -193,6 +214,7 @@ export async function getLessonParts(lessonId) {
 }
 
 export async function addLessonPart(part) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('lesson_parts')
     .insert([part])
@@ -204,6 +226,7 @@ export async function addLessonPart(part) {
 }
 
 export async function updateLessonPart(id, updates) {
+  await requireCurriculumAdmin()
   const { data, error } = await supabase
     .from('lesson_parts')
     .update(updates)
@@ -216,6 +239,7 @@ export async function updateLessonPart(id, updates) {
 }
 
 export async function deleteLessonPart(id) {
+  await requireCurriculumAdmin()
   const { error } = await supabase
     .from('lesson_parts')
     .delete()
@@ -225,8 +249,18 @@ export async function deleteLessonPart(id) {
 }
 
 export async function uploadFileToStorage(file) {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Math.random()}.${fileExt}`
+  await requireCurriculumAdmin()
+
+  if (!file || file.size > MAX_LESSON_FILE_BYTES) {
+    throw new Error('Fișierul este prea mare sau invalid.')
+  }
+
+  const fileExt = file.name.split('.').pop()?.toLowerCase()
+  if (!fileExt || !ALLOWED_LESSON_EXTENSIONS.has(fileExt)) {
+    throw new Error('Tipul de fișier nu este permis.')
+  }
+
+  const fileName = `${crypto.randomUUID()}.${fileExt}`
   const filePath = `lesson-materials/${fileName}`
 
   const { error: uploadError } = await supabase.storage

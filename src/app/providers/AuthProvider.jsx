@@ -90,16 +90,35 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      const nextUser = currentSession?.user ?? null
+    let mounted = true
+
+    const syncSessionState = async () => {
+      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser()
+      if (!mounted) return
+
+      if (error || !verifiedUser) {
+        setUser(null)
+        setSession(null)
+        setAuthLoading(false)
+        setEntitlement(null)
+        setEntitlementLoading(false)
+        setIsAdmin(false)
+        setAdminLoading(false)
+        return
+      }
+
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
       setSession(currentSession)
-      setUser(nextUser)
+      setUser(verifiedUser)
       setAuthLoading(false)
-      void syncEntitlementForUser(nextUser)
-      void syncAdminForUser(nextUser)
-    })
+      void syncEntitlementForUser(verifiedUser)
+      void syncAdminForUser(verifiedUser)
+    }
+
+    void syncSessionState()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (!mounted) return
       const nextUser = currentSession?.user ?? null
       setSession(currentSession)
       setUser(nextUser)
@@ -108,7 +127,10 @@ export function AuthProvider({ children }) {
       void syncAdminForUser(nextUser)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [syncEntitlementForUser, syncAdminForUser])
 
   // Reset streak to 0 when a full UTC calendar day passes with no login and no lesson activity

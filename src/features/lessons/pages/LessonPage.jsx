@@ -14,7 +14,14 @@ import {
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
 import { markLessonCompleted } from '../../../services/progressService'
-import { recordQuizMistake } from '../../../services/quizAttemptService'
+import { recordQuizMistake, submitQuizAnswer } from '../../../services/quizAttemptService'
+import {
+  canAccessLessonPart,
+  canAccessQuiz,
+  canTrackLessonCompletion,
+} from '../../../services/premiumAccessService'
+import { normalizeProfilesList } from '../../../services/profileService'
+import { resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -22,7 +29,8 @@ import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
 export function LessonPage() {
   const { lessonId } = useParams()
-  const { user, isPremium } = useAuth()
+  const { user, isPremium, openPremiumModal } = useAuth()
+  const activeProfiles = normalizeProfilesList(user?.user_metadata?.profiles ?? user?.user_metadata?.profile)
   const [lesson, setLesson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,8 +47,13 @@ export function LessonPage() {
       setLoading(true)
       setError('')
       try {
-        const lessonData = await getLessonById(lessonId)
+        const lessonData = await getLessonById(lessonId, { isPremium, activeProfiles })
         if (!mounted) return
+        if (!lessonData) {
+          setError('Această lecție necesită acces Premium sau un program activ.')
+          setLesson(null)
+          return
+        }
         setLesson(lessonData)
         setCurrentPartIndex(0)
         setQuizSelections({})
@@ -57,7 +70,7 @@ export function LessonPage() {
     return () => {
       mounted = false
     }
-  }, [lessonId])
+  }, [lessonId, isPremium, activeProfiles])
 
   useEffect(() => {
     if (!quizFeedback) return
@@ -66,7 +79,7 @@ export function LessonPage() {
   }, [quizFeedback])
 
   const handleComplete = async () => {
-    if (!user?.id || !lesson?.id || !canCompleteLesson) return
+    if (!user?.id || !lesson?.id || !canCompleteLesson || !canTrackLessonCompletion(lesson, isPremium)) return
     setSaving(true)
     try {
       const score = quizQuestions.length > 0
@@ -83,7 +96,12 @@ export function LessonPage() {
 
   const handleNextPart = () => {
     if (!lesson?.lesson_parts || currentPartIndex >= lesson.lesson_parts.length - 1) return
-    setCurrentPartIndex(currentPartIndex + 1)
+    const nextPartIndex = currentPartIndex + 1
+    if (!canAccessLessonPart(lesson, nextPartIndex, isPremium)) {
+      openPremiumModal()
+      return
+    }
+    setCurrentPartIndex(nextPartIndex)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -108,7 +126,7 @@ export function LessonPage() {
   const isFirstPart = currentPartIndex === 0
   const quizQuestions = lesson?.quiz_questions || []
   const quizAnsweredCount = quizQuestions.filter((question) => quizResults[question.id] !== undefined).length
-  const quizScore = quizQuestions.filter((question) => quizResults[question.id] === question.correct_option_index).length
+  const quizScore = quizQuestions.filter((question) => quizResults[question.id] === true).length
   const hasCompletedQuiz = quizQuestions.length > 0 && quizAnsweredCount === quizQuestions.length
   const getQuestionOptions = (question) => {
     return Array.isArray(question.options) ? question.options : question.options?.choices || []
@@ -122,23 +140,35 @@ export function LessonPage() {
     if (placement.type === 'after_part') return currentPart?.id === placement.partId
     return isLastPart
   })
-  const answerQuestion = (question) => {
+  const answerQuestion = async (question) => {
     const selectedAnswer = quizSelections[question.id]
     if (selectedAnswer === undefined) return
-    setQuizResults((prev) => ({ ...prev, [question.id]: selectedAnswer }))
-    const isCorrect = selectedAnswer === question.correct_option_index
-    if (!isCorrect && isPremium && user?.id && lesson?.id) {
-      void recordQuizMistake({
-        lessonId: lesson.id,
-        questionId: question.id,
-      }).catch((attemptError) => {
-        console.warn('Quiz mistake tracking failed:', attemptError)
-      })
+    if (!canAccessQuiz(lesson, isPremium)) {
+      openPremiumModal()
+      return
     }
-    setQuizFeedback({
-      type: isCorrect ? 'correct' : 'wrong',
-      message: isCorrect ? 'Răspuns corect' : 'Răspuns greșit',
-    })
+
+    try {
+      const isCorrect = await submitQuizAnswer({
+        questionId: question.id,
+        selectedIndex: selectedAnswer,
+      })
+      setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
+      if (!isCorrect && isPremium && user?.id && lesson?.id) {
+        void recordQuizMistake({
+          lessonId: lesson.id,
+          questionId: question.id,
+        }).catch((attemptError) => {
+          console.warn('Quiz mistake tracking failed:', attemptError)
+        })
+      }
+      setQuizFeedback({
+        type: isCorrect ? 'correct' : 'wrong',
+        message: isCorrect ? 'Răspuns corect' : 'Răspuns greșit',
+      })
+    } catch (submitError) {
+      setError(submitError.message || 'Răspunsul nu a putut fi verificat.')
+    }
   }
   const renderQuizSection = (title = 'Chestionar') => {
     if (!lesson) return null
@@ -168,8 +198,8 @@ export function LessonPage() {
         <div className="space-y-4">
           {visibleQuizQuestions.map((question, questionIndex) => {
             const selectedAnswer = quizSelections[question.id]
-            const submittedAnswer = quizResults[question.id]
-            const answered = submittedAnswer !== undefined
+            const answered = quizResults[question.id] !== undefined
+            const isCorrect = quizResults[question.id] === true
             const options = getQuestionOptions(question)
 
             return (
@@ -188,9 +218,8 @@ export function LessonPage() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {options.map((option, optionIndex) => {
                     const selected = selectedAnswer === optionIndex
-                    const correct = question.correct_option_index === optionIndex
-                    const showCorrect = answered && correct
-                    const showWrong = answered && submittedAnswer === optionIndex && !correct
+                    const showCorrect = answered && isCorrect && selected
+                    const showWrong = answered && !isCorrect && selected
 
                     return (
                       <button
@@ -229,8 +258,8 @@ export function LessonPage() {
                     Răspunde
                   </Button>
                   {answered && (
-                    <p className={`text-xs font-black uppercase tracking-widest ${submittedAnswer === question.correct_option_index ? 'text-emerald-500' : 'text-destructive'}`}>
-                      {submittedAnswer === question.correct_option_index ? 'Răspuns corect' : 'Răspuns greșit'}
+                    <p className={`text-xs font-black uppercase tracking-widest ${isCorrect ? 'text-emerald-500' : 'text-destructive'}`}>
+                      {isCorrect ? 'Răspuns corect' : 'Răspuns greșit'}
                     </p>
                   )}
                 </div>
@@ -352,12 +381,13 @@ export function LessonPage() {
                           </div>
                         </div>
                         
-                        {currentPart.video_url && (
+                        {currentPart.video_url && resolveLessonVideoEmbedSrc(currentPart.video_url) && (
                           <div className="relative aspect-video overflow-hidden rounded-[2rem] bg-black shadow-2xl border border-white/5 ring-1 ring-white/10 group/video">
                             <iframe
                               className="size-full"
-                              src={currentPart.video_url.replace('watch?v=', 'embed/').split('&')[0]}
+                              src={resolveLessonVideoEmbedSrc(currentPart.video_url)}
                               title={currentPart.title}
+                              sandbox="allow-scripts allow-same-origin allow-presentation"
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                               allowFullScreen
                             ></iframe>

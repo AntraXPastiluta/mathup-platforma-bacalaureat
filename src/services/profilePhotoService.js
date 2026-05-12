@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { getProfilePhotoExtension } from '../shared/utils/safeUrl'
 
 const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
 
@@ -11,12 +12,17 @@ export async function uploadProfilePhoto(file, userId) {
     throw new Error('Fotografia de profil trebuie să fie de cel mult 5 MB.')
   }
 
-  if (!userId) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!user?.id) {
     throw new Error('Trebuie să fii autentificat pentru a încărca o fotografie.')
   }
+  if (userId && userId !== user.id) {
+    throw new Error('Nu poți încărca o fotografie pentru alt cont.')
+  }
 
-  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-  const filePath = `profile-photos/${userId}/${crypto.randomUUID()}.${fileExt}`
+  const fileExt = getProfilePhotoExtension(file.name)
+  const filePath = `profile-photos/${user.id}/${crypto.randomUUID()}.${fileExt}`
 
   const { error } = await supabase.storage
     .from('materials')

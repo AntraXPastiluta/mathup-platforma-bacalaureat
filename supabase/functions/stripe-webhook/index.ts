@@ -4,6 +4,7 @@ import Stripe from 'npm:stripe@17.7.0'
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY') ?? ''
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? ''
+const stripePriceId = Deno.env.get('STRIPE_PRICE_ID') ?? ''
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') ?? ''
 
@@ -36,6 +37,19 @@ function subscriptionPeriodEndIso(subscription: Stripe.Subscription) {
     throw new Error('Subscription missing current period end.')
   }
   return capExpiresAt(new Date(periodEnd * 1000).toISOString())
+}
+
+function assertSubscriptionPrice(subscription: Stripe.Subscription) {
+  if (!stripePriceId) {
+    throw new Error('Missing STRIPE_PRICE_ID')
+  }
+
+  const matches = (subscription.items?.data ?? []).some(
+    (item: Stripe.SubscriptionItem) => item.price?.id === stripePriceId,
+  )
+  if (!matches) {
+    throw new Error('Unexpected subscription price.')
+  }
 }
 
 async function upsertEntitlement({
@@ -96,6 +110,8 @@ async function upsertEntitlement({
 }
 
 async function syncSubscriptionEntitlement(subscription: Stripe.Subscription) {
+  assertSubscriptionPrice(subscription)
+
   const userId = subscription.metadata?.user_id
   if (!userId) {
     throw new Error('Subscription missing user id metadata.')
@@ -140,6 +156,8 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session, stripe: Str
     ? subscription
     : await stripe.subscriptions.retrieve(subscriptionId)
 
+  assertSubscriptionPrice(fullSubscription)
+
   const paymentIntent = fullSession.payment_intent
   const paymentIntentId = typeof paymentIntent === 'string'
     ? paymentIntent
@@ -164,8 +182,12 @@ async function syncCheckoutSession(session: Stripe.Checkout.Session, stripe: Str
 }
 
 Deno.serve(async (req) => {
-  if (!stripeSecret || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
-    return new Response('Missing webhook configuration.', { status: 500 })
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed.', { status: 405 })
+  }
+
+  if (!stripeSecret || !webhookSecret || !supabaseUrl || !serviceRoleKey || !stripePriceId) {
+    return new Response('Webhook unavailable.', { status: 500 })
   }
 
   const stripe = new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' })
@@ -243,8 +265,8 @@ Deno.serve(async (req) => {
       }
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Webhook processing failed.'
-    return new Response(message, { status: 500 })
+    console.error('Stripe webhook processing failed:', error)
+    return new Response('Webhook processing failed.', { status: 500 })
   }
 
   return new Response('ok', { status: 200 })

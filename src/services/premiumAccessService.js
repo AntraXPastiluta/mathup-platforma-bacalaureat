@@ -1,13 +1,14 @@
 import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
 import { normalizeProfilesList } from './profileService'
 
-export function isLessonPremium() {
-  return false
+export function isLessonPremium(lesson) {
+  return Boolean(lesson?.is_premium)
 }
 
 export function canAccessLessonForUser(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
   if (isPremium) return true
+  if (isLessonPremium(lesson)) return false
   return normalizeProfilesList(activeProfiles).includes(lesson.profile)
 }
 
@@ -30,20 +31,26 @@ export function getPreviewPartCount(lesson) {
   return count
 }
 
-export function canAccessLessonContent() {
-  return true
+export function canAccessLessonContent(lesson, isPremium) {
+  if (!lesson) return false
+  return isPremium || !isLessonPremium(lesson)
 }
 
-export function canAccessLessonPart() {
-  return true
+export function canAccessLessonPart(lesson, partIndex, isPremium) {
+  if (!lesson) return false
+  if (isPremium) return true
+  if (!canAccessLessonContent(lesson, isPremium)) return false
+  return partIndex < getPreviewPartCount(lesson)
 }
 
-export function canAccessQuiz() {
-  return true
+export function canAccessQuiz(lesson, isPremium) {
+  if (!lesson) return false
+  return isPremium
 }
 
-export function canAccessLessonFiles() {
-  return true
+export function canAccessLessonFiles(lesson, isPremium) {
+  if (!lesson) return false
+  return isPremium
 }
 
 export function canAccessSolvedVariants(isPremium) {
@@ -54,6 +61,30 @@ export function canDownloadSolvedContent(isPremium) {
   return Boolean(isPremium)
 }
 
-export function canTrackLessonCompletion() {
-  return true
+export function canTrackLessonCompletion(lesson, isPremium) {
+  if (!lesson) return false
+  if (isPremium) return true
+  return !isLessonPremium(lesson)
+}
+
+export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
+  if (!lesson) return null
+  if (!canAccessLessonForUser(lesson, isPremium, activeProfiles)) return null
+
+  const masked = { ...lesson }
+  const previewCount = getPreviewPartCount(lesson)
+
+  if (!isPremium && Array.isArray(lesson.lesson_parts)) {
+    masked.lesson_parts = lesson.lesson_parts.filter((_, index) => index < previewCount)
+  }
+
+  if (!canAccessLessonFiles(lesson, isPremium)) {
+    masked.lesson_files = []
+  }
+
+  if (!canAccessQuiz(lesson, isPremium)) {
+    masked.quiz_questions = []
+  }
+
+  return masked
 }

@@ -1,9 +1,9 @@
-export async function downloadRemoteFile(url, fileName) {
-  if (!url) {
-    throw new Error('Fișierul nu are o adresă validă.')
-  }
+import { assertTrustedDownloadUrl } from './safeUrl'
 
-  const response = await fetch(url)
+export async function downloadRemoteFile(url, fileName) {
+  const safeUrl = assertTrustedDownloadUrl(url)
+
+  const response = await fetch(safeUrl)
   if (!response.ok) {
     throw new Error('Nu am putut descărca fișierul.')
   }

@@ -213,4 +213,4 @@ Migrările și politicile trebuie aplicate manual în proiectul Supabase înaint
 
 ---
 
-Proiect de licență / pregătire BAC la matematică. Pentru probleme de deploy sau configurare Supabase, verifică log-ul de lucru din repo și setările din dashboard-urile Vercel și Supabase.
+Proiect de licență / pregătire BAC la matematică.

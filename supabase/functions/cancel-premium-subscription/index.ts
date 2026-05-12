@@ -2,11 +2,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import Stripe from 'npm:stripe@17.7.0'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { buildCorsHeaders } from '../_shared/cors'
 
 function subscriptionPeriodEndIso(subscription: Stripe.Subscription) {
   const periodEnd = subscription.current_period_end
@@ -17,8 +13,17 @@ function subscriptionPeriodEndIso(subscription: Stripe.Subscription) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed.' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -110,9 +115,8 @@ Deno.serve(async (req) => {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Subscription cancellation failed.'
-    return new Response(JSON.stringify({ error: message }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Subscription cancellation failed.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

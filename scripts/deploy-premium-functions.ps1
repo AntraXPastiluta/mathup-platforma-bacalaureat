@@ -67,7 +67,6 @@ npx supabase secrets set `
 Write-Host "Deploying create-checkout-session..."
 npx supabase functions deploy create-checkout-session `
   --project-ref $ProjectRef `
-  --no-verify-jwt `
   --use-api `
   --yes
 
@@ -81,7 +80,6 @@ npx supabase functions deploy stripe-webhook `
 Write-Host "Deploying cancel-premium-subscription..."
 npx supabase functions deploy cancel-premium-subscription `
   --project-ref $ProjectRef `
-  --no-verify-jwt `
   --use-api `
   --yes
 

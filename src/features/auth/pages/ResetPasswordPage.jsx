@@ -20,17 +20,9 @@ export function ResetPasswordPage() {
   useEffect(() => {
     let mounted = true
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (!mounted) return
-      if (event === 'PASSWORD_RECOVERY' || session) {
-        setRecoveryReady(true)
-        setCheckingLink(false)
-      }
-    })
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return
-      if (session) {
+      if (event === 'PASSWORD_RECOVERY') {
         setRecoveryReady(true)
       }
       setCheckingLink(false)
@@ -46,8 +38,8 @@ export function ResetPasswordPage() {
     event.preventDefault()
     setLocalError('')
 
-    if (password.length < 6) {
-      setLocalError('Parola trebuie să aibă cel puțin 6 caractere.')
+    if (password.length < 8) {
+      setLocalError('Parola trebuie să aibă cel puțin 8 caractere.')
       return
     }
 
@@ -154,7 +146,7 @@ export function ResetPasswordPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="••••••••"
-                    minLength={6}
+                    minLength={8}
                     required
                   />
                 </div>
@@ -170,7 +162,7 @@ export function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     placeholder="••••••••"
-                    minLength={6}
+                    minLength={8}
                     required
                   />
                 </div>

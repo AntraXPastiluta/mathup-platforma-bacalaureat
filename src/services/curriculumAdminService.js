@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient'
 
-export const PRIMARY_ADMIN_EMAIL = 'cruceanu.cristian3004@gmail.com'
+export const PRIMARY_ADMIN_EMAIL = String(import.meta.env.VITE_PRIMARY_ADMIN_EMAIL || '').trim().toLowerCase()
 
 export function normalizeAdminEmail(email) {
   const value = String(email || '').trim().toLowerCase()
@@ -9,6 +9,7 @@ export function normalizeAdminEmail(email) {
 }
 
 export function isPrimaryAdminEmail(email) {
+  if (!PRIMARY_ADMIN_EMAIL) return false
   return normalizeAdminEmail(email) === PRIMARY_ADMIN_EMAIL
 }
 
@@ -32,6 +33,13 @@ export async function getCurriculumAdminEmails() {
 }
 
 export async function addCurriculumAdminEmail(email) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  if (!isPrimaryAdminEmail(user?.email)) {
+    throw new Error('Doar administratorul principal poate adăuga administratori.')
+  }
+
   const normalized = normalizeAdminEmail(email)
   if (!normalized) {
     throw new Error('Introdu o adresă de email validă.')
