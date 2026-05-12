@@ -1,4 +1,5 @@
 import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
+import { normalizeProfilesList } from './profileService'
 
 export function isLessonPremium(lesson) {
   if (!lesson) return false
@@ -7,14 +8,17 @@ export function isLessonPremium(lesson) {
   return lesson.profile !== DEFAULT_PROFILE
 }
 
-export function canAccessProgram(profileKey, isPremium) {
+export function canAccessProgram(profileKey, isPremium, activeProfiles) {
   if (isPremium) return true
+  const registered = normalizeProfilesList(activeProfiles)
+  if (registered.length > 0) return registered.includes(profileKey)
   return profileKey === DEFAULT_PROFILE
 }
 
-export function getSelectablePrograms(isPremium) {
+export function getSelectablePrograms(isPremium, activeProfiles) {
   if (isPremium) return PROFILES
-  return PROFILES.filter((profile) => profile.key === DEFAULT_PROFILE)
+  const registered = normalizeProfilesList(activeProfiles)
+  return PROFILES.filter((profile) => registered.includes(profile.key))
 }
 
 export function getPreviewPartCount(lesson) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { 
@@ -103,7 +103,8 @@ function ProfilePageContent({ metadata }) {
     }
   }
 
-  const selectablePrograms = getSelectablePrograms(isPremium)
+  const registeredProfiles = useMemo(() => getProfilesFromMetadata(metadata), [metadata])
+  const selectablePrograms = getSelectablePrograms(isPremium, registeredProfiles)
   const CurrentAvatarIcon = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.icon || User
   const currentAvatarColor = AVATAR_ICONS.find(a => a.id === selectedAvatar)?.color || 'bg-primary'
 
@@ -260,7 +261,7 @@ function ProfilePageContent({ metadata }) {
                   <p className="text-xs text-muted-foreground -mt-1 mb-1">
                     {isPremium
                       ? 'Alege programul pentru care vrei să vezi lecțiile.'
-                      : 'Contul gratuit include doar programul Mate-Info.'}
+                      : 'Pe contul gratuit poți gestiona programul ales la crearea contului. Pentru alte programe este necesar Premium.'}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectablePrograms.map((p) => {

@@ -124,7 +124,7 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Premium checkout: scholar-bac/src/services/billingService.js now sends the session token, retries via fetch when invoke fails, and surfaces Romanian errors in the dashboard and Premium modal.
 - Auth session: scholar-bac/src/supabaseClient.js keeps Supabase sessions in localStorage with auto-refresh.
 - Register program: scholar-bac/src/features/auth/pages/RegisterPage.jsx uses single program selection so the chosen profile is stored correctly.
-- Profile programs: scholar-bac/src/services/premiumAccessService.js adds getSelectablePrograms(); scholar-bac/src/features/profile/pages/ProfilePage.jsx shows only Mate-Info for free users.
+- Profile programs: scholar-bac/src/services/premiumAccessService.js adds getSelectablePrograms(); free accounts keep the program selected at signup in profile edit instead of being forced to Mate-Info only.
 - Login remember me: scholar-bac/src/features/auth/pages/LoginPage.jsx clarifies that the checkbox saves email while the session persists after closing the tab.
 - Admin lesson parts: scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx warns when a lesson has fewer than three sections and supports custom section images.
 - Student lesson view: scholar-bac/src/features/lessons/pages/LessonPage.jsx renders section images.
