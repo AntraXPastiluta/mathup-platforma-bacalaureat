@@ -7,13 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function seasonEndIso() {
-  const configured = Deno.env.get('PREMIUM_SEASON_END')
-  if (configured) return new Date(configured).toISOString()
-  const year = new Date().getUTCFullYear()
-  return new Date(Date.UTC(year, 6, 10, 21, 59, 59)).toISOString()
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -52,15 +45,19 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' })
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
+      mode: 'subscription',
       line_items: [{ price: stripePriceId, quantity: 1 }],
       success_url: `${appUrl}/profile?checkout=success`,
       cancel_url: `${appUrl}/profile?checkout=cancelled`,
       customer_email: user.email ?? undefined,
       client_reference_id: user.id,
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+        },
+      },
       metadata: {
         user_id: user.id,
-        premium_expires_at: seasonEndIso(),
       },
     })
 
