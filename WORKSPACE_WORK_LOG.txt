@@ -150,3 +150,4 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Added scholar-bac/src/features/profile/avatarPresets.js and scholar-bac/src/shared/ui/UserAvatar.jsx for preset or custom photo rendering.
 - Updated scholar-bac/src/features/profile/pages/ProfilePage.jsx with photo upload from the camera control and avatar_photo_url in user metadata.
 - Updated scholar-bac/src/shared/ui/Navbar.jsx to show the uploaded profile photo in the header profile button.
+.
