@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
 import { markLessonCompleted } from '../../../services/progressService'
+import { recordQuizMistake } from '../../../services/quizAttemptService'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -21,7 +22,7 @@ import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
 export function LessonPage() {
   const { lessonId } = useParams()
-  const { user } = useAuth()
+  const { user, isPremium } = useAuth()
   const [lesson, setLesson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -126,6 +127,14 @@ export function LessonPage() {
     if (selectedAnswer === undefined) return
     setQuizResults((prev) => ({ ...prev, [question.id]: selectedAnswer }))
     const isCorrect = selectedAnswer === question.correct_option_index
+    if (!isCorrect && isPremium && user?.id && lesson?.id) {
+      void recordQuizMistake({
+        lessonId: lesson.id,
+        questionId: question.id,
+      }).catch((attemptError) => {
+        console.warn('Quiz mistake tracking failed:', attemptError)
+      })
+    }
     setQuizFeedback({
       type: isCorrect ? 'correct' : 'wrong',
       message: isCorrect ? 'Răspuns corect' : 'Răspuns greșit',

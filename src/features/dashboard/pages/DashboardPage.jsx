@@ -13,6 +13,7 @@ import {
   Map,
   NotebookPen,
   Download,
+  Target,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonsForProfiles } from '../../../services/lessonService'
@@ -21,6 +22,8 @@ import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getRoadmapsForProfile } from '../../../services/roadmapService'
 import { canAccessLessonForUser } from '../../../services/premiumAccessService'
 import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
+import { getQuizMistakeCount } from '../../../services/quizAttemptService'
+import { buildTargetGradeReport } from '../../../services/targetGradeReportService'
 import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
@@ -35,6 +38,7 @@ export function DashboardPage() {
   const [roadmaps, setRoadmaps] = useState([])
   const [solvedVariants, setSolvedVariants] = useState([])
   const [downloadingVariantId, setDownloadingVariantId] = useState(null)
+  const [quizMistakeCount, setQuizMistakeCount] = useState(0)
   const [error, setError] = useState('')
   const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading, errorMessage } = useAuth()
   const navigate = useNavigate()
@@ -61,17 +65,19 @@ export function DashboardPage() {
       setError('')
       try {
         const primaryProfile = activeProfiles[0]
-        const [lessonsData, progressData, roadmapData, solvedVariantsData] = await Promise.all([
+        const [lessonsData, progressData, roadmapData, solvedVariantsData, mistakeCount] = await Promise.all([
           getLessonsForProfiles(activeProfiles),
           getUserProgress(user.id),
           isPremium ? getRoadmapsForProfile(primaryProfile) : Promise.resolve([]),
           isPremium ? getSolvedVariantsForProfiles(activeProfiles) : Promise.resolve([]),
+          isPremium ? getQuizMistakeCount(user.id) : Promise.resolve(0),
         ])
         if (!mounted) return
         setLessons(lessonsData)
         setProgressRows(progressData)
         setRoadmaps(roadmapData)
         setSolvedVariants(solvedVariantsData)
+        setQuizMistakeCount(mistakeCount)
       } catch (loadError) {
         if (!mounted) return
         setError(loadError.message)
@@ -98,12 +104,72 @@ export function DashboardPage() {
     return { total, completed, progressPercent }
   }, [lessons, completedSet])
 
+  const performanceMessaging = useMemo(() => {
+    const { completed, total } = overallProgress
+    const program = programsSummary
+
+    if (total === 0) {
+      return {
+        title: 'Pregătirea pentru BAC continuă',
+        description: `Materia pentru ${program} se populează. Revino când apar lecțiile publicate.`,
+      }
+    }
+
+    if (completed === 0) {
+      return {
+        title: 'Hai să deschidem primul capitol',
+        description: `Ai ${total} ${total === 1 ? 'capitol' : 'capitole'} pentru ${program}. Începe prima lecție și construiește ritmul de studiu.`,
+      }
+    }
+
+    if (completed === 1) {
+      return {
+        title: 'Excelent început',
+        description: `Ai finalizat deja 1 capitol din ${total} pentru ${program}. Continuă cu următoarea lecție ca ritmul să prindă formă.`,
+      }
+    }
+
+    if (completed < total && completed < Math.ceil(total / 2)) {
+      return {
+        title: 'Ești pe drumul cel bun',
+        description: `Ai stăpânit deja ${completed} din ${total} capitole pentru ${program}. Menține ritmul și avansează pas cu pas.`,
+      }
+    }
+
+    if (completed < total) {
+      return {
+        title: 'Progres solid',
+        description: `Ai finalizat ${completed} din ${total} capitole pentru ${program}. Mai ai ${total - completed} până la finalizarea materiei — ești în zona decisivă.`,
+      }
+    }
+
+    return {
+      title: 'Materia este finalizată',
+      description: `Ai stăpânit toate cele ${completed} capitole pentru ${program}. Recapitulează lecțiile și fixează progresul cu quiz-uri.`,
+    }
+  }, [overallProgress, programsSummary])
+
   const averageQuizScore = useMemo(() => {
     const scored = progressRows.filter((row) => typeof row.score === 'number')
     if (scored.length === 0) return null
     const total = scored.reduce((sum, row) => sum + row.score, 0)
     return Math.round(total / scored.length)
   }, [progressRows])
+
+  const answeredQuizLessons = useMemo(
+    () => progressRows.filter((row) => typeof row.score === 'number').length,
+    [progressRows],
+  )
+
+  const targetGradeReport = useMemo(() => {
+    if (!isPremium) return null
+    return buildTargetGradeReport({
+      targetGradeValue: user?.user_metadata?.target_grade,
+      averageQuizScore,
+      wrongAnswerCount: quizMistakeCount,
+      answeredQuizLessons,
+    })
+  }, [isPremium, user?.user_metadata?.target_grade, averageQuizScore, quizMistakeCount, answeredQuizLessons])
 
   const lessonsBySubject = useMemo(() => {
     const grouped = { 1: [], 2: [], 3: [] }
@@ -209,10 +275,9 @@ export function DashboardPage() {
                          <Award className="size-3 text-yellow-500 dark:text-yellow-400" />
                          Performanță Actuală
                       </div>
-                      <h3 className="text-3xl font-black text-slate-900 dark:text-white">Ești pe drumul cel bun!</h3>
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white">{performanceMessaging.title}</h3>
                       <p className="max-w-lg leading-relaxed text-slate-600 dark:text-slate-300">
-                        Ai stăpânit deja <span className="text-lg font-bold text-slate-900 dark:text-white">{overallProgress.completed}</span> capitole. 
-                        Cu acest ritm, vei finaliza materia pentru <span className="text-primary font-bold">{programsSummary}</span> în timp record.
+                        {performanceMessaging.description}
                         {isPremium && averageQuizScore !== null && (
                           <span className="mt-3 block text-sm text-slate-600 dark:text-indigo-200">
                             Scor mediu la quiz-uri: <span className="font-black text-slate-900 dark:text-white">{averageQuizScore}%</span>
@@ -245,6 +310,39 @@ export function DashboardPage() {
                    </div>
                 </div>
               </motion.div>
+
+              {isPremium && targetGradeReport ? (
+                <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Target className="size-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Raport Premium</p>
+                        <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">{targetGradeReport.title}</h3>
+                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{targetGradeReport.message}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[24rem]">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nota tinta</p>
+                        <p className="text-xl font-black text-slate-800 dark:text-white">{targetGradeReport.targetGrade.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Raspunsuri gresite</p>
+                        <p className="text-xl font-black text-slate-800 dark:text-white">{targetGradeReport.wrongAnswerCount}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Medie quiz</p>
+                        <p className="text-xl font-black text-slate-800 dark:text-white">
+                          {targetGradeReport.averageQuizScore ?? 0}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
 
               {isPremium && roadmaps.length > 0 && (
                 <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
