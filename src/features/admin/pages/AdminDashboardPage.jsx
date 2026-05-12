@@ -53,6 +53,7 @@ import { normalizeProfilesList } from '../../../services/profileService'
 import { RoadmapCanvas } from '../../roadmap/components/RoadmapCanvas'
 import { AdminSolvedVariantsSection } from '../components/AdminSolvedVariantsSection'
 import { AdminAccessSection } from '../components/AdminAccessSection'
+import { AdminPremiumUsersSection } from '../components/AdminPremiumUsersSection'
 import { createEmptyLayout, normalizeLayout } from '../../roadmap/utils/canvasLayout'
 
 export function AdminDashboardPage() {
@@ -731,6 +732,13 @@ export function AdminDashboardPage() {
           </button>
           <button
             type="button"
+            onClick={() => setAdminSection('premium')}
+            className={`rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all ${adminSection === 'premium' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'}`}
+          >
+            Premium
+          </button>
+          <button
+            type="button"
             onClick={() => setAdminSection('admins')}
             className={`rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all ${adminSection === 'admins' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'}`}
           >
@@ -921,6 +929,8 @@ export function AdminDashboardPage() {
           </div>
         ) : adminSection === 'variants' ? (
           <AdminSolvedVariantsSection />
+        ) : adminSection === 'premium' ? (
+          <AdminPremiumUsersSection />
         ) : adminSection === 'admins' ? (
           <AdminAccessSection />
         ) : (
