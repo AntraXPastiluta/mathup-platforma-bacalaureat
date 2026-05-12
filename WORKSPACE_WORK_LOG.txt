@@ -131,3 +131,14 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Database: scholar-bac/supabase/migrations/20260516_lesson_part_images.sql adds lesson_parts.image_url.
 - Signup trigger fix from 20260515_fix_auth_signup.sql still needs to be applied manually in Supabase if signup fails in production.
 - Edge Functions create-checkout-session and stripe-webhook must be deployed with Stripe secrets and APP_URL for checkout to work in production.
+
+
+14. Maintenance mode
+--------------------
+- Added scholar-bac/public/maintenance.html as the static maintenance page served before the React bundle.
+- Added scholar-bac/middleware.js to redirect all traffic to /maintenance.html when MAINTENANCE_MODE is enabled on Vercel.
+- Added scholar-bac/vercel.json SPA rewrites while keeping /maintenance.html and /assets available.
+- Added scholar-bac/src/app/config/maintenance.js and scholar-bac/src/features/maintenance/pages/MaintenancePage.jsx for local or client-side maintenance via VITE_MAINTENANCE_MODE.
+- Updated scholar-bac/src/App.jsx to route only to /maintenance when VITE_MAINTENANCE_MODE is true.
+- Vercel production toggle: set MAINTENANCE_MODE=true, redeploy, then set it back to false when the platform is live again.
+- Local preview toggle: set VITE_MAINTENANCE_MODE=true in .env.local and restart npm run dev.

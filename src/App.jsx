@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { isMaintenanceMode } from './app/config/maintenance'
 import { AuthProvider } from './app/providers/AuthProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
@@ -13,10 +14,23 @@ import { ProfilePage } from './features/profile/pages/ProfilePage'
 import { LessonPage } from './features/lessons/pages/LessonPage'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
 import { RoadmapWorkspacePage } from './features/roadmap/pages/RoadmapWorkspacePage'
+import { MaintenancePage } from './features/maintenance/pages/MaintenancePage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
 
 export default function App() {
+  if (isMaintenanceMode) {
+    return (
+      <>
+        <MathPaperBackground />
+        <Routes>
+          <Route path="/maintenance" element={<MaintenancePage />} />
+          <Route path="*" element={<Navigate to="/maintenance" replace />} />
+        </Routes>
+      </>
+    )
+  }
+
   return (
     <AuthProvider>
       <MathPaperBackground />

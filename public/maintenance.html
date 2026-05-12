@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScholarBAC | Mentenanță</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #020617;
+        --card: rgba(15, 23, 42, 0.88);
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --primary: #8b5cf6;
+        --primary-dark: #6d28d9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(139, 92, 246, 0.18), transparent 35%),
+          radial-gradient(circle at bottom right, rgba(79, 70, 229, 0.16), transparent 30%),
+          var(--bg);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .card {
+        width: min(100%, 42rem);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 2rem;
+        background: var(--card);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.45);
+        padding: 2.5rem;
+        text-align: center;
+        backdrop-filter: blur(18px);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        box-shadow: 0 16px 40px rgba(139, 92, 246, 0.35);
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--primary);
+      }
+
+      h1 {
+        margin: 0.75rem 0 0;
+        font-size: clamp(2rem, 5vw, 2.5rem);
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 1rem 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.95rem;
+      }
+
+      .note {
+        margin-top: 2rem;
+        padding: 1rem 1.25rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(139, 92, 246, 0.18);
+        background: rgba(139, 92, 246, 0.08);
+        color: #cbd5e1;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="badge" aria-hidden="true">SB</div>
+      <p class="eyebrow">ScholarBAC</p>
+      <h1>Platforma este în mentenanță</h1>
+      <p>Lucrăm la îmbunătățiri și revenim online în curând. Îți mulțumim pentru răbdare.</p>
+      <div class="note">Dacă ai nevoie urgentă de acces, contactează echipa ScholarBAC.</div>
+    </main>
+  </body>
+</html>
