@@ -102,7 +102,7 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 
 10. Verification
 ----------------
-- npm run build completed successfully after the roadmap ownership, canvas, forgot-password, bugfix, maintenance, profile photo, dashboard UI, and lesson-access changes.
+- npm run build completed successfully after the roadmap ownership, canvas, forgot-password, bugfix, maintenance, profile photo, dashboard UI, lesson-access, solved-variant, admin-access, and Premium quiz-report changes.
 - No linter issues were reported on the touched application files at the time of the latest implementation pass.
 
 
@@ -120,6 +120,7 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - GitHub and Vercel operational steps after deploy still require manual confirmation in each service dashboard.
 - Apply scholar-bac/supabase/migrations/20260515_fix_auth_signup.sql in Supabase if signup fails in production.
 - Apply scholar-bac/supabase/migrations/20260516_lesson_part_images.sql before using custom section images.
+- Apply program_solved_variants, curriculum_admin_emails, primary-admin protection, auth_user_email_exists, and user_quiz_attempts schema in Supabase before using program-level solved variants, the Administratori tab, or Premium quiz mistake tracking in production.
 - Deploy Supabase Edge Functions create-checkout-session and stripe-webhook with Stripe secrets and APP_URL.
 - Configure Supabase Storage policies on the materials bucket so authenticated users can upload profile-photos/{userId}/.
 - Supabase Auth email rate limits can block repeated signup or reset attempts during testing.
@@ -220,3 +221,40 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Updated scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx with a dedicated Variante tab for uploading solved variants per lesson.
 - Added scholar-bac/src/features/admin/components/AdminLessonVariantsTab.jsx for the solved-variant upload UI.
 - Regular lesson files and solved variants are listed separately in admin.
+- Superseded by section 24: uploads moved to program-level Variante rezolvate tab.
+
+
+24. Program-level solved variants (admin and student)
+-----------------------------------------------------
+- Added program_solved_variants usage in scholar-bac/src/services/adminService.js and scholar-bac/src/services/solvedVariantService.js.
+- Added scholar-bac/src/features/admin/components/AdminSolvedVariantsSection.jsx and a top-level Variante rezolvate tab in scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx for uploads by program, not by lesson.
+- Updated scholar-bac/src/services/solvedVariantService.js to merge program-level variants with legacy lesson_files rows marked is_solved_content.
+- Premium students browse and download variants from scholar-bac/src/features/dashboard/pages/DashboardPage.jsx and scholar-bac/src/features/variants/pages/SolvedVariantsPage.jsx via scholar-bac/src/shared/utils/downloadRemoteFile.js.
+- Added scholar-bac/src/shared/ui/SolvedVariantDocumentIcon.jsx for shared list styling in admin and student views.
+
+
+25. Curriculum admin management
+-------------------------------
+- Added scholar-bac/src/services/curriculumAdminService.js for curriculum_admin_emails CRUD, is_curriculum_admin checks, primary admin cruceanu.cristian3004@gmail.com protection, and auth_user_email_exists validation when adding admins.
+- Updated scholar-bac/src/app/providers/AuthProvider.jsx to resolve admin access from the database via checkCurrentUserIsAdmin instead of a hardcoded email.
+- Added scholar-bac/src/features/admin/components/AdminAccessSection.jsx and an Administratori tab in scholar-bac/src/features/admin/pages/AdminDashboardPage.jsx.
+- Updated scholar-bac/src/app/AdminRoute.jsx to wait on adminLoading before routing.
+
+
+26. Dashboard performance messaging
+-----------------------------------
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx with performanceMessaging that changes the main performance card title and body based on completed vs total chapters.
+
+
+27. Lesson completion guard
+-----------------------------
+- Updated scholar-bac/src/features/lessons/pages/LessonPage.jsx so lesson completion UI appears only when the lesson has published parts or non-empty content (canCompleteLesson).
+
+
+28. Premium quiz mistakes and target grade report
+-------------------------------------------------
+- Added scholar-bac/src/services/quizAttemptService.js to record wrong quiz answers in user_quiz_attempts and load mistake counts for Premium users.
+- Added scholar-bac/src/services/targetGradeReportService.js with buildTargetGradeReport (verdicts: insufficient_data, possible, uncertain, unlikely).
+- Updated scholar-bac/src/features/lessons/pages/LessonPage.jsx to call recordQuizMistake on wrong answers for Premium users; tracking errors are logged and do not block the lesson.
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx to load quiz mistake counts for Premium users and show a Raport Premium section with target grade, wrong-answer count, quiz average, and achievability messaging.
+- Database objects required in Supabase: user_quiz_attempts with RLS so authenticated users read their own rows and Premium users insert their own wrong-answer attempts via has_active_premium().
