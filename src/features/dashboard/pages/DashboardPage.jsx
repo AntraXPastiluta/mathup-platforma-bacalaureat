@@ -22,7 +22,7 @@ import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getRoadmapsForProfile } from '../../../services/roadmapService'
 import { canAccessLessonForUser } from '../../../services/premiumAccessService'
 import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
-import { getQuizMistakeCount } from '../../../services/quizAttemptService'
+import { getQuizCorrectCount, getQuizMistakeCount } from '../../../services/quizAttemptService'
 import { buildTargetGradeReport } from '../../../services/targetGradeReportService'
 import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
 import { Button } from '../../../shared/ui/Button'
@@ -39,6 +39,7 @@ export function DashboardPage() {
   const [solvedVariants, setSolvedVariants] = useState([])
   const [downloadingVariantId, setDownloadingVariantId] = useState(null)
   const [quizMistakeCount, setQuizMistakeCount] = useState(0)
+  const [quizCorrectCount, setQuizCorrectCount] = useState(0)
   const [error, setError] = useState('')
   const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading, errorMessage } = useAuth()
   const navigate = useNavigate()
@@ -65,12 +66,13 @@ export function DashboardPage() {
       setError('')
       try {
         const primaryProfile = activeProfiles[0]
-        const [lessonsData, progressData, roadmapData, solvedVariantsData, mistakeCount] = await Promise.all([
+        const [lessonsData, progressData, roadmapData, solvedVariantsData, mistakeCount, correctCount] = await Promise.all([
           getLessonsForProfiles(activeProfiles),
           getUserProgress(user.id),
           isPremium ? getRoadmapsForProfile(primaryProfile) : Promise.resolve([]),
           isPremium ? getSolvedVariantsForProfiles(activeProfiles) : Promise.resolve([]),
           isPremium ? getQuizMistakeCount(user.id) : Promise.resolve(0),
+          isPremium ? getQuizCorrectCount(user.id) : Promise.resolve(0),
         ])
         if (!mounted) return
         setLessons(lessonsData)
@@ -78,6 +80,7 @@ export function DashboardPage() {
         setRoadmaps(roadmapData)
         setSolvedVariants(solvedVariantsData)
         setQuizMistakeCount(mistakeCount)
+        setQuizCorrectCount(correctCount)
       } catch (loadError) {
         if (!mounted) return
         setError(loadError.message)
@@ -167,9 +170,10 @@ export function DashboardPage() {
       targetGradeValue: user?.user_metadata?.target_grade,
       averageQuizScore,
       wrongAnswerCount: quizMistakeCount,
+      correctAnswerCount: quizCorrectCount,
       answeredQuizLessons,
     })
-  }, [isPremium, user?.user_metadata?.target_grade, averageQuizScore, quizMistakeCount, answeredQuizLessons])
+  }, [isPremium, user?.user_metadata?.target_grade, averageQuizScore, quizMistakeCount, quizCorrectCount, answeredQuizLessons])
 
   const lessonsBySubject = useMemo(() => {
     const grouped = { 1: [], 2: [], 3: [] }
@@ -324,10 +328,14 @@ export function DashboardPage() {
                         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{targetGradeReport.message}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[24rem]">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-[32rem] lg:grid-cols-4">
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nota tinta</p>
                         <p className="text-xl font-black text-slate-800 dark:text-white">{targetGradeReport.targetGrade.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Raspunsuri corecte</p>
+                        <p className="text-xl font-black text-slate-800 dark:text-white">{targetGradeReport.correctAnswerCount ?? 0}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Raspunsuri gresite</p>

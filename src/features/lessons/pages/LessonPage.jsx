@@ -14,7 +14,7 @@ import {
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
 import { markLessonCompleted } from '../../../services/progressService'
-import { recordQuizMistake, submitQuizAnswer } from '../../../services/quizAttemptService'
+import { recordQuizAttempt, submitQuizAnswer } from '../../../services/quizAttemptService'
 import {
   canAccessLessonPart,
   canAccessQuiz,
@@ -81,40 +81,6 @@ export function LessonPage() {
     return () => clearTimeout(timer)
   }, [quizFeedback])
 
-  const handleComplete = async () => {
-    if (!user?.id || !lesson?.id || !canCompleteLesson || !canTrackLessonCompletion(lesson, isPremium)) return
-    setSaving(true)
-    try {
-      const score = quizQuestions.length > 0
-        ? Math.round((quizScore / quizQuestions.length) * 100)
-        : null
-      await markLessonCompleted({ userId: user.id, lessonId: lesson.id, score })
-      navigate('/dashboard')
-    } catch (saveError) {
-      setError(saveError.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleNextPart = () => {
-    if (!lesson?.lesson_parts || currentPartIndex >= lesson.lesson_parts.length - 1) return
-    const nextPartIndex = currentPartIndex + 1
-    if (!canAccessLessonPart(lesson, nextPartIndex, isPremium)) {
-      openPremiumModal()
-      return
-    }
-    setCurrentPartIndex(nextPartIndex)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handlePrevPart = () => {
-    if (currentPartIndex > 0) {
-      setCurrentPartIndex(prev => prev - 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
-
   const subjectMeta = lesson
     ? SUBJECT_PARTS.find((subject) => subject.value === lesson.subject_part)
     : null
@@ -143,6 +109,60 @@ export function LessonPage() {
     if (placement.type === 'after_part') return currentPart?.id === placement.partId
     return isLastPart
   })
+  const visibleQuizAnsweredCount = visibleQuizQuestions.filter(
+    (question) => quizResults[question.id] !== undefined,
+  ).length
+  const hasCompletedVisibleQuiz = visibleQuizQuestions.length === 0
+    || visibleQuizAnsweredCount === visibleQuizQuestions.length
+
+  const handleComplete = async () => {
+    if (!user?.id || !lesson?.id || !canCompleteLesson || !canTrackLessonCompletion(lesson, isPremium)) return
+    if (!hasCompletedVisibleQuiz) {
+      setQuizFeedback({
+        type: 'wrong',
+        message: 'Răspunde la toate întrebările înainte de a finaliza lecția.',
+      })
+      return
+    }
+    setSaving(true)
+    try {
+      const score = quizQuestions.length > 0
+        ? Math.round((quizScore / quizQuestions.length) * 100)
+        : null
+      await markLessonCompleted({ userId: user.id, lessonId: lesson.id, score })
+      navigate('/dashboard')
+    } catch (saveError) {
+      setError(saveError.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleNextPart = () => {
+    if (!lesson?.lesson_parts || currentPartIndex >= lesson.lesson_parts.length - 1) return
+    if (!hasCompletedVisibleQuiz) {
+      setQuizFeedback({
+        type: 'wrong',
+        message: 'Răspunde la toate întrebările înainte de a continua.',
+      })
+      return
+    }
+    const nextPartIndex = currentPartIndex + 1
+    if (!canAccessLessonPart(lesson, nextPartIndex, isPremium)) {
+      openPremiumModal()
+      return
+    }
+    setCurrentPartIndex(nextPartIndex)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handlePrevPart = () => {
+    if (currentPartIndex > 0) {
+      setCurrentPartIndex(prev => prev - 1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   const answerQuestion = async (question) => {
     const selectedAnswer = quizSelections[question.id]
     if (selectedAnswer === undefined) return
@@ -157,12 +177,13 @@ export function LessonPage() {
         selectedIndex: selectedAnswer,
       })
       setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
-      if (!isCorrect && isPremium && user?.id && lesson?.id) {
-        void recordQuizMistake({
+      if (isPremium && user?.id && lesson?.id) {
+        void recordQuizAttempt({
           lessonId: lesson.id,
           questionId: question.id,
+          isCorrect,
         }).catch((attemptError) => {
-          console.warn('Quiz mistake tracking failed:', attemptError)
+          console.warn('Quiz attempt tracking failed:', attemptError)
         })
       }
       setQuizFeedback({
@@ -187,7 +208,7 @@ export function LessonPage() {
             <div>
               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">{title}</h3>
               <p className="text-xs font-bold text-muted-foreground">
-                {quizAnsweredCount} din {quizQuestions.length} întrebări verificate
+                {visibleQuizAnsweredCount} din {visibleQuizQuestions.length} întrebări verificate
               </p>
             </div>
           </div>
@@ -519,8 +540,9 @@ export function LessonPage() {
                       
                       {!isLastPart ? (
                         <Button 
-                          onClick={handleNextPart} 
-                          className="flex-1 sm:flex-none h-14 px-8 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 shadow-xl shadow-primary/20 gap-3 font-black uppercase tracking-widest text-[10px]"
+                          onClick={handleNextPart}
+                          disabled={!hasCompletedVisibleQuiz}
+                          className="flex-1 sm:flex-none h-14 px-8 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 shadow-xl shadow-primary/20 gap-3 font-black uppercase tracking-widest text-[10px] disabled:opacity-40"
                         >
                           Următoarea Parte
                           <ArrowRight className="size-4" />
@@ -528,7 +550,7 @@ export function LessonPage() {
                       ) : (
                         <Button 
                           onClick={handleComplete} 
-                          disabled={saving} 
+                          disabled={saving || !hasCompletedVisibleQuiz}
                           className="flex-1 sm:flex-none h-14 px-10 rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-500/20 font-black uppercase tracking-widest text-[10px] gap-2"
                         >
                           {saving ? 'Se salvează...' : (

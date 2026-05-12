@@ -8,12 +8,14 @@ export function buildTargetGradeReport({
   targetGradeValue,
   averageQuizScore,
   wrongAnswerCount,
+  correctAnswerCount,
   answeredQuizLessons,
 }) {
   const targetGrade = toTargetGradeNumber(targetGradeValue)
   const wrongAnswers = wrongAnswerCount ?? 0
+  const correctAnswers = correctAnswerCount ?? 0
   const answeredLessons = answeredQuizLessons ?? 0
-  const hasQuizData = answeredLessons > 0 || wrongAnswers > 0
+  const hasQuizData = answeredLessons > 0 || wrongAnswers > 0 || correctAnswers > 0
 
   if (!hasQuizData) {
     return {
@@ -22,6 +24,7 @@ export function buildTargetGradeReport({
       message: 'Rezolvă câteva quiz-uri ca să estimăm dacă nota țintă este realistă.',
       targetGrade: targetGrade,
       wrongAnswerCount: wrongAnswers,
+      correctAnswerCount: correctAnswers,
     }
   }
 
@@ -42,9 +45,10 @@ export function buildTargetGradeReport({
     return {
       verdict,
       title: 'Nota țintă pare realizabilă',
-      message: `Ai ${wrongAnswers} răspunsuri greșite la chestionare și o medie de ${average}% la quiz-uri. Pentru nota ${targetLabel}, traiectoria actuală este suficientă dacă menții ritmul.`,
+      message: `Ai ${correctAnswers} răspunsuri corecte, ${wrongAnswers} răspunsuri greșite la chestionare și o medie de ${average}% la quiz-uri. Pentru nota ${targetLabel}, traiectoria actuală este suficientă dacă menții ritmul.`,
       targetGrade,
       wrongAnswerCount: wrongAnswers,
+      correctAnswerCount: correctAnswers,
       requiredAverage,
       adjustedAverage,
       averageQuizScore: average,
@@ -55,9 +59,10 @@ export function buildTargetGradeReport({
     return {
       verdict,
       title: 'Nota țintă este la limită',
-      message: `Ai ${wrongAnswers} răspunsuri greșite și o medie de ${average}% la quiz-uri. Nota ${targetLabel} este posibilă, dar ai nevoie de mai puține greșeli și consolidare pe capitolele slabe.`,
+      message: `Ai ${correctAnswers} răspunsuri corecte, ${wrongAnswers} răspunsuri greșite și o medie de ${average}% la quiz-uri. Nota ${targetLabel} este posibilă, dar ai nevoie de mai puține greșeli și consolidare pe capitolele slabe.`,
       targetGrade,
       wrongAnswerCount: wrongAnswers,
+      correctAnswerCount: correctAnswers,
       requiredAverage,
       adjustedAverage,
       averageQuizScore: average,
@@ -67,9 +72,10 @@ export function buildTargetGradeReport({
   return {
     verdict,
     title: 'Nota țintă este greu de atins acum',
-    message: `Ai ${wrongAnswers} răspunsuri greșite și o medie de ${average}% la quiz-uri. Pentru nota ${targetLabel}, recomandăm recapitulare și refacerea chestionarelor înainte de a crește obiectivul.`,
+    message: `Ai ${correctAnswers} răspunsuri corecte, ${wrongAnswers} răspunsuri greșite și o medie de ${average}% la quiz-uri. Pentru nota ${targetLabel}, recomandăm recapitulare și refacerea chestionarelor înainte de a crește obiectivul.`,
     targetGrade,
     wrongAnswerCount: wrongAnswers,
+    correctAnswerCount: correctAnswers,
     requiredAverage,
     adjustedAverage,
     averageQuizScore: average,
