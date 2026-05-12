@@ -40,7 +40,9 @@ function parseCheckoutPayload(payload) {
 }
 
 async function invokeCheckoutSession(accessToken) {
+  const returnOrigin = window.location.origin
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+    body: { return_origin: returnOrigin },
     headers: { Authorization: `Bearer ${accessToken}` },
   })
 
@@ -68,6 +70,7 @@ async function invokeCheckoutSession(accessToken) {
       apikey: supabaseAnonKey,
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ return_origin: window.location.origin }),
   })
 
   const payload = await response.json().catch(() => null)

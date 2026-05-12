@@ -7,6 +7,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function normalizeOrigin(origin: string) {
+  return origin.replace(/\/$/, '')
+}
+
+function isAllowedReturnOrigin(origin: string) {
+  const normalized = normalizeOrigin(origin)
+  if (normalized === 'http://localhost:5173') return true
+  if (/^https:\/\/scholar-bac\.vercel\.app$/.test(normalized)) return true
+  if (/^https:\/\/scholar-bac-[a-z0-9-]+-[\w-]+\.vercel\.app$/.test(normalized)) return true
+
+  const configured = Deno.env.get('APP_URL')
+  if (configured && normalized === normalizeOrigin(configured)) return true
+
+  return false
+}
+
+function resolveAppUrl(req: Request, returnOrigin: unknown) {
+  const configured = normalizeOrigin(Deno.env.get('APP_URL') ?? 'http://localhost:5173')
+  const candidates = [
+    typeof returnOrigin === 'string' ? returnOrigin : null,
+    req.headers.get('Origin'),
+  ]
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const normalized = normalizeOrigin(candidate)
+    if (isAllowedReturnOrigin(normalized)) return normalized
+  }
+
+  return configured
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -17,7 +49,8 @@ Deno.serve(async (req) => {
     const stripePriceId = Deno.env.get('STRIPE_PRICE_ID')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
-    const appUrl = Deno.env.get('APP_URL') ?? 'http://localhost:5173'
+    const requestBody = await req.json().catch(() => ({}))
+    const appUrl = resolveAppUrl(req, requestBody.return_origin)
 
     if (!stripeSecret || !stripePriceId || !supabaseUrl || !supabaseAnonKey) {
       throw new Error('Missing Stripe or Supabase environment configuration.')
