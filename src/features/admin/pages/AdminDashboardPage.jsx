@@ -52,6 +52,7 @@ import { PROFILES, SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
 import { RoadmapCanvas } from '../../roadmap/components/RoadmapCanvas'
 import { AdminSolvedVariantsSection } from '../components/AdminSolvedVariantsSection'
+import { AdminAccessSection } from '../components/AdminAccessSection'
 import { createEmptyLayout, normalizeLayout } from '../../roadmap/utils/canvasLayout'
 
 export function AdminDashboardPage() {
@@ -728,6 +729,13 @@ export function AdminDashboardPage() {
           >
             Variante rezolvate
           </button>
+          <button
+            type="button"
+            onClick={() => setAdminSection('admins')}
+            className={`rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all ${adminSection === 'admins' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'}`}
+          >
+            Administratori
+          </button>
         </motion.div>
 
         {adminSection === 'roadmaps' ? (
@@ -913,6 +921,8 @@ export function AdminDashboardPage() {
           </div>
         ) : adminSection === 'variants' ? (
           <AdminSolvedVariantsSection />
+        ) : adminSection === 'admins' ? (
+          <AdminAccessSection />
         ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           

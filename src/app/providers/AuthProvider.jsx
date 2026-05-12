@@ -9,6 +9,7 @@ import {
 import { supabase } from '../../supabaseClient'
 import { requestPasswordReset as sendPasswordResetEmail, updatePassword as applyPasswordUpdate } from '../../services/authService'
 import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as createCheckout } from '../../services/billingService'
+import { checkCurrentUserIsAdmin } from '../../services/curriculumAdminService'
 import { normalizeProfile, normalizeProfilesList } from '../../services/profileService'
 import {
   streakDecayPatch,
@@ -31,6 +32,29 @@ export function AuthProvider({ children }) {
   const [entitlementLoading, setEntitlementLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [premiumModalOpen, setPremiumModalOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminLoading, setAdminLoading] = useState(true)
+
+  const syncAdminForUser = useCallback(async (nextUser) => {
+    if (!nextUser?.email) {
+      setIsAdmin(false)
+      setAdminLoading(false)
+      return false
+    }
+
+    setAdminLoading(true)
+    try {
+      const isAdminUser = await checkCurrentUserIsAdmin()
+      setIsAdmin(isAdminUser)
+      return isAdminUser
+    } catch (error) {
+      console.warn('Admin access refresh failed:', error)
+      setIsAdmin(false)
+      return false
+    } finally {
+      setAdminLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -71,6 +95,7 @@ export function AuthProvider({ children }) {
       setUser(nextUser)
       setAuthLoading(false)
       void syncEntitlementForUser(nextUser)
+      void syncAdminForUser(nextUser)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
@@ -79,10 +104,11 @@ export function AuthProvider({ children }) {
       setUser(nextUser)
       setAuthLoading(false)
       void syncEntitlementForUser(nextUser)
+      void syncAdminForUser(nextUser)
     })
 
     return () => subscription.unsubscribe()
-  }, [syncEntitlementForUser])
+  }, [syncEntitlementForUser, syncAdminForUser])
 
   // Reset streak to 0 when a full UTC calendar day passes with no login and no lesson activity
   useEffect(() => {
@@ -104,6 +130,10 @@ export function AuthProvider({ children }) {
     return syncEntitlementForUser(user)
   }, [syncEntitlementForUser, user])
 
+  const refreshAdminAccess = useCallback(async () => {
+    return syncAdminForUser(user)
+  }, [syncAdminForUser, user])
+
   const openPremiumModal = useCallback(() => {
     setPremiumModalOpen(true)
   }, [])
@@ -112,7 +142,6 @@ export function AuthProvider({ children }) {
     setPremiumModalOpen(false)
   }, [])
 
-  const isAdmin = user?.email === 'cruceanu.cristian3004@gmail.com'
   const isPremium = isEntitlementActive(entitlement) || isAdmin
   const premiumExpiresAt = entitlement?.expires_at ?? null
 
@@ -311,6 +340,8 @@ export function AuthProvider({ children }) {
     setProfile,
     updateUserMetadata,
     isAdmin,
+    adminLoading,
+    refreshAdminAccess,
     entitlement,
     entitlementLoading,
     isPremium,
@@ -339,6 +370,8 @@ export function AuthProvider({ children }) {
     setProfile,
     updateUserMetadata,
     isAdmin,
+    adminLoading,
+    refreshAdminAccess,
     entitlement,
     entitlementLoading,
     isPremium,
