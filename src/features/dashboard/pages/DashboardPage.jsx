@@ -17,7 +17,7 @@ import { getLessonsForProfiles } from '../../../services/lessonService'
 import { getUserProgress } from '../../../services/progressService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getRoadmapsForProfile } from '../../../services/roadmapService'
-import { isLessonPremium } from '../../../services/premiumAccessService'
+import { canAccessLessonForUser } from '../../../services/premiumAccessService'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -173,14 +173,14 @@ export function DashboardPage() {
             <>
               {/* Ultra-Premium Progress Card */}
               <motion.div 
-                className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-xl shadow-slate-200/70 dark:border-transparent dark:bg-slate-900 dark:text-white dark:shadow-2xl dark:shadow-primary/20 md:p-12"
+                className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-xl shadow-slate-200/70 dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:shadow-none md:p-12"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
                 {/* Abstract backgrounds */}
-                <div className="absolute -top-24 -right-24 size-64 rounded-full bg-primary/10 blur-3xl dark:bg-primary/20" />
-                <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/20" />
+                <div className="absolute -top-24 -right-24 size-64 rounded-full bg-primary/10 blur-3xl dark:hidden" />
+                <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-indigo-500/10 blur-3xl dark:hidden" />
                 
                 <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center">
                    <div className="flex-1 space-y-4">
@@ -332,7 +332,7 @@ export function DashboardPage() {
                           <span>Progres Subiect</span>
                           <span>{subjectProgress}%</span>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-inner">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner dark:bg-slate-800 dark:shadow-none">
                            <motion.div 
                               className="h-full bg-gradient-to-r from-primary to-indigo-600"
                               initial={{ width: 0 }}
@@ -347,7 +347,7 @@ export function DashboardPage() {
                           <div className="space-y-2">
                             {subjectLessons.map((lesson) => {
                               const isCompleted = completedSet.has(lesson.id)
-                              const locked = isLessonPremium(lesson) && !isPremium
+                              const locked = !canAccessLessonForUser(lesson, isPremium, activeProfiles)
                               return (
                                 <div key={lesson.id} className="space-y-1">
                                   <motion.button

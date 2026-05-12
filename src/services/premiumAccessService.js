@@ -4,8 +4,13 @@ import { normalizeProfilesList } from './profileService'
 export function isLessonPremium(lesson) {
   if (!lesson) return false
   if (lesson.is_premium) return true
-  if ((lesson.subject_part ?? 1) === 3) return true
-  return lesson.profile !== DEFAULT_PROFILE
+  return (lesson.subject_part ?? 1) === 3
+}
+
+export function canAccessLessonForUser(lesson, isPremium, activeProfiles) {
+  if (!lesson) return false
+  if (isPremium) return true
+  return normalizeProfilesList(activeProfiles).includes(lesson.profile)
 }
 
 export function canAccessProgram(profileKey, isPremium, activeProfiles) {

@@ -96,12 +96,13 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Supabase Edge Functions, Stripe secrets, and PREMIUM_SEASON_END remain on Supabase, not on Vercel.
 - After deploy, Supabase Auth Site URL and Redirect URLs should include the Vercel domain.
 - Supabase Edge Function secret APP_URL should be updated to the Vercel URL for Stripe return redirects.
-- A vercel.json SPA rewrite for React Router was recommended but is not yet present in the repository.
+- scholar-bac/vercel.json now provides SPA rewrites while keeping /maintenance.html and /assets available.
+- Vercel redeploys from GitHub pushes on main; run git add, commit, and push from scholar-bac, not from the parent workspace folder.
 
 
 10. Verification
 ----------------
-- npm run build completed successfully after the roadmap ownership, canvas, and forgot-password changes.
+- npm run build completed successfully after the roadmap ownership, canvas, forgot-password, bugfix, maintenance, profile photo, dashboard UI, and lesson-access changes.
 - No linter issues were reported on the touched application files at the time of the latest implementation pass.
 
 
@@ -115,8 +116,13 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 ---------------------------------
 - Supabase migrations were not applied from the agent environment.
 - The admin roadmap step list UI still exists alongside the canvas editor for lesson-linked steps.
-- vercel.json for client-side route rewrites may still need to be added and pushed if direct URL navigation fails on Vercel.
-- GitHub and Vercel operational steps after the first deploy still require manual confirmation in each service dashboard.
+- Git commands must run inside scholar-bac; the parent workspace folder is not a Git repository.
+- GitHub and Vercel operational steps after deploy still require manual confirmation in each service dashboard.
+- Apply scholar-bac/supabase/migrations/20260515_fix_auth_signup.sql in Supabase if signup fails in production.
+- Apply scholar-bac/supabase/migrations/20260516_lesson_part_images.sql before using custom section images.
+- Deploy Supabase Edge Functions create-checkout-session and stripe-webhook with Stripe secrets and APP_URL.
+- Configure Supabase Storage policies on the materials bucket so authenticated users can upload profile-photos/{userId}/.
+- Supabase Auth email rate limits can block repeated signup or reset attempts during testing.
 
 
 13. Bugfix pass from erori.txt (2026-05-12)
@@ -150,4 +156,26 @@ This file summarizes changes made in the ScholarBAC project during recent agent 
 - Added scholar-bac/src/features/profile/avatarPresets.js and scholar-bac/src/shared/ui/UserAvatar.jsx for preset or custom photo rendering.
 - Updated scholar-bac/src/features/profile/pages/ProfilePage.jsx with photo upload from the camera control and avatar_photo_url in user metadata.
 - Updated scholar-bac/src/shared/ui/Navbar.jsx to show the uploaded profile photo in the header profile button.
-.
+
+
+16. Platform branding and profile validation
+--------------------------------------------
+- Updated scholar-bac/index.html document title from scholar-back to ScholarBAC.
+- Added target grade helpers in scholar-bac/src/services/profileService.js: normalizeTargetGrade and constrainTargetGradeInput.
+- Updated scholar-bac/src/features/profile/pages/ProfilePage.jsx so Nota tinta (BAC) is capped at 10 on input, blur, and save.
+
+
+17. Dashboard UI polish
+-----------------------
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx so the main performance card uses a white background and readable text in light mode.
+- Added platform hover highlight styles in scholar-bac/src/App.css via platform-surface-hover and platform-surface-hover-subtle.
+- Applied those hover styles to subject cards, lesson rows, and lesson part rows on the dashboard.
+- Reduced dark-mode glow on the performance card, subject progress bars, and dark hover states so progress UI stays flat in dark mode.
+
+
+18. Free-account lesson access by selected program
+--------------------------------------------------
+- Updated scholar-bac/src/services/premiumAccessService.js so isLessonPremium no longer treats every non-Mate-Info program as premium.
+- Added canAccessLessonForUser(lesson, isPremium, activeProfiles) to allow free users to open lessons for the program chosen at signup.
+- Updated scholar-bac/src/features/dashboard/pages/DashboardPage.jsx to open the Premium modal only when the lesson is outside the user registered program.
+- Premium remains required for other programs, Subiectul III, lessons flagged is_premium, quizzes, files, and roadmap content.
