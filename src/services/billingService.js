@@ -23,7 +23,11 @@ export function isEntitlementActive(entitlement) {
 }
 
 function checkoutUnavailableMessage() {
-  return 'Plata Premium nu este disponibilă momentan. Verifică că funcțiile Edge create-checkout-session și stripe-webhook sunt publicate în Supabase și că secretul APP_URL este setat.'
+  return 'Plata Premium nu este disponibilă momentan. Publică în Supabase funcțiile Edge create-checkout-session și stripe-webhook, apoi setează secretele Stripe și APP_URL.'
+}
+
+function checkoutNotDeployedMessage() {
+  return 'Funcția create-checkout-session nu este publicată pe Supabase. Din folderul scholar-bac rulează deploy pentru create-checkout-session și stripe-webhook, apoi setează secretele Stripe și APP_URL.'
 }
 
 function parseCheckoutPayload(payload) {
@@ -43,6 +47,11 @@ async function invokeCheckoutSession(accessToken) {
   if (!error) return parseCheckoutPayload(data)
 
   const message = error.message || ''
+  const contextStatus = error?.context?.status
+  if (contextStatus === 404) {
+    throw new Error(checkoutNotDeployedMessage())
+  }
+
   const shouldRetryWithFetch =
     message.includes('Failed to send a request to the Edge Function') ||
     message.includes('Failed to fetch') ||
@@ -63,7 +72,10 @@ async function invokeCheckoutSession(accessToken) {
 
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(payload?.error || checkoutUnavailableMessage())
+    if (response.status === 404 || payload?.code === 'NOT_FOUND') {
+      throw new Error(checkoutNotDeployedMessage())
+    }
+    throw new Error(payload?.error || payload?.message || checkoutUnavailableMessage())
   }
 
   return parseCheckoutPayload(payload)
