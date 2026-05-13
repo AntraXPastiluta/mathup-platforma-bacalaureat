@@ -22,4 +22,31 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets & environment (Vite / Node / Supabase / scripts)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env*.template
 .env.local
+
+# Private keys & client certificates (never commit)
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.ppk
+
+# Supabase CLI local cache (project link metadata)
+supabase/.temp/
+
+# Shell / tool credential files
+.netrc
+.npmrc.local
+
+# Cloud provider service account keys (Google / Firebase admin SDK, etc.)
+**/serviceAccount*.json
+**/firebase-adminsdk-*.json
