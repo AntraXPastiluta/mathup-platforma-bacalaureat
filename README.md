@@ -22,15 +22,14 @@ Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orie
 
 ScholarBAC este o aplicație **React** (Vite) cu autentificare și date în **Supabase**. Elevii își aleg programul la înregistrare, parcurg lecții pe Subiectul I, II și III, răspund la chestionare și își urmăresc progresul pe dashboard. Contul **Premium** (Stripe) extinde accesul la roadmap-ul publicat de profesor, la variante rezolvate și la raportul de pregătire legat de nota țintă din profil.
 
-Administratorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap-urile și variante rezolvate la nivel de program; accesul la panoul admin este controlat prin lista de emailuri din baza de date.
+Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap-urile și variante rezolvate la nivel de program; accesul la panoul de control care gestioneaza lista de emailuri din baza de date.
 
 ## Funcționalități principale
 
 ### Autentificare și profil
 
-- Înregistrare, autentificare, recuperare parolă (`/forgot-password`, `/reset-password`).
-- Profil: nume, program(e) liceal(e), **notă țintă la BAC** (validată, maxim 10), temă clară/întunecată.
-- Avatar: preseturi sau fotografie încărcată în Supabase Storage (`profile-photos/{userId}/`).
+- Înregistrare, autentificare
+- Profil: nume, program(e) liceal(e).
 
 ### Dashboard elev
 
@@ -50,22 +49,18 @@ Administratorii de curriculum gestionează lecțiile, fișierele, quiz-urile, ro
 
 ### Roadmap de studiu
 
-- Creat și editat doar de administratori (inclusiv editor **canvas**: noduri, legături, importanță subiecte BAC).
-- Vizualizat de elevii Premium pe `/roadmap` (read-only).
+- Creat și editat doar de profesori (inclusiv editor **canvas**: noduri, legături, importanță subiecte BAC).
 
 ### Variante rezolvate
 
-- **Admin:** încărcare documente per program (tab **Variante rezolvate**).
+- **Profesor:** încărcare documente per program (tab **Variante rezolvate**).
 - **Premium:** listare și descărcare pe dashboard și pe `/variante-rezolvate` (inclusiv variante legacy legate de lecții, dacă există în baza de date).
 
 ### Abonament Premium
 
 - Checkout Stripe prin Edge Functions Supabase (`create-checkout-session`, `stripe-webhook`).
-- Entitlement activ verificat în aplicație; administratorii de curriculum sunt tratați ca Premium fără plată.
+- Entitlement activ verificat în aplicație; profesorii de curriculum sunt tratați ca Premium fără plată.
 
-### Mentenanță
-
-- Mod mentenanță local (`VITE_MAINTENANCE_MODE`) sau pe Vercel (`MAINTENANCE_MODE` + `public/maintenance.html`).
 
 ## Cont gratuit vs Premium
 
@@ -77,16 +72,10 @@ Administratorii de curriculum gestionează lecțiile, fișierele, quiz-urile, ro
 | Variante rezolvate | Nu | Da |
 | Raport greșeli quiz + notă țintă | Nu | Da |
 
-Regulile de acces sunt centralizate în `src/services/premiumAccessService.js`.
-
-## Panou de administrare
-
-Ruta `/admin` (doar utilizatori marcați administrator în Supabase):
 
 - **Curriculum:** lecții, părți, fișiere, întrebări quiz (inclusiv imagini).
 - **Roadmap:** pași legați de lecții și layout canvas.
-- **Variante rezolvate:** upload per program (`AdminSolvedVariantsSection`).
-- **Administratori:** adăugare/eliminare emailuri admin (`AdminAccessSection`); administratorul principal nu poate fi eliminat; la adăugare se verifică existența contului în Auth.
+- **Variante rezolvate:** upload per program
 
 ## Tehnologii
 
@@ -112,11 +101,10 @@ scholar-bac/
 │   │   ├── dashboard/      # dashboard elev
 │   │   ├── lessons/        # lecție, profile M1/M2/M3
 │   │   ├── profile/        # profil și avatar
-│   │   ├── roadmap/        # vizualizare elev + canvas admin
+│   │   ├── roadmap/        # vizualizare elev + canvas 
 │   │   ├── variants/       # variante rezolvate (elev)
-│   │   ├── admin/          # panou administrator
 │   │   └── maintenance/
-│   ├── services/           # Supabase, billing, progres, quiz, admin
+│   ├── services/           # Supabase, billing, progres, quiz,
 │   └── shared/ui/          # componente UI reutilizabile
 ├── supabase/
 │   └── functions/          # checkout Stripe, webhook
@@ -124,7 +112,6 @@ scholar-bac/
 └── package.json
 ```
 
-Serviciile din `src/services/` izolează apelurile către Supabase (lecții, progres, roadmap, billing, administratori, variante rezolvate, încercări quiz, raport notă țintă).
 
 ## Rute aplicație
 
@@ -138,78 +125,18 @@ Serviciile din `src/services/` izolează apelurile către Supabase (lecții, pro
 | `/lessons/:lessonId` | Lecție + quiz | Autentificat |
 | `/roadmap` | Roadmap studiu | Autentificat (conținut Premium) |
 | `/variante-rezolvate` | Variante rezolvate | Autentificat (Premium) |
-| `/admin` | Administrare curriculum | Administrator |
-| `/maintenance` | Mentenanță | Când modul mentenanță e activ |
-
-## Configurare locală
 
 ### Cerințe
 
 - Node.js (LTS recomandat)
 - Proiect Supabase configurat (Auth, tabele, politici RLS, Storage, funcții Edge)
 
-### Variabile de mediu
-
-Creează `scholar-bac/.env.local`:
-
-```env
-VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon-key>
-```
-
-Opțional, pentru previzualizare mentenanță local:
-
-```env
-VITE_MAINTENANCE_MODE=true
-```
-
-Nu comite `.env.local` (este în `.gitignore`).
-
-### Pornire development
-
-```bash
-cd scholar-bac
-npm install
-npm run dev
-```
-
-## Build și deploy
-
-### Build local
-
-```bash
-npm run build
-npm run preview
-```
-
-### Vercel
-
-- **Build command:** `npm run build`
-- **Output:** `dist`
-- Variabile în proiectul Vercel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- După deploy: actualizează în Supabase Auth **Site URL** și **Redirect URLs** (inclusiv `/reset-password`); secretul `APP_URL` pe Edge Functions pentru return Stripe
-
-### Git
-
-Repository-ul Git este rădăcina folderului `scholar-bac` (nu folderul părinte al workspace-ului).
-
 ## Supabase și backend
 
 - **Auth:** sesiuni persistate în browser; reset parolă către originea site-ului.
-- **Date:** lecții, progres, roadmap, entitlement Premium, administratori, variante pe program, încercări quiz — cu RLS; funcții precum `has_active_premium()` și `is_curriculum_admin()` pentru politici server-side.
-- **Storage:** materiale lecții, poze profil, upload-uri admin.
-- **Edge Functions:** `create-checkout-session`, `stripe-webhook` (secrete Stripe și `APP_URL` în Supabase, nu pe Vercel).
+- **Storage:** materiale lecții, poze profil
+- **Edge Functions:** `create-checkout-session`, `stripe-webhook`
 
-Migrările și politicile trebuie aplicate manual în proiectul Supabase înainte de funcționalități complete în producție. Detalii istorice de implementare: `WORKSPACE_WORK_LOG.txt`.
-
-## Scripturi npm
-
-| Comandă | Rol |
-|---------|-----|
-| `npm run dev` | Server development Vite |
-| `npm run build` | Build producție în `dist/` |
-| `npm run preview` | Previzualizare build local |
-| `npm run lint` | ESLint |
 
 ---
 
