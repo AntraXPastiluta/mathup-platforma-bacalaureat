@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Crown, Sparkles, X } from 'lucide-react'
+import { Check, Crown, Sparkles, X } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
+import { PREMIUM_PRICE_LABEL } from '../../constants/premiumDisplay'
 import { AlertMessage } from './AlertMessage'
 import { Button } from './Button'
 
@@ -52,12 +53,38 @@ export function PremiumUpgradeModal() {
               </div>
             </div>
 
-            <ul className="mb-8 space-y-3 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <li>Roadmap de studiu publicat de profesor</li>
-              <li>Acces la variante deja rezolvate</li>
-              <li>Acces la toate programele liceale și Subiectul III</li>
-              <li>Lecțiile, quiz-urile și materialele rămân disponibile în programul ales la cont gratuit</li>
+            <p className="mb-5 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400">
+              Acces la roadmap-ul de studiu, variante rezolvate și toate programele liceale.
+            </p>
+
+            <ul className="mb-6 list-none space-y-2.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <li className="flex gap-2">
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <span>Roadmap de studiu publicat de administrator</span>
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <span>Variante deja rezolvate (documente pe program)</span>
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <span>Toate programele liceale și conținut Premium (ex. Subiectul III acolo unde e disponibil)</span>
+              </li>
             </ul>
+
+            <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                Preț abonament
+              </p>
+              {PREMIUM_PRICE_LABEL ? (
+                <p className="mt-1 text-lg font-black tracking-tight text-slate-900 dark:text-white">{PREMIUM_PRICE_LABEL}</p>
+              ) : (
+                <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Suma exactă și perioada de facturare apar în pagina securizată Stripe, înainte de plată.
+                </p>
+              )}
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">Plată securizată · poți revizui totul înainte de confirmare</p>
+            </div>
 
             {errorMessage ? <AlertMessage message={errorMessage} className="mb-6" /> : null}
 
@@ -72,7 +99,7 @@ export function PremiumUpgradeModal() {
                 className="h-14 w-full rounded-2xl bg-gradient-to-r from-primary to-indigo-600 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
               >
                 <Sparkles className="size-4" />
-                {checkoutLoading ? 'Redirecționăm către Stripe...' : 'Cumpără Premium'}
+                {checkoutLoading ? 'Redirecționăm către plată...' : 'Continuă către plată'}
               </Button>
             )}
           </motion.div>

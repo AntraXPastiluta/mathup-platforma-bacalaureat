@@ -46,9 +46,8 @@ function ProfilePageContent({ metadata }) {
     isPremium,
     premiumExpiresAt,
     entitlement,
-    startPremiumCheckout,
+    openPremiumModal,
     cancelPremiumSubscription,
-    checkoutLoading,
     cancelPremiumLoading,
     refreshEntitlement,
     isAdmin,
@@ -215,12 +214,11 @@ function ProfilePageContent({ metadata }) {
                 </div>
                 {!isPremium ? (
                   <Button
-                    onClick={startPremiumCheckout}
-                    disabled={checkoutLoading}
+                    onClick={openPremiumModal}
                     className="h-14 w-full shrink-0 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-8 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 lg:w-auto"
                   >
                     <Sparkles className="size-4" />
-                    {checkoutLoading ? 'Redirecționare...' : 'Cumpără Premium'}
+                    Cumpără Premium
                   </Button>
                 ) : null}
               </div>

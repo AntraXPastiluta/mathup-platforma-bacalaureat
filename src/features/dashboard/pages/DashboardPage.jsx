@@ -41,7 +41,7 @@ export function DashboardPage() {
   const [quizMistakeCount, setQuizMistakeCount] = useState(0)
   const [quizCorrectCount, setQuizCorrectCount] = useState(0)
   const [error, setError] = useState('')
-  const { user, isPremium, openPremiumModal, startPremiumCheckout, checkoutLoading, errorMessage } = useAuth()
+  const { user, isPremium, openPremiumModal, errorMessage } = useAuth()
   const navigate = useNavigate()
 
   const activeProfiles = useMemo(
@@ -241,8 +241,8 @@ export function DashboardPage() {
             <div>
               <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează roadmap-ul de studiu</p>
             </div>
-            <Button onClick={startPremiumCheckout} disabled={checkoutLoading} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
-              {checkoutLoading ? 'Redirecționare...' : 'Cumpără Premium'}
+            <Button onClick={openPremiumModal} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
+              Cumpără Premium
             </Button>
           </div>
         ) : null}
