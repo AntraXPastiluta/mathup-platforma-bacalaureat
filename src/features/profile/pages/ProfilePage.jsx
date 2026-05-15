@@ -88,7 +88,7 @@ function ProfilePageContent({ metadata }) {
         full_name: fullName.trim() || 'Elev',
         profiles: [program],
         profile: program,
-        target_grade: normalizeTargetGrade(targetGrade),
+        ...(isPremium ? { target_grade: normalizeTargetGrade(targetGrade) } : {}),
         bio: bio.trim(),
         avatar_id: selectedAvatar,
         avatar_photo_url: avatarPhotoUrl || null,
@@ -162,10 +162,12 @@ function ProfilePageContent({ metadata }) {
               <ArrowLeft className="size-4" />
               Înapoi la Dashboard
             </motion.button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Profil Premium</span>
-            </div>
+            {isPremium ? (
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Profil Premium</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-white/80 p-6 shadow-xl shadow-primary/10 dark:bg-slate-900/80 dark:shadow-primary/5 md:p-7">
@@ -179,8 +181,10 @@ function ProfilePageContent({ metadata }) {
                   </div>
                   <motion.div layout className="space-y-3">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">ScholarBAC Premium</p>
-                      <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                      {isPremium ? (
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">ScholarBAC Premium</p>
+                      ) : null}
+                      <h2 className={`text-xl font-black tracking-tight text-slate-900 dark:text-white ${isPremium ? 'mt-1' : ''}`}>
                         {isAdmin
                           ? 'Ești administrator, ai acces la serviciile premium'
                           : isPremium
@@ -271,15 +275,17 @@ function ProfilePageContent({ metadata }) {
                   {getProfileMeta(selectedProfile).label}
                 </p>
 
-                <div className="pt-6 border-t border-slate-100 dark:border-white/5 space-y-3">
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground font-medium">Nota Țintă</span>
+                {isPremium ? (
+                  <div className="space-y-3 border-t border-slate-100 pt-6 dark:border-white/5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-muted-foreground">Nota Țintă</span>
                       <span className="font-black text-primary">{targetGrade}</span>
-                   </div>
-                   <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                       <div className="h-full bg-primary" style={{ width: `${targetGradeProgress}%` }} />
-                   </div>
-                </div>
+                    </div>
+                  </div>
+                ) : null}
               </motion.div>
             </div>
 
@@ -329,7 +335,7 @@ function ProfilePageContent({ metadata }) {
                   </div>
                 </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className={`grid grid-cols-1 gap-8 ${isPremium ? 'md:grid-cols-2' : ''}`}>
                   {/* Name Input */}
                   <section className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nume Complet</label>
@@ -342,23 +348,24 @@ function ProfilePageContent({ metadata }) {
                     />
                   </section>
 
-                  {/* Target Grade */}
-                  <section className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
-                      <Target className="size-3" />
-                      Nota Țintă (BAC)
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-800 dark:text-white"
-                      value={targetGrade}
-                      onChange={(e) => setTargetGrade(constrainTargetGradeInput(e.target.value))}
-                      onBlur={() => setTargetGrade(normalizeTargetGrade(targetGrade))}
-                      placeholder="Ex: 9.50"
-                    />
-                    <p className="text-xs text-muted-foreground ml-1">Nota țintă poate fi cel mult 10.</p>
-                  </section>
+                  {isPremium ? (
+                    <section className="space-y-3">
+                      <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                        <Target className="size-3" />
+                        Nota Țintă (BAC)
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                        value={targetGrade}
+                        onChange={(e) => setTargetGrade(constrainTargetGradeInput(e.target.value))}
+                        onBlur={() => setTargetGrade(normalizeTargetGrade(targetGrade))}
+                        placeholder="Ex: 9.50"
+                      />
+                      <p className="ml-1 text-xs text-muted-foreground">Nota țintă poate fi cel mult 10.</p>
+                    </section>
+                  ) : null}
                 </div>
 
                 {/* High school programs */}
@@ -442,7 +449,9 @@ function ProfilePageContent({ metadata }) {
       <footer className="container py-12 text-center opacity-30">
         <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
           <GraduationCap className="size-5" />
-          <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">ScholarBAC Premium</span>
+          <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
+            {isPremium ? 'ScholarBAC Premium' : 'ScholarBAC'}
+          </span>
         </div>
       </footer>
     </div>

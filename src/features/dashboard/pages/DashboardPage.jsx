@@ -211,10 +211,12 @@ export function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="size-4 text-primary animate-spin-slow" />
-              <span className="text-xs font-bold text-primary uppercase tracking-tighter">Plan personalizat de studiu</span>
-            </div>
+            {isPremium ? (
+              <div className="mb-2 flex items-center gap-2">
+                <Sparkles className="size-4 animate-spin-slow text-primary" />
+                <span className="text-xs font-bold uppercase tracking-tighter text-primary">Plan personalizat de studiu</span>
+              </div>
+            ) : null}
             <h2 className="text-4xl font-black tracking-tight text-slate-800 dark:text-white">Salutare, {fullName.split(' ')[0]}! 👋</h2>
             <p className="text-muted-foreground max-w-md mt-1">Suntem pregătiți să abordăm subiectele de astăzi. Ești la un pas de succes.</p>
           </motion.div>
@@ -237,7 +239,6 @@ export function DashboardPage() {
         {!isPremium ? (
           <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">ScholarBAC Premium</p>
               <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează roadmap-ul de studiu</p>
             </div>
             <Button onClick={startPremiumCheckout} disabled={checkoutLoading} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
@@ -578,7 +579,9 @@ export function DashboardPage() {
       <footer className="container py-12 text-center opacity-30">
         <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
           <GraduationCap className="size-5" />
-          <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">ScholarBAC Premium</span>
+          <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
+            {isPremium ? 'ScholarBAC Premium' : 'ScholarBAC'}
+          </span>
         </div>
       </footer>
     </div>
