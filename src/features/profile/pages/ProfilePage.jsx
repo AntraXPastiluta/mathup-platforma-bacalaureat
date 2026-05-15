@@ -51,6 +51,7 @@ function ProfilePageContent({ metadata }) {
     checkoutLoading,
     cancelPremiumLoading,
     refreshEntitlement,
+    isAdmin,
   } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -180,7 +181,11 @@ function ProfilePageContent({ metadata }) {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">ScholarBAC Premium</p>
                       <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {isPremium ? 'Ai acces la roadmap și la toate programele' : 'Deblochează roadmap-ul de studiu'}
+                        {isAdmin
+                          ? 'Ești administrator, ai acces la serviciile premium'
+                          : isPremium
+                            ? 'Ai acces la roadmap și la toate programele'
+                            : 'Deblochează roadmap-ul de studiu'}
                       </h2>
                     </div>
                     {isPremium ? (
