@@ -110,10 +110,14 @@ export function AdminSolvedVariantsSection() {
             <select
               value={selectedProfile}
               onChange={(event) => setSelectedProfile(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-800 scheme-light dark:border-white/10 dark:bg-white/5 dark:text-white dark:scheme-dark"
             >
               {PROFILES.map((profile) => (
-                <option key={profile.key} value={profile.key}>
+                <option
+                  key={profile.key}
+                  value={profile.key}
+                  className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100"
+                >
                   {profile.label}
                 </option>
               ))}

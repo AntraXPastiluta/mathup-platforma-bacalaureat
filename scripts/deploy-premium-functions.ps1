@@ -1,5 +1,6 @@
 param(
-  [string]$ProjectRef = 'dhphstiemdzfglncqyev'
+  # Optional override; otherwise SUPABASE_PROJECT_REF from .env.local or the shell
+  [string]$ProjectRef
 )
 
 $ErrorActionPreference = 'Stop'
@@ -54,6 +55,25 @@ if ($missing.Count -gt 0) {
   throw "Missing values in .env.local: $($missing -join ', ')"
 }
 
+$resolvedRef = if ($ProjectRef -and $ProjectRef.Trim()) {
+  $ProjectRef.Trim()
+} elseif ($envValues.SUPABASE_PROJECT_REF -and $envValues.SUPABASE_PROJECT_REF.Trim()) {
+  $envValues.SUPABASE_PROJECT_REF.Trim()
+} elseif ($env:SUPABASE_PROJECT_REF -and $env:SUPABASE_PROJECT_REF.Trim()) {
+  $env:SUPABASE_PROJECT_REF.Trim()
+} else {
+  $null
+}
+if (-not $resolvedRef) {
+  throw @'
+Missing Supabase project reference. Use one of:
+  - Pass -ProjectRef <reference_id>
+  - Add SUPABASE_PROJECT_REF to .env.local
+  - Set environment variable SUPABASE_PROJECT_REF
+Find Reference ID under Supabase Dashboard → Project Settings → General.
+'@
+}
+
 Write-Host "Setting Supabase Edge Function secrets..."
 npx supabase secrets set `
   "STRIPE_SECRET_KEY=$($envValues.STRIPE_SECRET_KEY)" `
@@ -62,24 +82,24 @@ npx supabase secrets set `
   "SERVICE_ROLE_KEY=$($envValues.SUPABASE_SERVICE_ROLE_KEY)" `
   "APP_URL=$($envValues.APP_URL)" `
   "PREMIUM_SEASON_END=$($envValues.PREMIUM_SEASON_END)" `
-  --project-ref $ProjectRef
+  --project-ref $resolvedRef
 
 Write-Host "Deploying create-checkout-session..."
 npx supabase functions deploy create-checkout-session `
-  --project-ref $ProjectRef `
+  --project-ref $resolvedRef `
   --use-api `
   --yes
 
 Write-Host "Deploying stripe-webhook..."
 npx supabase functions deploy stripe-webhook `
-  --project-ref $ProjectRef `
+  --project-ref $resolvedRef `
   --no-verify-jwt `
   --use-api `
   --yes
 
 Write-Host "Deploying cancel-premium-subscription..."
 npx supabase functions deploy cancel-premium-subscription `
-  --project-ref $ProjectRef `
+  --project-ref $resolvedRef `
   --use-api `
   --yes
 
