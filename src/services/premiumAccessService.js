@@ -1,6 +1,11 @@
 import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
 import { normalizeProfilesList } from './profileService'
 
+/** Lecțiile cu `subject_part === 3` sunt accesibile gratuit (inclusiv din toate programele), indiferent de `is_premium`. */
+function isSubjectThreeLesson(lesson) {
+  return Number(lesson?.subject_part) === 3
+}
+
 export function isLessonPremium(lesson) {
   return Boolean(lesson?.is_premium)
 }
@@ -8,6 +13,7 @@ export function isLessonPremium(lesson) {
 export function canAccessLessonForUser(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
   if (isPremium) return true
+  if (isSubjectThreeLesson(lesson)) return true
   if (isLessonPremium(lesson)) return false
   return normalizeProfilesList(activeProfiles).includes(lesson.profile)
 }
@@ -33,24 +39,29 @@ export function getPreviewPartCount(lesson) {
 
 export function canAccessLessonContent(lesson, isPremium) {
   if (!lesson) return false
-  return isPremium || !isLessonPremium(lesson)
+  if (isPremium) return true
+  if (isSubjectThreeLesson(lesson)) return true
+  return !isLessonPremium(lesson)
 }
 
 export function canAccessLessonPart(lesson, partIndex, isPremium) {
   if (!lesson) return false
   if (isPremium) return true
   if (!canAccessLessonContent(lesson, isPremium)) return false
+  if (isSubjectThreeLesson(lesson)) return true
   return partIndex < getPreviewPartCount(lesson)
 }
 
 export function canAccessQuiz(lesson, isPremium) {
   if (!lesson) return false
-  return isPremium
+  if (isPremium) return true
+  return isSubjectThreeLesson(lesson)
 }
 
 export function canAccessLessonFiles(lesson, isPremium) {
   if (!lesson) return false
-  return isPremium
+  if (isPremium) return true
+  return isSubjectThreeLesson(lesson)
 }
 
 export function canAccessSolvedVariants(isPremium) {
@@ -64,6 +75,7 @@ export function canDownloadSolvedContent(isPremium) {
 export function canTrackLessonCompletion(lesson, isPremium) {
   if (!lesson) return false
   if (isPremium) return true
+  if (isSubjectThreeLesson(lesson)) return true
   return !isLessonPremium(lesson)
 }
 
@@ -74,7 +86,7 @@ export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
   const masked = { ...lesson }
   const previewCount = getPreviewPartCount(lesson)
 
-  if (!isPremium && Array.isArray(lesson.lesson_parts)) {
+  if (!isPremium && Array.isArray(lesson.lesson_parts) && !isSubjectThreeLesson(lesson)) {
     masked.lesson_parts = lesson.lesson_parts.filter((_, index) => index < previewCount)
   }
 

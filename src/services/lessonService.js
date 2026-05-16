@@ -20,8 +20,9 @@ export async function getLessons(profile = DEFAULT_PROFILE) {
   return data ?? []
 }
 
-/** Lessons for one or more BAC programs (profiles). */
-export async function getLessonsForProfiles(profileKeys) {
+/** Lessons for one or more BAC programs (profiles). Optionally merges Subiectul III from every program (free global access). */
+export async function getLessonsForProfiles(profileKeys, options = {}) {
+  const { includeSubjectThreeForAllProfiles = false } = options
   const keys = normalizeProfilesList(profileKeys)
   let query = supabase
     .from('lessons')
@@ -31,13 +32,37 @@ export async function getLessonsForProfiles(profileKeys) {
 
   if (keys.length === 1) {
     query = query.eq('profile', keys[0])
-  } else {
+  } else if (keys.length > 1) {
     query = query.in('profile', keys)
+  } else {
+    query = query.eq('profile', DEFAULT_PROFILE)
   }
 
   const { data, error } = await query
   if (error) throw error
-  return data ?? []
+  const mainList = data ?? []
+
+  if (!includeSubjectThreeForAllProfiles) {
+    return mainList
+  }
+
+  const { data: subjectThreeLessons, error: s3Error } = await supabase
+    .from('lessons')
+    .select(`${LESSON_COLUMNS}, lesson_parts(*)`)
+    .eq('subject_part', 3)
+    .order('profile', { ascending: true })
+    .order('order_index', { ascending: true })
+
+  if (s3Error) throw s3Error
+  const seen = new Set(mainList.map((l) => l.id))
+  const merged = [...mainList]
+  for (const lesson of subjectThreeLessons ?? []) {
+    if (!seen.has(lesson.id)) {
+      seen.add(lesson.id)
+      merged.push(lesson)
+    }
+  }
+  return merged
 }
 
 export async function getLessonById(lessonId, accessContext = null) {

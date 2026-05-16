@@ -67,7 +67,7 @@ export function DashboardPage() {
       try {
         const primaryProfile = activeProfiles[0]
         const [lessonsData, progressData, roadmapData, solvedVariantsData, mistakeCount, correctCount] = await Promise.all([
-          getLessonsForProfiles(activeProfiles),
+          getLessonsForProfiles(activeProfiles, { includeSubjectThreeForAllProfiles: !isPremium }),
           getUserProgress(user.id),
           isPremium ? getRoadmapsForProfile(primaryProfile) : Promise.resolve([]),
           isPremium ? getSolvedVariantsForProfiles(activeProfiles) : Promise.resolve([]),

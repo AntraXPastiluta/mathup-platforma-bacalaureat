@@ -68,7 +68,7 @@ export function PremiumUpgradeModal() {
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                <span>Toate programele liceale și conținut Premium (ex. Subiectul III acolo unde e disponibil)</span>
+                <span>Toate programele liceale</span>
               </li>
             </ul>
 
