@@ -25,6 +25,7 @@ import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantSer
 import { getQuizCorrectCount, getQuizMistakeCount } from '../../../services/quizAttemptService'
 import { buildTargetGradeReport } from '../../../services/targetGradeReportService'
 import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -83,7 +84,7 @@ export function DashboardPage() {
         setQuizCorrectCount(correctCount)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoadingData(false)
       }
@@ -190,7 +191,7 @@ export function DashboardPage() {
     try {
       await downloadRemoteFile(variant.file_url, variant.file_name)
     } catch (downloadError) {
-      setError(downloadError.message)
+      setError(toUserFacingError(downloadError, USER_MESSAGES.download))
     } finally {
       setDownloadingVariantId(null)
     }

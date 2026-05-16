@@ -50,3 +50,4 @@ supabase/.temp/
 # Cloud provider service account keys (Google / Firebase admin SDK, etc.)
 **/serviceAccount*.json
 **/firebase-adminsdk-*.json
+.cursor/

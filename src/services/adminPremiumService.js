@@ -5,7 +5,7 @@ export async function getPremiumUsersForAdmin() {
   const { data, error } = await supabase.rpc('list_premium_entitlements_for_admin')
   if (error) {
     if (error.code === 'PGRST202' || error.code === '42883') {
-      throw new Error('Lista Premium nu este disponibilă. Aplică migrarea pentru administratori Premium în Supabase.')
+      throw new Error('Lista Premium nu este disponibilă momentan.')
     }
     throw error
   }

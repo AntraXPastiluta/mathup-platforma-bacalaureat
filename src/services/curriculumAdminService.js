@@ -51,13 +51,13 @@ export async function addCurriculumAdminEmail(email) {
 
   if (lookupError) {
     if (lookupError.code === 'PGRST202' || lookupError.code === '42883') {
-      throw new Error('Verificarea emailului nu este disponibilă. Aplică migrarea pentru administratori în Supabase.')
+      throw new Error('Verificarea emailului nu este disponibilă momentan.')
     }
     throw lookupError
   }
 
   if (!userExists) {
-    throw new Error('Nu există un cont înregistrat cu acest email.')
+    throw new Error('Nu am putut adăuga administratorul. Verifică că persoana are cont activ.')
   }
 
   const { data, error } = await supabase

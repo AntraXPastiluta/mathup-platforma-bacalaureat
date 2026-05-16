@@ -7,6 +7,7 @@ import {
   revokePremiumEntitlement,
 } from '../../../services/adminPremiumService'
 import { isPrimaryAdminEmail } from '../../../services/curriculumAdminService'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function AdminPremiumUsersSection() {
   const { user } = useAuth()
@@ -30,7 +31,7 @@ export function AdminPremiumUsersSection() {
         setPremiumUsers(rows)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -61,7 +62,7 @@ export function AdminPremiumUsersSection() {
       setPremiumUsers((current) => current.filter((row) => row.user_id !== premiumRow.user_id))
       setSuccess(`Accesul Premium pentru ${premiumRow.email} a fost eliminat.`)
     } catch (saveError) {
-      setError(saveError.message)
+      setError(toUserFacingError(saveError, USER_MESSAGES.save))
     } finally {
       setSaving(false)
     }

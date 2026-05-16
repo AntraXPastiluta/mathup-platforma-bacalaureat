@@ -9,6 +9,7 @@ import {
   uploadFileToStorage,
 } from '../../../services/adminService'
 import { PROFILES, getProfileMeta } from '../../lessons/profiles'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function AdminSolvedVariantsSection() {
   const [selectedProfile, setSelectedProfile] = useState('mate_info')
@@ -35,7 +36,7 @@ export function AdminSolvedVariantsSection() {
         setVariants(data)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -65,7 +66,7 @@ export function AdminSolvedVariantsSection() {
       setVariants((current) => [savedVariant, ...current])
       setSuccess('Varianta rezolvată a fost încărcată!')
     } catch (uploadError) {
-      setError(uploadError.message)
+      setError(toUserFacingError(uploadError, USER_MESSAGES.upload))
     } finally {
       setUploading(false)
       event.target.value = ''
@@ -80,7 +81,7 @@ export function AdminSolvedVariantsSection() {
       setVariants((current) => current.filter((variant) => variant.id !== id))
       setSuccess('Varianta rezolvată a fost ștearsă.')
     } catch (deleteError) {
-      setError(deleteError.message)
+      setError(toUserFacingError(deleteError, USER_MESSAGES.delete))
     }
   }
 

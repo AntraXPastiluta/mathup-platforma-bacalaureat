@@ -16,6 +16,16 @@ import {
   hasStreakUpdates,
   mergeStreakMetadataForLogin,
 } from '../../services/streakService'
+import {
+  toAuthLoginError,
+  toAuthRegisterError,
+  toAuthResetPasswordError,
+  toAuthResetRequestError,
+  toCheckoutError,
+  toCancelPremiumError,
+  toUserFacingError,
+  USER_MESSAGES,
+} from '../../shared/utils/userFacingError'
 
 const AuthContext = createContext()
 
@@ -182,8 +192,7 @@ export function AuthProvider({ children }) {
     try {
       await createCheckout()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Plata Premium nu a putut fi pornită.'
-      setErrorMessage(message)
+      setErrorMessage(toCheckoutError(error))
       setPremiumModalOpen(true)
       throw error
     } finally {
@@ -202,8 +211,7 @@ export function AuthProvider({ children }) {
       )
       return result
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Abonamentul Premium nu a putut fi anulat.'
-      setErrorMessage(message)
+      setErrorMessage(toCancelPremiumError(error))
       throw error
     } finally {
       setCancelPremiumLoading(false)
@@ -240,7 +248,7 @@ export function AuthProvider({ children }) {
       }
       return data
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toAuthRegisterError(error))
       throw error
     } finally {
       setLoading(false)
@@ -267,7 +275,7 @@ export function AuthProvider({ children }) {
       }
       return data
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toAuthLoginError(error))
       throw error
     } finally {
       setLoading(false)
@@ -282,7 +290,7 @@ export function AuthProvider({ children }) {
       await sendPasswordResetEmail(email)
       setSuccessMessage('Dacă există un cont asociat acestui email, vei primi un link de resetare în câteva minute.')
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toAuthResetRequestError(error))
       throw error
     } finally {
       setLoading(false)
@@ -298,7 +306,7 @@ export function AuthProvider({ children }) {
       setSuccessMessage('Parola a fost actualizată cu succes.')
       return data
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toAuthResetPasswordError(error))
       throw error
     } finally {
       setLoading(false)
@@ -311,7 +319,7 @@ export function AuthProvider({ children }) {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toUserFacingError(error, USER_MESSAGES.generic))
     } finally {
       setLoading(false)
     }
@@ -331,7 +339,7 @@ export function AuthProvider({ children }) {
       setSuccessMessage('Profilul a fost actualizat cu succes!')
       return data.user
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toUserFacingError(error, USER_MESSAGES.save))
       throw error
     } finally {
       setProfileSaving(false)
@@ -355,7 +363,7 @@ export function AuthProvider({ children }) {
       setSuccessMessage('Datele au fost actualizate!')
       return data.user
     } catch (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(toUserFacingError(error, USER_MESSAGES.save))
       throw error
     } finally {
       setProfileSaving(false)

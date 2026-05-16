@@ -22,6 +22,7 @@ import {
 } from '../../../services/premiumAccessService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
 import { resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -64,7 +65,7 @@ export function LessonPage() {
         setQuizFeedback(null)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -132,7 +133,7 @@ export function LessonPage() {
       await markLessonCompleted({ userId: user.id, lessonId: lesson.id, score })
       navigate('/dashboard')
     } catch (saveError) {
-      setError(saveError.message)
+      setError(toUserFacingError(saveError, USER_MESSAGES.save))
     } finally {
       setSaving(false)
     }
@@ -191,7 +192,7 @@ export function LessonPage() {
         message: isCorrect ? 'Răspuns corect' : 'Răspuns greșit',
       })
     } catch (submitError) {
-      setError(submitError.message || 'Răspunsul nu a putut fi verificat.')
+      setError(toUserFacingError(submitError, 'Răspunsul nu a putut fi verificat.'))
     }
   }
   const renderQuizSection = (title = 'Chestionar') => {

@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Check .env.local in scholar-back.');
+  throw new Error('Aplicația nu este configurată corect. Contactează suportul.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

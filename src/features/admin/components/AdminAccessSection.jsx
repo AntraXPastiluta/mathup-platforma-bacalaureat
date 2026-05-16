@@ -10,6 +10,7 @@ import {
   normalizeAdminEmail,
   removeCurriculumAdminEmail,
 } from '../../../services/curriculumAdminService'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function AdminAccessSection() {
   const { user, refreshAdminAccess } = useAuth()
@@ -32,7 +33,7 @@ export function AdminAccessSection() {
         setAdmins(rows)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -65,7 +66,7 @@ export function AdminAccessSection() {
       setSuccess(`Administratorul ${created.email} a fost adăugat.`)
       await refreshAdminAccess()
     } catch (saveError) {
-      setError(saveError.message)
+      setError(toUserFacingError(saveError, USER_MESSAGES.save))
     } finally {
       setSaving(false)
     }
@@ -98,7 +99,7 @@ export function AdminAccessSection() {
       setSuccess(`Administratorul ${adminRow.email} a fost eliminat.`)
       await refreshAdminAccess()
     } catch (deleteError) {
-      setError(deleteError.message)
+      setError(toUserFacingError(deleteError, USER_MESSAGES.delete))
     } finally {
       setSaving(false)
     }

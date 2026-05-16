@@ -11,33 +11,7 @@ async function requireCurriculumAdmin() {
   }
 }
 
-/**
- * Admin Service for managing lessons, quizzes, and files.
- * 
- * Required DB Tables (SQL to run in Supabase):
- * 
- * -- Quiz Questions Table
- * CREATE TABLE IF NOT EXISTS public.quiz_questions (
- *   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
- *   lesson_id uuid REFERENCES public.lessons(id) ON DELETE CASCADE,
- *   question_text text NOT NULL,
- *   options jsonb NOT NULL, -- Array of strings
- *   correct_option_index integer NOT NULL,
- *   image_url text,
- *   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
- * );
- * 
- * -- Lesson Files Table
- * CREATE TABLE IF NOT EXISTS public.lesson_files (
- *   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
- *   lesson_id uuid REFERENCES public.lessons(id) ON DELETE CASCADE,
- *   file_name text NOT NULL,
- *   file_url text NOT NULL,
- *   file_type text,
- *   is_solved_content boolean NOT NULL DEFAULT false,
- *   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
- * );
- */
+/** Admin: lecții, quiz-uri, fișiere (acces doar curriculum admin). */
 
 export async function getAllLessonsAdmin() {
   const { data, error } = await supabase

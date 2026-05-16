@@ -1,7 +1,11 @@
 import { supabase } from '../supabaseClient'
+import { USER_MESSAGES } from '../shared/utils/userFacingError'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+const CHECKOUT_UNAVAILABLE = USER_MESSAGES.checkout
+const CANCEL_UNAVAILABLE = USER_MESSAGES.cancelPremium
 
 export async function getPremiumEntitlement(userId) {
   if (!userId) return null
@@ -22,20 +26,16 @@ export function isEntitlementActive(entitlement) {
   return new Date(entitlement.expires_at).getTime() > Date.now()
 }
 
-function checkoutUnavailableMessage() {
-  return 'Plata Premium nu este disponibilă momentan. Publică în Supabase funcțiile Edge create-checkout-session și stripe-webhook, apoi setează secretele Stripe și APP_URL.'
-}
-
-function checkoutNotDeployedMessage() {
-  return 'Funcția create-checkout-session nu este publicată pe Supabase. Din folderul scholar-bac rulează deploy pentru create-checkout-session și stripe-webhook, apoi setează secretele Stripe și APP_URL.'
+function logBillingError(context, error) {
+  if (import.meta.env.DEV) {
+    console.error(`[billing:${context}]`, error)
+  }
 }
 
 function parseCheckoutPayload(payload) {
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('Nu am putut porni plata Premium.')
+  if (!payload || typeof payload !== 'object' || !payload.url) {
+    throw new Error(CHECKOUT_UNAVAILABLE)
   }
-  if (payload.error) throw new Error(payload.error)
-  if (!payload.url) throw new Error('Nu am putut porni plata Premium.')
   return payload.url
 }
 
@@ -51,7 +51,8 @@ async function invokeCheckoutSession(accessToken) {
   const message = error.message || ''
   const contextStatus = error?.context?.status
   if (contextStatus === 404) {
-    throw new Error(checkoutNotDeployedMessage())
+    logBillingError('checkout-not-deployed', error)
+    throw new Error(CHECKOUT_UNAVAILABLE)
   }
 
   const shouldRetryWithFetch =
@@ -60,7 +61,8 @@ async function invokeCheckoutSession(accessToken) {
     message.includes('NetworkError')
 
   if (!shouldRetryWithFetch || !supabaseUrl || !supabaseAnonKey) {
-    throw new Error(message || checkoutUnavailableMessage())
+    logBillingError('checkout-invoke', error)
+    throw new Error(CHECKOUT_UNAVAILABLE)
   }
 
   const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
@@ -75,10 +77,8 @@ async function invokeCheckoutSession(accessToken) {
 
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    if (response.status === 404 || payload?.code === 'NOT_FOUND') {
-      throw new Error(checkoutNotDeployedMessage())
-    }
-    throw new Error(payload?.error || payload?.message || checkoutUnavailableMessage())
+    logBillingError('checkout-fetch', { status: response.status, payload })
+    throw new Error(CHECKOUT_UNAVAILABLE)
   }
 
   return parseCheckoutPayload(payload)
@@ -97,9 +97,12 @@ export async function startPremiumCheckout() {
 
 function parseCancelPayload(payload) {
   if (!payload || typeof payload !== 'object') {
-    throw new Error('Nu am putut anula abonamentul Premium.')
+    throw new Error(CANCEL_UNAVAILABLE)
   }
-  if (payload.error) throw new Error(payload.error)
+  if (payload.error) {
+    logBillingError('cancel-payload', payload.error)
+    throw new Error(CANCEL_UNAVAILABLE)
+  }
   return payload
 }
 
@@ -113,7 +116,8 @@ async function invokeCancelPremiumSubscription(accessToken) {
   const message = error.message || ''
   const contextStatus = error?.context?.status
   if (contextStatus === 404) {
-    throw new Error('Funcția cancel-premium-subscription nu este publicată pe Supabase.')
+    logBillingError('cancel-not-deployed', error)
+    throw new Error(CANCEL_UNAVAILABLE)
   }
 
   const shouldRetryWithFetch =
@@ -122,7 +126,8 @@ async function invokeCancelPremiumSubscription(accessToken) {
     message.includes('NetworkError')
 
   if (!shouldRetryWithFetch || !supabaseUrl || !supabaseAnonKey) {
-    throw new Error(message || 'Nu am putut anula abonamentul Premium.')
+    logBillingError('cancel-invoke', error)
+    throw new Error(CANCEL_UNAVAILABLE)
   }
 
   const response = await fetch(`${supabaseUrl}/functions/v1/cancel-premium-subscription`, {
@@ -136,10 +141,8 @@ async function invokeCancelPremiumSubscription(accessToken) {
 
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    if (response.status === 404 || payload?.code === 'NOT_FOUND') {
-      throw new Error('Funcția cancel-premium-subscription nu este publicată pe Supabase.')
-    }
-    throw new Error(payload?.error || payload?.message || 'Nu am putut anula abonamentul Premium.')
+    logBillingError('cancel-fetch', { status: response.status, payload })
+    throw new Error(CANCEL_UNAVAILABLE)
   }
 
   return parseCancelPayload(payload)

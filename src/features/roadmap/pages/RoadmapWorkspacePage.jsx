@@ -9,6 +9,7 @@ import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getRoadmapsForProfile } from '../../../services/roadmapService'
 import { RoadmapCanvas } from '../components/RoadmapCanvas'
 import { normalizeLayout } from '../utils/canvasLayout'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function RoadmapWorkspacePage() {
   const navigate = useNavigate()
@@ -42,7 +43,7 @@ export function RoadmapWorkspacePage() {
         setSelectedRoadmapId(data[0]?.id ?? null)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }

@@ -25,6 +25,7 @@ import { getSelectablePrograms } from '../../../services/premiumAccessService'
 import { isEntitlementActive } from '../../../services/billingService'
 import { uploadProfilePhoto } from '../../../services/profilePhotoService'
 import { AVATAR_PRESETS } from '../avatarPresets'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function ProfilePage() {
   const { user } = useAuth()
@@ -109,7 +110,7 @@ function ProfilePageContent({ metadata }) {
       await updateUserMetadata({ avatar_photo_url: url })
       setSuccessMessage('Fotografia de profil a fost actualizată.')
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Nu am putut încărca fotografia.')
+      setErrorMessage(toUserFacingError(error, USER_MESSAGES.upload))
     } finally {
       setPhotoUploading(false)
       event.target.value = ''

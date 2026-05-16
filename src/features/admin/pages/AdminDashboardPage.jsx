@@ -47,6 +47,7 @@ import {
 } from '../../../services/adminService'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { PROFILES, SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
@@ -166,7 +167,7 @@ export function AdminDashboardPage() {
       const data = await getAllLessonsAdmin()
       setLessons(data)
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -178,7 +179,7 @@ export function AdminDashboardPage() {
       const data = await getAllRoadmapsAdmin()
       setRoadmaps(data)
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -280,7 +281,7 @@ export function AdminDashboardPage() {
           : 'Lecție creată cu succes!'
       )
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -328,7 +329,7 @@ export function AdminDashboardPage() {
       await loadLessons()
       handleSelectLesson(updated)
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -390,7 +391,7 @@ export function AdminDashboardPage() {
       setSelectedLesson(null)
       setSuccess('Lecție ștearsă!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -401,7 +402,7 @@ export function AdminDashboardPage() {
       setSuccess('Conținutul lecției a fost actualizat!')
       loadLessons()
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -426,7 +427,7 @@ export function AdminDashboardPage() {
       setNewQuestion({ text: '', options: ['', '', '', ''], correct: 0, placement: { type: 'end', partId: '' } })
       setSuccess('Întrebare adăugată!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -435,7 +436,7 @@ export function AdminDashboardPage() {
       await deleteQuizQuestion(id)
       setQuestions(questions.filter(q => q.id !== id))
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -455,7 +456,7 @@ export function AdminDashboardPage() {
       setFiles([...files, savedFile])
       setSuccess('Fișier încărcat cu succes!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setUploading(false)
       event.target.value = ''
@@ -467,7 +468,7 @@ export function AdminDashboardPage() {
       await deleteLessonFile(id)
       setFiles(files.filter(f => f.id !== id))
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -489,7 +490,7 @@ export function AdminDashboardPage() {
       }
       setSuccess('Imagine încărcată pentru secțiune.')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setUploading(false)
       event.target.value = ''
@@ -514,7 +515,7 @@ export function AdminDashboardPage() {
       setNewPart({ title: '', content: '', video_url: '', image_url: '' })
       setSuccess('Parte adăugată cu succes!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -525,7 +526,7 @@ export function AdminDashboardPage() {
       setEditingPartId(null)
       setSuccess('Parte actualizată!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -536,7 +537,7 @@ export function AdminDashboardPage() {
       setParts(parts.filter(p => p.id !== id))
       setSuccess('Parte ștearsă!')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -618,7 +619,7 @@ export function AdminDashboardPage() {
       }
       await loadRoadmapsAdmin()
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -635,7 +636,7 @@ export function AdminDashboardPage() {
       await loadRoadmapsAdmin()
       setSuccess('Roadmap șters.')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 
@@ -664,7 +665,7 @@ export function AdminDashboardPage() {
       await loadRoadmapsAdmin()
       setSuccess('Pas adăugat în roadmap.')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     } finally {
       setLoading(false)
     }
@@ -676,7 +677,7 @@ export function AdminDashboardPage() {
       await loadRoadmapsAdmin()
       setSuccess('Pas șters.')
     } catch (err) {
-      setError(err.message)
+      setError(toUserFacingError(err, USER_MESSAGES.save))
     }
   }
 

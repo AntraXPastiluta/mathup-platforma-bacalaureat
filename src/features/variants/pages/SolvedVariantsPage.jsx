@@ -10,6 +10,7 @@ import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
 import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
 import { getProfileMeta } from '../../lessons/profiles'
+import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function SolvedVariantsPage() {
   const navigate = useNavigate()
@@ -41,7 +42,7 @@ export function SolvedVariantsPage() {
         setVariants(data)
       } catch (loadError) {
         if (!mounted) return
-        setError(loadError.message)
+        setError(toUserFacingError(loadError, USER_MESSAGES.load))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -71,7 +72,7 @@ export function SolvedVariantsPage() {
     try {
       await downloadRemoteFile(variant.file_url, variant.file_name)
     } catch (downloadError) {
-      setError(downloadError.message)
+      setError(toUserFacingError(downloadError, USER_MESSAGES.download))
     } finally {
       setDownloadingVariantId(null)
     }
