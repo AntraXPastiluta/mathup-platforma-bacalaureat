@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Target,
   FileText,
-  GraduationCap,
   Crown,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
@@ -20,6 +19,7 @@ import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { UserAvatar } from '../../../shared/ui/UserAvatar'
 import { getProfileMeta } from '../../lessons/profiles'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { getProfilesFromMetadata, normalizeProfile, normalizeTargetGrade, constrainTargetGradeInput } from '../../../services/profileService'
 import { getSelectablePrograms } from '../../../services/premiumAccessService'
 import { isEntitlementActive } from '../../../services/billingService'
@@ -182,14 +182,14 @@ function ProfilePageContent({ metadata }) {
                   <motion.div layout className="space-y-3">
                     <div>
                       {isPremium ? (
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">ScholarBAC Premium</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">MathUP Premium</p>
                       ) : null}
                       <h2 className={`text-xl font-black tracking-tight text-slate-900 dark:text-white ${isPremium ? 'mt-1' : ''}`}>
                         {isAdmin
                           ? 'Ești administrator, ai acces la serviciile premium'
                           : isPremium
                             ? 'Ai acces la roadmap și la toate programele'
-                            : 'Deblochează roadmap-ul de studiu'}
+                            : 'Deblochează MathUP Premium'}
                       </h2>
                     </div>
                     {isPremium ? (
@@ -269,7 +269,7 @@ function ProfilePageContent({ metadata }) {
                   </label>
                 </div>
                 
-                <h2 className="text-xl font-black tracking-tight mb-1">{fullName || 'Elev ScholarBAC'}</h2>
+                <h2 className="text-xl font-black tracking-tight mb-1">{fullName || 'Elev MathUP'}</h2>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 leading-relaxed">
                   {getProfileMeta(selectedProfile).label}
                 </p>
@@ -447,9 +447,9 @@ function ProfilePageContent({ metadata }) {
 
       <footer className="container py-12 text-center opacity-30">
         <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
-          <GraduationCap className="size-5" />
+          <BrandLogo className="size-5" />
           <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
-            {isPremium ? 'ScholarBAC Premium' : 'ScholarBAC'}
+            {isPremium ? 'MathUP Premium' : 'MathUP'}
           </span>
         </div>
       </footer>

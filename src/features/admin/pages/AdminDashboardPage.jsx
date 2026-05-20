@@ -14,7 +14,6 @@ import {
   UploadCloud,
   ExternalLink,
   ChevronLeft,
-  GraduationCap,
   PlayCircle,
   Check,
   BarChart3,
@@ -48,7 +47,9 @@ import {
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
 import { Navbar } from '../../../shared/ui/Navbar'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { PROFILES, SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
 import { RoadmapCanvas } from '../../roadmap/components/RoadmapCanvas'
@@ -57,13 +58,15 @@ import { AdminAccessSection } from '../components/AdminAccessSection'
 import { AdminPremiumUsersSection } from '../components/AdminPremiumUsersSection'
 import { createEmptyLayout, normalizeLayout } from '../../roadmap/utils/canvasLayout'
 
+const ALLOWED_LESSON_FILE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'doc', 'docx'])
+
 export function AdminDashboardPage() {
   const [lessons, setLessons] = useState([])
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState('content') // content, parts, quiz, files, variants
+  const [activeTab, setActiveTab] = useState('content')
   const [isCreating, setIsCreating] = useState(false)
 
   // Form states for existing lesson
@@ -146,6 +149,11 @@ export function AdminDashboardPage() {
     })
   }, [lessons, selectedProgramKey, sidebarQuery])
 
+  const newPartPreviewSrc = useMemo(
+    () => getTrustedStorageUrl(newPart.image_url),
+    [newPart.image_url],
+  )
+
   useEffect(() => {
     loadLessons()
   }, [])
@@ -216,7 +224,7 @@ export function AdminDashboardPage() {
       setFiles(fData)
       setParts(pData)
     } catch (err) {
-      console.error('Error loading sub-data:', err)
+      setError(toUserFacingError(err, USER_MESSAGES.load))
     }
   }
 
@@ -443,6 +451,12 @@ export function AdminDashboardPage() {
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    if (!extension || !ALLOWED_LESSON_FILE_EXTENSIONS.has(extension)) {
+      setError('Tipul de fișier nu este permis. Folosește PDF, imagini sau documente Word.')
+      event.target.value = ''
+      return
+    }
     setUploading(true)
     try {
       const uploaded = await uploadFileToStorage(file)
@@ -1544,8 +1558,8 @@ export function AdminDashboardPage() {
                                 />
                                 <div className="space-y-3 rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Imagine secțiune (opțional)</p>
-                                  {newPart.image_url ? (
-                                    <img src={newPart.image_url} alt="Previzualizare secțiune" className="max-h-48 w-full rounded-2xl object-cover" />
+                                  {newPartPreviewSrc ? (
+                                    <img src={newPartPreviewSrc} alt="Previzualizare secțiune" className="max-h-48 w-full rounded-2xl object-cover" />
                                   ) : null}
                                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-600 dark:border-white/10 dark:text-slate-300">
                                     <UploadCloud className="size-4" />
@@ -1572,7 +1586,9 @@ export function AdminDashboardPage() {
                                 </div>
                               ) : (
                                 <ul className="space-y-4">
-                                  {parts.map((part, idx) => (
+                                  {parts.map((part, idx) => {
+                                    const partImageSrc = getTrustedStorageUrl(part.image_url)
+                                    return (
                                     <li key={part.id} className="relative group/part">
                                       <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-6 transition-all group-hover/part:border-primary/30 group-hover/part:bg-white dark:group-hover/part:bg-white/[0.07] overflow-hidden shadow-sm hover:shadow-md">
                                         <div className="flex justify-between items-start mb-4 relative z-10">
@@ -1620,8 +1636,8 @@ export function AdminDashboardPage() {
                                             />
                                             <div className="space-y-3 rounded-xl border border-dashed border-slate-200 p-4 dark:border-white/10">
                                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Imagine secțiune</p>
-                                              {part.image_url ? (
-                                                <img src={part.image_url} alt={part.title} className="max-h-40 w-full rounded-xl object-cover" />
+                                              {partImageSrc ? (
+                                                <img src={partImageSrc} alt={part.title} className="max-h-40 w-full rounded-xl object-cover" />
                                               ) : null}
                                               <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:border-white/10 dark:text-slate-300">
                                                 <UploadCloud className="size-3.5" />
@@ -1643,7 +1659,7 @@ export function AdminDashboardPage() {
                                         )}
                                       </div>
                                     </li>
-                                  ))}
+                                  )})}
                                 </ul>
                               )}
                             </div>
@@ -1778,6 +1794,7 @@ export function AdminDashboardPage() {
                                   type="file" 
                                   id="file-upload" 
                                   className="hidden" 
+                                  accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,application/pdf,image/*"
                                   onChange={handleFileUpload} 
                                   disabled={uploading}
                                 />
@@ -1827,7 +1844,9 @@ export function AdminDashboardPage() {
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                                      {regularFiles.map(file => (
+                                      {regularFiles.map(file => {
+                                        const fileHref = getTrustedStorageUrl(file.file_url)
+                                        return (
                                         <tr key={file.id} className="group/row hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
                                           <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
@@ -1844,16 +1863,18 @@ export function AdminDashboardPage() {
                                           </td>
                                           <td className="px-6 py-5 text-right">
                                             <div className="flex justify-end gap-2">
-                                              <a href={file.file_url} target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-white dark:bg-white/5 text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white transition-all shadow-sm">
-                                                <ExternalLink className="size-4" />
-                                              </a>
+                                              {fileHref ? (
+                                                <a href={fileHref} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white dark:bg-white/5 text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white transition-all shadow-sm">
+                                                  <ExternalLink className="size-4" />
+                                                </a>
+                                              ) : null}
                                               <button onClick={() => handleDeleteFile(file.id)} className="p-2 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all shadow-sm">
                                                 <Trash2 className="size-4" />
                                               </button>
                                             </div>
                                           </td>
                                         </tr>
-                                      ))}
+                                      )})}
                                     </tbody>
                                   </table>
                                 </div>
@@ -1875,18 +1896,10 @@ export function AdminDashboardPage() {
 
       <footer className="container py-20 mt-10 border-t border-slate-200/50 dark:border-white/5 opacity-30 text-center">
          <div className="flex items-center justify-center gap-3 grayscale group hover:grayscale-0 transition-all">
-            <GraduationCap className="size-6 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 dark:text-slate-400">ScholarBAC Engineering</span>
+            <BrandLogo className="size-6" />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 dark:text-slate-400">MathUP Engineering</span>
          </div>
       </footer>
-
-      {/* Global CSS for scrollbars */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(100,100,255,0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100,100,255,0.2); }
-      `}} />
     </div>
   )
 }

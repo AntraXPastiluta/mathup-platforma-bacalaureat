@@ -7,21 +7,45 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependency directories
+node_modules/
+jspm_packages/
 
-# Editor directories and files
-.vscode/*
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.vite/
+.eslintcache
+.stylelintcache
+
+# Editor & IDE settings/directories
+.vscode/
 !.vscode/extensions.json
-.idea
-.DS_Store
+.vscode/*
+.idea/
+.cursor/
+.history/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-project
+*.sublime-workspace
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+desktop.ini
 
 # Secrets & environment (Vite / Node / Supabase / scripts)
 .env
@@ -31,6 +55,7 @@ dist-ssr
 !.env.sample
 !.env*.template
 .env.local
+*.local
 
 # Private keys & client certificates (never commit)
 *.pem
@@ -40,8 +65,12 @@ id_rsa
 id_ed25519
 *.ppk
 
-# Supabase CLI local cache (project link metadata)
+# Supabase CLI local cache & settings
+.supabase/
 supabase/.temp/
+
+# Vercel deployment metadata
+.vercel/
 
 # Shell / tool credential files
 .netrc
@@ -50,4 +79,5 @@ supabase/.temp/
 # Cloud provider service account keys (Google / Firebase admin SDK, etc.)
 **/serviceAccount*.json
 **/firebase-adminsdk-*.json
-.cursor/
+
+

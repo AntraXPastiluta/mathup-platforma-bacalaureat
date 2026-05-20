@@ -1,4 +1,4 @@
-# ScholarBAC
+# MathUP
 
 Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orientată pe programele liceale (M1, M2, M3), lecții structurate pe subiecte de examen, quiz-uri, progres personal și funcții Premium (roadmap, variante rezolvate, raport față de nota țintă).
 
@@ -20,7 +20,7 @@ Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orie
 
 ## Prezentare generală
 
-ScholarBAC este o aplicație **React** (Vite) cu autentificare și date în **Supabase**. Elevii își aleg programul la înregistrare, parcurg lecții pe Subiectul I, II și III, răspund la chestionare și își urmăresc progresul pe dashboard. Contul **Premium** (Stripe) extinde accesul la roadmap-ul publicat de profesor, la variante rezolvate și la raportul de pregătire legat de nota țintă din profil.
+MathUP este o aplicație **React** (Vite) cu autentificare și date în **Supabase**. Elevii își aleg programul la înregistrare, parcurg lecții pe Subiectul I, II și III, răspund la chestionare și își urmăresc progresul pe dashboard. Contul **Premium** (Stripe) extinde accesul la roadmap-ul publicat de profesor, la variante rezolvate și la raportul de pregătire legat de nota țintă din profil.
 
 Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap-urile și variante rezolvate la nivel de program; accesul la panoul de control care gestioneaza lista de emailuri din baza de date.
 
@@ -92,19 +92,19 @@ Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap
 ## Structura proiectului
 
 ```text
-scholar-bac/
+mathup/
 ├── public/                 # static, maintenance.html
 ├── src/
 │   ├── app/                # rute protejate, AuthProvider, config mentenanță
 │   ├── features/
-│   │   ├── auth/           # welcome, login, register, reset parolă
+│   │   ├── auth/           # welcome, login, register, resetare parolă
 │   │   ├── dashboard/      # dashboard elev
 │   │   ├── lessons/        # lecție, profile M1/M2/M3
 │   │   ├── profile/        # profil și avatar
-│   │   ├── roadmap/        # vizualizare elev + canvas 
+│   │   ├── roadmap/        # vizualizare elev + canvas
 │   │   ├── variants/       # variante rezolvate (elev)
 │   │   └── maintenance/
-│   ├── services/           # Supabase, billing, progres, quiz,
+│   ├── services/           # Supabase, plăți, progres, quiz
 │   └── shared/ui/          # componente UI reutilizabile
 ├── supabase/
 │   └── functions/          # checkout Stripe, webhook

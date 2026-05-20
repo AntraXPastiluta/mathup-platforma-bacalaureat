@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { 
-  GraduationCap, 
   Flame, 
   Sun, 
   Moon, 
@@ -12,6 +11,7 @@ import {
 import { useAuth } from '../../app/providers/AuthProvider'
 import { Button } from './Button'
 import { UserAvatar } from './UserAvatar'
+import { BrandLogo } from './BrandLogo'
 
 export function Navbar() {
   const navigate = useNavigate()
@@ -26,11 +26,11 @@ export function Navbar() {
           whileHover={{ scale: 1.02 }}
         >
           <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 shadow-lg shadow-primary/25 text-white transform group-hover:rotate-6 transition-transform">
-            <GraduationCap className="size-6" />
+            <BrandLogo className="size-6" />
           </div>
           <div>
-            <strong className="block text-base leading-tight font-black tracking-tight uppercase text-slate-800 dark:text-white">ScholarBAC</strong>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Elevate Your Mind</span>
+            <strong className="block text-base leading-tight font-black tracking-tight uppercase text-slate-800 dark:text-white">MathUP</strong>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Performanță construită pas cu pas.</span>
           </div>
         </motion.div>
         

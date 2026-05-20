@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, GraduationCap, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { supabase } from '../../../supabaseClient'
 import { AuthCard } from '../../../shared/ui/AuthCard'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Button } from '../../../shared/ui/Button'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 
 export function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -72,11 +73,11 @@ export function ResetPasswordPage() {
             whileHover={{ scale: 1.02 }}
           >
             <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 shadow-lg shadow-primary/25 text-white transform group-hover:rotate-6 transition-transform">
-              <GraduationCap className="size-6" />
+              <BrandLogo className="size-6" />
             </div>
             <div>
-              <strong className="block text-base leading-tight font-black tracking-tight uppercase text-slate-800 dark:text-white">ScholarBAC</strong>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Elevate Your Mind</span>
+              <strong className="block text-base leading-tight font-black tracking-tight uppercase text-slate-800 dark:text-white">MathUP</strong>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Performanță construită pas cu pas.</span>
             </div>
           </motion.div>
 
@@ -100,7 +101,7 @@ export function ResetPasswordPage() {
         >
           <AuthCard
             title="Parolă nouă"
-            description="Alege o parolă nouă pentru contul tău ScholarBAC."
+            description="Alege o parolă nouă pentru contul tău MathUP."
             footer={(
               <div className="w-full text-center space-y-4">
                 <Button

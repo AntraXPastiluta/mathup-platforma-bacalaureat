@@ -46,29 +46,29 @@ export function PremiumUpgradeModal() {
                 <Crown className="size-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">ScholarBAC Premium</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">MathUP Premium</p>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Deblochează roadmap-ul de studiu
+                  Deblochează MathUP Premium
                 </h2>
               </div>
             </div>
 
             <p className="mb-5 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400">
-              Acces la roadmap-ul de studiu, variante rezolvate și toate programele liceale.
+              Acces la roadmaps, variante rezolvate și la toate programele liceale.
             </p>
 
             <ul className="mb-6 list-none space-y-2.5 text-sm font-medium text-slate-600 dark:text-slate-300">
               <li className="flex gap-2">
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                <span>Roadmap de studiu publicat de administrator</span>
+                <span>Roadmap de studiu pentru fiecare program, pentru fiecare subiect in parte si grad de importanta</span>
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                <span>Variante deja rezolvate (documente pe program)</span>
+                <span>Acces la variante deja rezolvate</span>
               </li>
               <li className="flex gap-2">
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                <span>Toate programele liceale</span>
+                <span>Acces la toate programele liceale</span>
               </li>
             </ul>
 

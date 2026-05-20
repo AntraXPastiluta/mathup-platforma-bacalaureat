@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   XCircle,
   BookOpen, 
-  GraduationCap,
   FileText,
   ArrowRight,
   ExternalLink,
@@ -26,6 +25,7 @@ import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFaci
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
 export function LessonPage() {
@@ -580,9 +580,9 @@ export function LessonPage() {
 
       <footer className="container py-12 text-center opacity-30">
         <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
-          <GraduationCap className="size-5" />
+          <BrandLogo className="size-5" />
           <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
-            {isPremium ? 'ScholarBAC Premium' : 'ScholarBAC'}
+            {isPremium ? 'MathUP Premium' : 'MathUP'}
           </span>
         </div>
       </footer>

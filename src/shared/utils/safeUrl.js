@@ -28,6 +28,15 @@ export function resolveLessonVideoEmbedSrc(videoUrl) {
   return `https://www.youtube-nocookie.com/embed/${videoId}`
 }
 
+/** Returns a validated storage URL, or null if the value is missing or untrusted. */
+export function getTrustedStorageUrl(url) {
+  try {
+    return assertTrustedDownloadUrl(url)
+  } catch {
+    return null
+  }
+}
+
 export function assertTrustedDownloadUrl(url) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
   if (!url || typeof url !== 'string') {

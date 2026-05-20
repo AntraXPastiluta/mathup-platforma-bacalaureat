@@ -6,7 +6,6 @@ import {
   CheckCircle2, 
   ChevronRight, 
   Award, 
-  GraduationCap,
   Sparkles,
   User,
   Crown,
@@ -29,6 +28,7 @@ import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFaci
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { SolvedVariantDocumentIcon } from '../../../shared/ui/SolvedVariantDocumentIcon'
 import { SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 
@@ -240,7 +240,7 @@ export function DashboardPage() {
         {!isPremium ? (
           <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează roadmap-ul de studiu</p>
+              <p className="text-lg font-black text-slate-800 dark:text-white">Deblochează MathUP Premium</p>
             </div>
             <Button onClick={openPremiumModal} className="rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6">
               Cumpără Premium
@@ -579,9 +579,9 @@ export function DashboardPage() {
       {/* Footer Branding */}
       <footer className="container py-12 text-center opacity-30">
         <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
-          <GraduationCap className="size-5" />
+          <BrandLogo className="size-5" />
           <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
-            {isPremium ? 'ScholarBAC Premium' : 'ScholarBAC'}
+            {isPremium ? 'MathUP Premium' : 'MathUP'}
           </span>
         </div>
       </footer>

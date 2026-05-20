@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../app/providers/AuthProvider'
+import { BrandLogo } from '../../../shared/ui/BrandLogo'
 
 const benefits = [
   { 
@@ -49,11 +50,11 @@ export function WelcomePage() {
             whileHover={{ scale: 1.02 }}
           >
             <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 shadow-lg shadow-primary/25 text-white transform group-hover:rotate-6 transition-transform">
-              <GraduationCap className="size-6" />
+              <BrandLogo className="size-6" />
             </div>
             <div>
-              <strong className="block text-base leading-tight font-black tracking-tight uppercase">ScholarBAC</strong>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Success starts here</span>
+              <strong className="block text-base leading-tight font-black tracking-tight uppercase">MathUP</strong>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Performanță construită pas cu pas.</span>
             </div>
           </motion.div>
           
@@ -172,15 +173,15 @@ export function WelcomePage() {
         <div className="container flex flex-col items-center justify-between gap-8 md:flex-row">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10">
-               <GraduationCap className="size-6" />
+               <BrandLogo className="size-6" />
             </div>
             <div>
-               <span className="block text-xl font-black tracking-tight uppercase">ScholarBAC</span>
+               <span className="block text-xl font-black tracking-tight uppercase">MathUP</span>
                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Platformă Educațională</span>
             </div>
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            &copy; {new Date().getFullYear()} ScholarBAC. Toate drepturile rezervate. <br />
+            &copy; {new Date().getFullYear()} MathUP. Toate drepturile rezervate. <br />
             <span className="text-[10px] uppercase font-bold tracking-widest opacity-50">Construit cu pasiune pentru educație.</span>
           </p>
         </div>
