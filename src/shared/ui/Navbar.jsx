@@ -88,7 +88,7 @@ export function Navbar() {
                      variant="outline" 
                      size="sm" 
                      onClick={() => navigate('/admin')}
-                     className="hidden md:flex gap-2 rounded-full border-primary/30 hover:bg-primary/5"
+                     className="hidden md:flex gap-2 rounded-full border-primary/40 text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-95"
                    >
                      <LayoutDashboard className="size-4" />
                      Admin

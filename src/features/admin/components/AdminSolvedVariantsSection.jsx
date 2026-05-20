@@ -104,14 +104,14 @@ export function AdminSolvedVariantsSection() {
       {error ? <AlertMessage message={error} variant="error" onClose={() => setError('')} /> : null}
       {success ? <AlertMessage message={success} variant="success" onClose={() => setSuccess('')} /> : null}
 
-      <div className="rounded-3xl border border-slate-200/50 bg-white p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+      <div className="rounded-3xl border border-slate-300/50 bg-white p-8 shadow-md dark:border-white/10 dark:bg-[#0a0f1c] dark:shadow-none">
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Program</label>
             <select
               value={selectedProfile}
               onChange={(event) => setSelectedProfile(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-800 scheme-light dark:border-white/10 dark:bg-white/5 dark:text-white dark:scheme-dark"
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold text-slate-800 scheme-light dark:border-white/10 dark:bg-white/5 dark:text-white dark:scheme-dark"
             >
               {PROFILES.map((profile) => (
                 <option
@@ -132,7 +132,7 @@ export function AdminSolvedVariantsSection() {
 
         <div className="relative group mb-10">
           <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-primary/10 to-indigo-600/10 opacity-20 blur transition-opacity group-hover:opacity-40" />
-          <div className="relative rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50/50 p-10 text-center shadow-inner transition-all group-hover:bg-white dark:border-white/10 dark:bg-white/2 dark:group-hover:bg-white/5">
+          <div className="relative rounded-[2rem] border-2 border-dashed border-slate-300 bg-slate-50/50 p-10 text-center shadow-inner transition-all group-hover:bg-white dark:border-white/10 dark:bg-white/2 dark:group-hover:bg-white/5">
             <input
               type="file"
               id="program-variant-upload"
@@ -157,7 +157,7 @@ export function AdminSolvedVariantsSection() {
                 </p>
               </div>
               {!uploading ? (
-                <div className="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all group-hover:bg-primary group-hover:text-white dark:border-white/5 dark:bg-white/5">
+                <div className="rounded-full border border-slate-300 bg-white px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all group-hover:bg-primary group-hover:text-white dark:border-white/5 dark:bg-white/5">
                   Selectează fișier
                 </div>
               ) : null}
@@ -171,15 +171,15 @@ export function AdminSolvedVariantsSection() {
           </h3>
 
           {loading ? (
-            <div className="flex h-48 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 dark:border-white/5 dark:bg-white/2">
+            <div className="flex h-48 items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 dark:border-white/5 dark:bg-white/2">
               <div className="size-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
             </div>
           ) : variants.length === 0 ? (
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-12 text-center shadow-sm dark:border-white/5 dark:bg-white/2">
+            <div className="rounded-3xl border border-slate-300 bg-slate-50 p-12 text-center shadow-sm dark:border-white/5 dark:bg-white/2">
               <p className="text-sm font-medium italic text-slate-500">Nu există variante rezolvate pentru acest program.</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+            <div className="overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:bg-white/5 dark:text-slate-500">
                   <tr>
@@ -200,7 +200,7 @@ export function AdminSolvedVariantsSection() {
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5">
+                        <span className="rounded border border-slate-300 bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5">
                           {variant.file_type?.split('/')[1] || 'DOC'}
                         </span>
                       </td>
@@ -210,7 +210,7 @@ export function AdminSolvedVariantsSection() {
                             href={variant.file_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-lg border border-slate-200 bg-white p-2 text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-primary dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white"
+                            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-primary dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white"
                           >
                             <ExternalLink className="size-4" />
                           </a>

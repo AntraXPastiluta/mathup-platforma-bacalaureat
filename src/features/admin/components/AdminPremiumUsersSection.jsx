@@ -88,17 +88,17 @@ export function AdminPremiumUsersSection() {
       {error ? <AlertMessage message={error} variant="error" onClose={() => setError('')} /> : null}
       {success ? <AlertMessage message={success} variant="success" onClose={() => setSuccess('')} /> : null}
 
-      <div className="rounded-3xl border border-slate-200/50 bg-white p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+      <div className="rounded-3xl border border-slate-300/50 bg-white p-8 shadow-md dark:border-white/10 dark:bg-[#0a0f1c] dark:shadow-none">
         {loading ? (
-          <div className="flex h-40 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 dark:border-white/5 dark:bg-white/2">
+          <div className="flex h-40 items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 dark:border-white/5 dark:bg-white/2">
             <div className="size-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           </div>
         ) : premiumUsers.length === 0 ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/2">
+          <div className="rounded-3xl border border-slate-300 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/2">
             <p className="text-sm font-medium italic text-slate-500">Nu există utilizatori Premium activi înregistrați.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+          <div className="overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:bg-white/5 dark:text-slate-500">
                 <tr>

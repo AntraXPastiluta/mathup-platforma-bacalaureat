@@ -122,7 +122,7 @@ export function AdminAccessSection() {
       {error ? <AlertMessage message={error} variant="error" onClose={() => setError('')} /> : null}
       {success ? <AlertMessage message={success} variant="success" onClose={() => setSuccess('')} /> : null}
 
-      <div className="rounded-3xl border border-slate-200/50 bg-white p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+      <div className="rounded-3xl border border-slate-300/50 bg-white p-8 shadow-md dark:border-white/10 dark:bg-[#0a0f1c] dark:shadow-none">
         <form onSubmit={handleAddAdmin} className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email administrator</label>
@@ -131,7 +131,7 @@ export function AdminAccessSection() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="profesor@exemplu.ro"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-white"
             />
           </div>
           <div className="flex items-end">
@@ -143,15 +143,15 @@ export function AdminAccessSection() {
         </form>
 
         {loading ? (
-          <div className="flex h-40 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 dark:border-white/5 dark:bg-white/2">
+          <div className="flex h-40 items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 dark:border-white/5 dark:bg-white/2">
             <div className="size-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           </div>
         ) : admins.length === 0 ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/2">
+          <div className="rounded-3xl border border-slate-300 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/2">
             <p className="text-sm font-medium italic text-slate-500">Nu există administratori configurați în baza de date.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+          <div className="overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:bg-white/5 dark:text-slate-500">
                 <tr>
