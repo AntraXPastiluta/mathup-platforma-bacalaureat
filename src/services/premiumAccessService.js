@@ -6,16 +6,25 @@ function isSubjectThreeLesson(lesson) {
   return Number(lesson?.subject_part) === 3
 }
 
+function isLessonInUserPrograms(lesson, activeProfiles) {
+  if (!lesson?.profile) return false
+  return normalizeProfilesList(activeProfiles).includes(lesson.profile)
+}
+
+/** Acces complet: toate părțile, quiz, fișiere (program înregistrat, Premium sau Subiectul III). */
+function hasFullLessonAccess(lesson, isPremium, activeProfiles) {
+  if (!lesson) return false
+  if (isPremium) return true
+  if (isSubjectThreeLesson(lesson)) return true
+  return isLessonInUserPrograms(lesson, activeProfiles)
+}
+
 export function isLessonPremium(lesson) {
   return Boolean(lesson?.is_premium)
 }
 
 export function canAccessLessonForUser(lesson, isPremium, activeProfiles) {
-  if (!lesson) return false
-  if (isPremium) return true
-  if (isSubjectThreeLesson(lesson)) return true
-  if (isLessonPremium(lesson)) return false
-  return normalizeProfilesList(activeProfiles).includes(lesson.profile)
+  return hasFullLessonAccess(lesson, isPremium, activeProfiles)
 }
 
 export function canAccessProgram(profileKey, isPremium, activeProfiles) {
@@ -37,31 +46,28 @@ export function getPreviewPartCount(lesson) {
   return count
 }
 
-export function canAccessLessonContent(lesson, isPremium) {
+export function canAccessLessonContent(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
-  if (isPremium) return true
-  if (isSubjectThreeLesson(lesson)) return true
-  return !isLessonPremium(lesson)
+  if (hasFullLessonAccess(lesson, isPremium, activeProfiles)) return true
+  if (isLessonPremium(lesson)) return false
+  return false
 }
 
-export function canAccessLessonPart(lesson, partIndex, isPremium) {
+export function canAccessLessonPart(lesson, partIndex, isPremium, activeProfiles) {
   if (!lesson) return false
-  if (isPremium) return true
-  if (!canAccessLessonContent(lesson, isPremium)) return false
-  if (isSubjectThreeLesson(lesson)) return true
+  if (hasFullLessonAccess(lesson, isPremium, activeProfiles)) return true
+  if (!canAccessLessonContent(lesson, isPremium, activeProfiles)) return false
   return partIndex < getPreviewPartCount(lesson)
 }
 
-export function canAccessQuiz(lesson, isPremium) {
+export function canAccessQuiz(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
-  if (isPremium) return true
-  return isSubjectThreeLesson(lesson)
+  return hasFullLessonAccess(lesson, isPremium, activeProfiles)
 }
 
-export function canAccessLessonFiles(lesson, isPremium) {
+export function canAccessLessonFiles(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
-  if (isPremium) return true
-  return isSubjectThreeLesson(lesson)
+  return hasFullLessonAccess(lesson, isPremium, activeProfiles)
 }
 
 export function canAccessSolvedVariants(isPremium) {
@@ -72,11 +78,9 @@ export function canDownloadSolvedContent(isPremium) {
   return Boolean(isPremium)
 }
 
-export function canTrackLessonCompletion(lesson, isPremium) {
+export function canTrackLessonCompletion(lesson, isPremium, activeProfiles) {
   if (!lesson) return false
-  if (isPremium) return true
-  if (isSubjectThreeLesson(lesson)) return true
-  return !isLessonPremium(lesson)
+  return hasFullLessonAccess(lesson, isPremium, activeProfiles)
 }
 
 export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
@@ -84,17 +88,18 @@ export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
   if (!canAccessLessonForUser(lesson, isPremium, activeProfiles)) return null
 
   const masked = { ...lesson }
+  const fullAccess = hasFullLessonAccess(lesson, isPremium, activeProfiles)
   const previewCount = getPreviewPartCount(lesson)
 
-  if (!isPremium && Array.isArray(lesson.lesson_parts) && !isSubjectThreeLesson(lesson)) {
+  if (!fullAccess && Array.isArray(lesson.lesson_parts)) {
     masked.lesson_parts = lesson.lesson_parts.filter((_, index) => index < previewCount)
   }
 
-  if (!canAccessLessonFiles(lesson, isPremium)) {
+  if (!canAccessLessonFiles(lesson, isPremium, activeProfiles)) {
     masked.lesson_files = []
   }
 
-  if (!canAccessQuiz(lesson, isPremium)) {
+  if (!canAccessQuiz(lesson, isPremium, activeProfiles)) {
     masked.quiz_questions = []
   }
 

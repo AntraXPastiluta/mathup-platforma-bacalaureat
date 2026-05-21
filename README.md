@@ -103,6 +103,7 @@ mathup/
 │   │   ├── profile/        # profil și avatar
 │   │   ├── roadmap/        # vizualizare elev + canvas
 │   │   ├── variants/       # variante rezolvate (elev)
+│   │   ├── support/        # contact suport
 │   │   └── maintenance/
 │   ├── services/           # Supabase, plăți, progres, quiz
 │   └── shared/ui/          # componente UI reutilizabile
@@ -120,11 +121,12 @@ mathup/
 | `/` | Pagină de bun venit | Public |
 | `/register`, `/login` | Cont nou / autentificare | Public |
 | `/forgot-password`, `/reset-password` | Recuperare parolă | Public |
-| `/dashboard` | Dashboard elev | Autentificat |
-| `/profile` | Profil | Autentificat |
-| `/lessons/:lessonId` | Lecție + quiz | Autentificat |
-| `/roadmap` | Roadmap studiu | Autentificat (conținut Premium) |
+| `/dashboard` | Dashboard elev | 
+| `/profile` | Profil |
+| `/lessons/:lessonId` | Lecție + quiz 
+| `/roadmap` | Roadmap studiu | (conținut Premium) |
 | `/variante-rezolvate` | Variante rezolvate | Autentificat (Premium) |
+| `/support` | Contact suport |
 
 ### Cerințe
 
@@ -135,9 +137,7 @@ mathup/
 
 - **Auth:** sesiuni persistate în browser; reset parolă către originea site-ului.
 - **Storage:** materiale lecții, poze profil
-- **Edge Functions:** `create-checkout-session`, `stripe-webhook`
-
-
+- **Edge Functions:** `create-checkout-session`, `stripe-webhook`, `submit-support-request`
 ---
 
 Proiect de licență / pregătire BAC la matematică.

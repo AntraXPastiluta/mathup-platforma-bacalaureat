@@ -547,7 +547,17 @@ export function DashboardPage() {
                                   {lesson.lesson_parts && lesson.lesson_parts.length > 0 && !isCompleted && (
                                     <div className="ml-9 border-l-2 border-slate-100 dark:border-slate-800 pl-4 py-1 space-y-2">
                                       {lesson.lesson_parts.map((part, pIdx) => (
-                                        <div key={part.id} className="platform-surface-hover-subtle flex items-center gap-2 rounded-lg border border-transparent px-2 py-1 transition-all group/part cursor-pointer" onClick={() => navigate(`/lessons/${lesson.id}`)}>
+                                        <div
+                                          key={part.id}
+                                          className="platform-surface-hover-subtle flex items-center gap-2 rounded-lg border border-transparent px-2 py-1 transition-all group/part cursor-pointer"
+                                          onClick={() => {
+                                            if (locked) {
+                                              openPremiumModal()
+                                              return
+                                            }
+                                            navigate(`/lessons/${lesson.id}`)
+                                          }}
+                                        >
                                           <div className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-700 group-hover/part:bg-primary transition-colors" />
                                           <span className="text-[10px] font-bold text-muted-foreground group-hover/part:text-primary transition-colors uppercase tracking-tight">
                                             Partea {pIdx + 1}: {part.title}

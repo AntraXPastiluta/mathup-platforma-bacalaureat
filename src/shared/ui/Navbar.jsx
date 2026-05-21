@@ -7,6 +7,7 @@ import {
   LayoutDashboard, 
   LogOut, 
   Crown,
+  MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
 import { Button } from './Button'
@@ -73,6 +74,16 @@ export function Navbar() {
 
              {user && (
                <>
+                 <Button
+                   variant="ghost"
+                   size="icon"
+                   onClick={() => navigate('/support')}
+                   className="rounded-full hover:bg-slate-100 dark:hover:bg-white/5"
+                   title="Suport"
+                 >
+                   <MessageCircle className="size-5" />
+                 </Button>
+
                  <Button
                    variant="ghost"
                    size="icon"

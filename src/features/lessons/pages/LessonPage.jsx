@@ -117,7 +117,7 @@ export function LessonPage() {
     || visibleQuizAnsweredCount === visibleQuizQuestions.length
 
   const handleComplete = async () => {
-    if (!user?.id || !lesson?.id || !canCompleteLesson || !canTrackLessonCompletion(lesson, isPremium)) return
+    if (!user?.id || !lesson?.id || !canCompleteLesson || !canTrackLessonCompletion(lesson, isPremium, activeProfiles)) return
     if (!hasCompletedVisibleQuiz) {
       setQuizFeedback({
         type: 'wrong',
@@ -149,7 +149,7 @@ export function LessonPage() {
       return
     }
     const nextPartIndex = currentPartIndex + 1
-    if (!canAccessLessonPart(lesson, nextPartIndex, isPremium)) {
+    if (!canAccessLessonPart(lesson, nextPartIndex, isPremium, activeProfiles)) {
       openPremiumModal()
       return
     }
@@ -167,7 +167,7 @@ export function LessonPage() {
   const answerQuestion = async (question) => {
     const selectedAnswer = quizSelections[question.id]
     if (selectedAnswer === undefined) return
-    if (!canAccessQuiz(lesson, isPremium)) {
+    if (!canAccessQuiz(lesson, isPremium, activeProfiles)) {
       openPremiumModal()
       return
     }

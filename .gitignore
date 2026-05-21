@@ -29,6 +29,8 @@ out/
 .vscode/*
 .idea/
 .cursor/
+.scripts/
+.supabase/
 .history/
 *.suo
 *.ntvs*

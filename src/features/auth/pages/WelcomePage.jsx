@@ -108,7 +108,9 @@ export function WelcomePage() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               Excelența în Matematică <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-600">Începe Aici</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-800 via-indigo-700 to-indigo-600 dark:from-primary dark:via-indigo-400 dark:to-indigo-300">
+                Începe Aici
+              </span>
             </motion.h1>
 
             <motion.p
