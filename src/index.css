@@ -127,6 +127,14 @@ p {
   background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px, auto, auto;
 }
 
+.math-paper-bg--lite .math-equation-fall {
+  will-change: auto;
+}
+
+.support-page-card {
+  contain: layout style paint;
+}
+
 .dark .math-paper-bg {
   background-color: #020617;
   background-image:

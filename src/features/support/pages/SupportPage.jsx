@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
-import { AuthCard } from '../../../shared/ui/AuthCard'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Button } from '../../../shared/ui/Button'
 import { submitSupportRequest, SUPPORT_SAVED_EMAIL_PENDING } from '../../../services/supportService'
@@ -96,11 +94,14 @@ export function SupportPage() {
     }
   }
 
+  const fieldClass =
+    'w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/50 dark:border-white/10 dark:bg-slate-900/80 dark:text-white'
+
   return (
-    <div className="min-h-screen transition-colors duration-500">
+    <div className="min-h-screen">
       <Navbar />
 
-      <main className="container max-w-2xl py-10 px-4">
+      <main className="container relative z-0 max-w-2xl py-10 px-4">
         <Button
           variant="ghost"
           size="sm"
@@ -111,15 +112,16 @@ export function SupportPage() {
           Înapoi la dashboard
         </Button>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <AuthCard
-            title="Contactează suportul"
-            description="Descrie problema ta și îți răspundem pe emailul contului în cel mult 48 de ore."
-          >
+        <section className="support-page-card rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-lg shadow-slate-200/40 md:p-10 dark:border-white/10 dark:bg-slate-900 dark:shadow-none">
+          <header className="pb-8">
+            <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
+              Contactează suportul
+            </h1>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Descrie problema ta și îți răspundem pe emailul contului în cel mult 48 de ore.
+            </p>
+          </header>
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <AlertMessage type="success" message={success} />
               <AlertMessage message={error} />
@@ -157,7 +159,7 @@ export function SupportPage() {
                 </label>
                 <select
                   id="support-category"
-                  className="w-full appearance-none cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-800 shadow-sm transition-all scheme-light focus:outline-none focus:ring-2 focus:ring-primary/50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:scheme-dark"
+                  className={`${fieldClass} appearance-none cursor-pointer shadow-sm scheme-light dark:scheme-dark`}
                   value={form.category}
                   onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
                   disabled={loading || Boolean(success)}
@@ -182,11 +184,10 @@ export function SupportPage() {
                   id="support-subject"
                   type="text"
                   maxLength={120}
-                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-800 dark:text-white placeholder:text-slate-400"
+                  className={`${fieldClass} placeholder:text-slate-400`}
                   value={form.subject}
                   onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
                   placeholder={categoryExamples.subject}
-                  key={`subject-${form.category}`}
                   required
                   disabled={loading || Boolean(success)}
                 />
@@ -200,11 +201,10 @@ export function SupportPage() {
                   id="support-message"
                   rows={6}
                   maxLength={2000}
-                  className="w-full resize-y bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-slate-800 dark:text-white placeholder:text-slate-400"
+                  className={`${fieldClass} resize-y font-medium placeholder:text-slate-400`}
                   value={form.message}
                   onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
                   placeholder={categoryExamples.message}
-                  key={`message-${form.category}`}
                   required
                   disabled={loading || Boolean(success)}
                 />
@@ -247,8 +247,7 @@ export function SupportPage() {
                 )}
               </div>
             </form>
-          </AuthCard>
-        </motion.div>
+        </section>
       </main>
     </div>
   )

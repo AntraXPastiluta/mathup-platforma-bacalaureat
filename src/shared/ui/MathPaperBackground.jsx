@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const EQUATIONS = [
   'x^2 + y^2 = r^2',
@@ -24,17 +25,23 @@ const EQUATIONS = [
 ]
 
 const MAX_FLAKES = 28
+const MAX_FLAKES_LITE = 6
 const IDLE_MS = 2400
-const SCROLL_THROTTLE_MS = 140
+const IDLE_MS_LITE = 5000
+const LITE_PATH_PREFIXES = ['/support', '/profile']
 
 function pickEquation() {
   return EQUATIONS[Math.floor(Math.random() * EQUATIONS.length)]
 }
 
 export function MathPaperBackground() {
+  const { pathname } = useLocation()
+  const liteMode = LITE_PATH_PREFIXES.some((path) => pathname.startsWith(path))
+  const maxFlakes = liteMode ? MAX_FLAKES_LITE : MAX_FLAKES
+  const idleMs = liteMode ? IDLE_MS_LITE : IDLE_MS
+
   const [flakes, setFlakes] = useState([])
   const nextId = useRef(0)
-  const lastScrollSpawn = useRef(0)
   const prefersReducedMotion = useRef(false)
 
   const spawnFlakes = useCallback((count = 1) => {
@@ -49,8 +56,8 @@ export function MathPaperBackground() {
       size: 0.78 + Math.random() * 0.42,
     }))
 
-    setFlakes((prev) => [...prev, ...created].slice(-MAX_FLAKES))
-  }, [])
+    setFlakes((prev) => [...prev, ...created].slice(-maxFlakes))
+  }, [maxFlakes])
 
   const removeFlake = useCallback((id) => {
     setFlakes((prev) => prev.filter((flake) => flake.id !== id))
@@ -66,30 +73,21 @@ export function MathPaperBackground() {
     }
 
     media.addEventListener('change', onMotionChange)
-    spawnFlakes(4)
+    setFlakes([])
+    spawnFlakes(liteMode ? 2 : 4)
 
-    const idleTimer = window.setInterval(() => spawnFlakes(1), IDLE_MS)
-    const onScroll = () => {
-      if (prefersReducedMotion.current) return
-      const now = Date.now()
-      if (now - lastScrollSpawn.current < SCROLL_THROTTLE_MS) return
-      lastScrollSpawn.current = now
-      spawnFlakes(Math.random() > 0.55 ? 2 : 1)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const idleTimer = window.setInterval(() => spawnFlakes(1), idleMs)
 
     return () => {
       media.removeEventListener('change', onMotionChange)
       window.clearInterval(idleTimer)
-      window.removeEventListener('scroll', onScroll)
     }
-  }, [spawnFlakes])
+  }, [spawnFlakes, liteMode, idleMs])
 
   return (
     <div
       aria-hidden
-      className="math-paper-bg pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className={`math-paper-bg pointer-events-none fixed inset-0 -z-10 overflow-hidden${liteMode ? ' math-paper-bg--lite' : ''}`}
     >
       {flakes.map((flake) => (
         <span
