@@ -12,7 +12,7 @@ import {
 } from '../../../services/curriculumAdminService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
-export function AdminAccessSection() {
+export function AccesSection() {
   const { user, refreshAdminAccess } = useAuth()
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)

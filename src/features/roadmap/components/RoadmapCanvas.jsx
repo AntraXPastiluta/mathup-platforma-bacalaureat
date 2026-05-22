@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { ArrowRight, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
+import { Select } from '../../../shared/ui/Select'
 import { SUBJECT_PARTS } from '../../lessons/profiles'
 import {
   createEdge,
@@ -200,16 +201,16 @@ export function RoadmapCanvas({
       {!readOnly ? (
         <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-            <select
+            <Select
               value={subjectToAdd}
-              onChange={(event) => setSubjectToAdd(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold dark:border-white/10 dark:bg-white/5 sm:max-w-xs"
-            >
-              <option value="">Alege un subiect</option>
-              {availableSubjects.map((subject) => (
-                <option key={subject.value} value={subject.value}>{subject.label}</option>
-              ))}
-            </select>
+              onChange={setSubjectToAdd}
+              placeholder="Alege un subiect"
+              options={availableSubjects.map((subject) => ({
+                value: String(subject.value),
+                label: subject.label,
+              }))}
+              className="w-full sm:max-w-xs"
+            />
             <Button type="button" onClick={handleAddSubject} disabled={!subjectToAdd} className="rounded-2xl">
               <Plus className="size-4" />
               Adaugă subiect
@@ -259,15 +260,14 @@ export function RoadmapCanvas({
           {selectedNode.type === 'subject' ? (
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grad de importanță</label>
-              <select
+              <Select
                 value={selectedNode.importance_grade}
-                onChange={(event) => handleNodeFieldChange(selectedNode.id, 'importance_grade', Number(event.target.value))}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold dark:border-white/10 dark:bg-white/5"
-              >
-                {IMPORTANCE_GRADES.map((grade) => (
-                  <option key={grade.value} value={grade.value}>{grade.value} · {grade.label}</option>
-                ))}
-              </select>
+                onChange={(grade) => handleNodeFieldChange(selectedNode.id, 'importance_grade', Number(grade))}
+                options={IMPORTANCE_GRADES.map((grade) => ({
+                  value: grade.value,
+                  label: `${grade.value} · ${grade.label}`,
+                }))}
+              />
             </div>
           ) : null}
           <div className="space-y-2 md:col-span-3">

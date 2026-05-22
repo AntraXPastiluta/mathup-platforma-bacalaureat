@@ -9,7 +9,7 @@ import {
 import { isPrimaryAdminEmail } from '../../../services/curriculumAdminService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
-export function AdminPremiumUsersSection() {
+export function PremiumUsersSection() {
   const { user } = useAuth()
   const [premiumUsers, setPremiumUsers] = useState([])
   const [loading, setLoading] = useState(true)

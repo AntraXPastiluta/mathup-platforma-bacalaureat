@@ -11,7 +11,7 @@ import {
 import { PROFILES, getProfileMeta } from '../../lessons/profiles'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
-export function AdminSolvedVariantsSection() {
+export function SolvedVariantsSection() {
   const [selectedProfile, setSelectedProfile] = useState('mate_info')
   const [variants, setVariants] = useState([])
   const [loading, setLoading] = useState(true)
