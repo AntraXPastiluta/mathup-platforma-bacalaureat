@@ -588,7 +588,7 @@ export function DashboardPage() {
       
       {/* Footer Branding */}
       <footer className="container py-12 text-center opacity-30">
-        <div className="flex items-center justify-center gap-2 grayscale hover:grayscale-0 transition-all">
+        <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 grayscale hover:grayscale-0 transition-all">
           <BrandLogo className="size-5" />
           <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">
             {isPremium ? 'MathUP Premium' : 'MathUP'}

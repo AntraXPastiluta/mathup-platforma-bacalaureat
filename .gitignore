@@ -30,6 +30,7 @@ out/
 .idea/
 .cursor/
 .scripts/*
+scripts/
 .supabase/*
 .history/
 *.suo
@@ -67,9 +68,9 @@ id_rsa
 id_ed25519
 *.ppk
 
-# Supabase CLI local cache & settings
+# Supabase CLI local cache & project (functions, migrations, config)
 .supabase/
-supabase/.temp/
+supabase/
 
 # Vercel deployment metadata
 .vercel/

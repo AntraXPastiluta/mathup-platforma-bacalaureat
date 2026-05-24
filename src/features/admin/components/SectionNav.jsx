@@ -1,14 +1,24 @@
 import { motion } from 'framer-motion'
-import { ADMIN_SECTIONS } from '../constants'
+import { useAuth } from '../../../app/providers/AuthProvider'
+import { getAdminSectionsForUser } from '../constants'
 
 export function SectionNav({ activeSection, onSelectSection }) {
+  const { user } = useAuth()
+  const sections = getAdminSectionsForUser(user?.email)
+  const gridCols =
+    sections.length >= 6
+      ? 'lg:grid-cols-6'
+      : sections.length >= 5
+        ? 'lg:grid-cols-5'
+        : 'lg:grid-cols-4'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+      className={`mb-12 grid grid-cols-2 md:grid-cols-3 ${gridCols} gap-4`}
     >
-      {ADMIN_SECTIONS.map((section) => {
+      {sections.map((section) => {
         const isActive = activeSection === section.id
         return (
           <button

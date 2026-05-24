@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Hammer, Sparkles } from 'lucide-react'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
+import { MAINTENANCE_CONTACT_EMAIL } from '../../../services/platformSettingsService'
 
 export function MaintenancePage() {
   return (
@@ -24,7 +25,14 @@ export function MaintenancePage() {
         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-5 py-4 text-left">
           <Hammer className="size-5 shrink-0 text-primary" />
           <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-            Dacă ai nevoie urgentă de acces, contactează echipa MathUP.
+            Dacă ai nevoie urgentă de acces, contactează echipa MathUP la{' '}
+            <a
+              href={`mailto:${MAINTENANCE_CONTACT_EMAIL}`}
+              className="font-bold text-primary hover:underline"
+            >
+              {MAINTENANCE_CONTACT_EMAIL}
+            </a>
+            .
           </p>
         </div>
 

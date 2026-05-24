@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { isMaintenanceMode } from './app/config/maintenance'
 import { AuthProvider } from './app/providers/AuthProvider'
+import { MaintenanceModeProvider, useMaintenanceMode } from './app/providers/MaintenanceModeProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
 import { WelcomePage } from './features/auth/pages/WelcomePage'
@@ -20,89 +20,115 @@ import { SupportPage } from './features/support/pages/SupportPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
 
-export default function App() {
-  if (isMaintenanceMode) {
-    return (
-      <>
-        <MathPaperBackground />
-        <Routes>
-          <Route path="/maintenance" element={<MaintenancePage />} />
-          <Route path="*" element={<Navigate to="/maintenance" replace />} />
-        </Routes>
-      </>
-    )
+function MaintenanceRoutes() {
+  return (
+    <Routes>
+      <Route path="/maintenance" element={<MaintenancePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/admin"
+        element={(
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/maintenance" replace />} />
+    </Routes>
+  )
+}
+
+function NormalRoutes() {
+  return (
+    <div className="app-shell">
+      <Routes>
+        <Route path="/" element={<WelcomePage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/dashboard"
+          element={(
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/profile"
+          element={(
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/support"
+          element={(
+            <ProtectedRoute>
+              <SupportPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/lessons/:lessonId"
+          element={(
+            <ProtectedRoute>
+              <LessonPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/roadmap"
+          element={(
+            <ProtectedRoute>
+              <RoadmapWorkspacePage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/variante-rezolvate"
+          element={(
+            <ProtectedRoute>
+              <SolvedVariantsPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/admin"
+          element={(
+            <AdminRoute>
+              <AdminDashboardPage />
+            </AdminRoute>
+          )}
+        />
+        <Route path="/maintenance" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  )
+}
+
+function AppRoutes() {
+  const { ready, enabled } = useMaintenanceMode()
+
+  // Fail-open: show normal app until we know maintenance is on (avoids blank screen).
+  if (ready && enabled) {
+    return <MaintenanceRoutes />
   }
 
+  return <NormalRoutes />
+}
+
+export default function App() {
   return (
-    <AuthProvider>
-      <MathPaperBackground />
-      <PremiumUpgradeModal />
-      <div className="app-shell">
-        <Routes>
-          <Route path="/" element={<WelcomePage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/dashboard"
-            element={(
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/profile"
-            element={(
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/support"
-            element={(
-              <ProtectedRoute>
-                <SupportPage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/lessons/:lessonId"
-            element={(
-              <ProtectedRoute>
-                <LessonPage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/roadmap"
-            element={(
-              <ProtectedRoute>
-                <RoadmapWorkspacePage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/variante-rezolvate"
-            element={(
-              <ProtectedRoute>
-                <SolvedVariantsPage />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/admin"
-            element={(
-              <AdminRoute>
-                <AdminDashboardPage />
-              </AdminRoute>
-            )}
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
-    </AuthProvider>
+    <MaintenanceModeProvider>
+      <AuthProvider>
+        <MathPaperBackground />
+        <PremiumUpgradeModal />
+        <AppRoutes />
+      </AuthProvider>
+    </MaintenanceModeProvider>
   )
 }

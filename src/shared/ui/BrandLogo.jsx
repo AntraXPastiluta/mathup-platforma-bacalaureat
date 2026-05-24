@@ -1,3 +1,16 @@
-export function BrandLogo({ className = 'size-6', alt = 'MathUP logo' }) {
-  return <img src="/mathup.svg" alt={alt} className={className} />
+const MATHUP_LOGO_PATH =
+  'M16.141 7.905c.24.102.24.269 0 .37l-7.204 3.058a1.288 1.288 0 0 1-.874 0L.859 8.276c-.24-.102-.24-.27 0-.371l7.204-3.058a1.287 1.287 0 0 1 .874 0zm-6.833 4.303 3.983-1.69v2.081c0 1.394-2.145 2.524-4.791 2.524s-4.79-1.13-4.79-2.524v-2.082l3.982 1.69a2.226 2.226 0 0 0 1.616 0zm4.94 1.677h1.642v-1.091a.822.822 0 1 0-1.643 0zm.82-3.603a.554.554 0 1 0-.553-.554.554.554 0 0 0 .554.554zm0 1.415a.554.554 0 1 0-.553-.555.554.554 0 0 0 .554.555z'
+
+export function BrandLogo({ className = 'size-6 shrink-0', alt = 'MathUP logo' }) {
+  return (
+    <svg
+      viewBox="-1 0 19 19"
+      fill="currentColor"
+      className={className}
+      role="img"
+      aria-label={alt}
+    >
+      <path d={MATHUP_LOGO_PATH} />
+    </svg>
+  )
 }

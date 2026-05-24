@@ -1,4 +1,5 @@
-import { BookOpen, FileText, Map, Shield, Users } from 'lucide-react'
+import { BookOpen, FileText, Hammer, Map, Shield, Users } from 'lucide-react'
+import { isPrimaryAdminEmail } from '../../services/curriculumAdminService'
 
 export const ALLOWED_LESSON_FILE_EXTENSIONS = new Set([
   'pdf',
@@ -17,7 +18,14 @@ export const ADMIN_SECTIONS = [
   { id: 'variants', label: 'Variante', icon: FileText, description: 'Arhivă rezolvări' },
   { id: 'premium', label: 'Premium', icon: Users, description: 'Abonamente elevi' },
   { id: 'admins', label: 'Admins', icon: Shield, description: 'Control acces' },
+  { id: 'platform', label: 'Platformă', icon: Hammer, description: 'Mentenanță', primaryAdminOnly: true },
 ]
+
+/** Secțiuni vizibile în panou pentru emailul curent (Platformă = doar admin principal). */
+export function getAdminSectionsForUser(userEmail) {
+  const isPrimary = isPrimaryAdminEmail(userEmail)
+  return ADMIN_SECTIONS.filter((section) => !section.primaryAdminOnly || isPrimary)
+}
 
 export const LESSON_EDITOR_TABS = [
   { id: 'content', label: 'Conținut' },

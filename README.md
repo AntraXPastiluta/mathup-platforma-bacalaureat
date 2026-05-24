@@ -1,6 +1,6 @@
 # MathUP
 
-Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orientată pe programele liceale (M1, M2, M3), lecții structurate pe subiecte de examen, quiz-uri, progres personal și funcții Premium (roadmap, variante rezolvate, raport față de nota țintă).
+Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orientată pe programele liceale (M1, M2, M3), lecții structurate pe subiecte de examen, quiz-uri, progres personal și funcții MathUP Premium (roadmap, variante rezolvate, raport față de nota țintă).
 
 **Producție:** [https://scholar-bac.vercel.app](https://scholar-bac.vercel.app)
 
@@ -8,7 +8,7 @@ Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orie
 
 - [Prezentare generală](#prezentare-generală)
 - [Funcționalități principale](#funcționalități-principale)
-- [Cont gratuit vs Premium](#cont-gratuit-vs-premium)
+- [Cont gratuit vs MathUP Premium](#cont-gratuit-vs-MathUP Premium)
 - [Panou de administrare](#panou-de-administrare)
 - [Tehnologii](#tehnologii)
 - [Structura proiectului](#structura-proiectului)
@@ -17,10 +17,11 @@ Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orie
 - [Build și deploy](#build-și-deploy)
 - [Supabase și backend](#supabase-și-backend)
 - [Scripturi npm](#scripturi-npm)
+- [Mod mentenanță](#mod-mentenanță)
 
 ## Prezentare generală
 
-MathUP este o aplicație **React** (Vite) cu autentificare și date în **Supabase**. Elevii își aleg programul la înregistrare, parcurg lecții pe Subiectul I, II și III, răspund la chestionare și își urmăresc progresul pe dashboard. Contul **Premium** (Stripe) extinde accesul la roadmap-ul publicat de profesor, la variante rezolvate și la raportul de pregătire legat de nota țintă din profil.
+MathUP este o aplicație **React** (Vite) cu autentificare și date în **Supabase**. Elevii își aleg programul la înregistrare, parcurg lecții pe Subiectul I, II și III, răspund la chestionare și își urmăresc progresul pe dashboard. Contul **MathUP Premium** (Stripe) extinde accesul la roadmap-ul publicat de profesor, la variante rezolvate și la raportul de pregătire legat de nota țintă din profil.
 
 Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap-urile și variante rezolvate la nivel de program; accesul la panoul de control care gestioneaza lista de emailuri din baza de date.
 
@@ -36,8 +37,8 @@ Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap
 - Rezumat progres (capitole finalizate, procent general).
 - Mesaje de performanță adaptate numărului de capitole parcurse.
 - Lecții grupate pe program și pe subiecte de examen (I, II, III).
-- Acces la lecții conform programului înregistrat; pentru alte programe se propune upgrade Premium.
-- **Premium:** secțiune roadmap, variante rezolvate, **Raport Premium** (notă țintă, greșeli la quiz, medie quiz, estimare realizabilitate).
+- Acces la lecții conform programului înregistrat; pentru alte programe se propune upgrade MathUP Premium.
+- **MathUP Premium:** secțiune roadmap, variante rezolvate, **Raport MathUP Premium** (notă țintă, greșeli la quiz, medie quiz, estimare realizabilitate).
 
 ### Lecții și quiz-uri
 
@@ -45,26 +46,26 @@ Profesorii de curriculum gestionează lecțiile, fișierele, quiz-urile, roadmap
 - Materiale suplimentare (fișiere) per lecție.
 - Chestionare la final de secțiune sau la finalul lecției; feedback imediat la răspuns.
 - Finalizare lecție și salvare progres/scor doar când există conținut publicat.
-- **Premium:** la răspuns greșit, înregistrare în istoricul de încercări quiz (pentru raportul de pe dashboard).
+- **MathUP Premium:** la răspuns greșit, înregistrare în istoricul de încercări quiz (pentru raportul de pe dashboard).
 
 ### Roadmap de studiu
 
-- Creat și editat doar de profesori (inclusiv editor **canvas**: noduri, legături, importanță subiecte BAC).
+- Creat și editat doar de profesori (inclusiv editor **canvas**: noduri, legături, nivelul de importanță subiecte).
 
 ### Variante rezolvate
 
 - **Profesor:** încărcare documente per program (tab **Variante rezolvate**).
-- **Premium:** listare și descărcare pe dashboard și pe `/variante-rezolvate` (inclusiv variante legacy legate de lecții, dacă există în baza de date).
+- **MathUP Premium:** listare și descărcare pe dashboard și pe `/variante-rezolvate` (inclusiv variante legacy legate de lecții, dacă există în baza de date).
 
-### Abonament Premium
+### Abonament MathUP Premium
 
 - Checkout Stripe prin Edge Functions Supabase (`create-checkout-session`, `stripe-webhook`).
-- Entitlement activ verificat în aplicație; profesorii de curriculum sunt tratați ca Premium fără plată.
+- Entitlement activ verificat în aplicație; profesorii de curriculum sunt tratați ca MathUP Premium fără plată.
 
 
-## Cont gratuit vs Premium
+## Cont gratuit vs MathUP Premium
 
-| Zonă | Cont gratuit | Premium |
+| Zonă | Cont gratuit | MathUP Premium |
 |------|----------------|---------|
 | Lecții, quiz-uri, fișiere, finalizare în **programul ales la signup** | Da | Da |
 | Lecții din **alte programe** / Subiectul III extins | Nu | Da |
@@ -124,8 +125,8 @@ mathup/
 | `/dashboard` | Dashboard elev | 
 | `/profile` | Profil |
 | `/lessons/:lessonId` | Lecție + quiz 
-| `/roadmap` | Roadmap studiu | (conținut Premium) |
-| `/variante-rezolvate` | Variante rezolvate | Autentificat (Premium) |
+| `/roadmap` | Roadmap studiu | (conținut MathUP Premium) |
+| `/variante-rezolvate` | Variante rezolvate | Autentificat (MathUP Premium) |
 | `/support` | Contact suport |
 
 ### Cerințe
@@ -138,6 +139,7 @@ mathup/
 - **Auth:** sesiuni persistate în browser; reset parolă către originea site-ului.
 - **Storage:** materiale lecții, poze profil
 - **Edge Functions:** `create-checkout-session`, `stripe-webhook`, `submit-support-request`
+
 ---
 
 Proiect de licență / pregătire BAC la matematică.
