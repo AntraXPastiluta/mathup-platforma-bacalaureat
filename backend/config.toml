@@ -1,0 +1,21 @@
+project_id = "dhphstiemdzfglncqyev"
+
+[functions.create-checkout-session]
+verify_jwt = true
+import_map = "./supabase/functions/deno.json"
+
+[functions.stripe-webhook]
+verify_jwt = false
+import_map = "./supabase/functions/deno.json"
+
+[functions.cancel-premium-subscription]
+verify_jwt = true
+import_map = "./supabase/functions/deno.json"
+
+[functions.submit-support-request]
+verify_jwt = true
+import_map = "./supabase/functions/deno.json"
+
+[functions.export-user-data]
+verify_jwt = true
+import_map = "./supabase/functions/deno.json"

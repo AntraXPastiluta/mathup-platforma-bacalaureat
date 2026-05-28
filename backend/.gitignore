@@ -1,0 +1,38 @@
+# Supabase CLI — cache local (conține project-ref, pooler URL, org IDs)
+.temp/
+**/.temp/
+
+# Branches locale Supabase CLI
+.branches/
+**/.branches/
+
+# Secrets & environment (Stripe, service role, EmailJS, etc.)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env*.template
+
+# Chei private & certificate
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.ppk
+
+# Service account keys (Google / Firebase admin SDK)
+**/serviceAccount*.json
+**/firebase-adminsdk-*.json
+
+# Shell / tool credential files
+.netrc
+.npmrc.local
+
+# Logs
+*.log
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

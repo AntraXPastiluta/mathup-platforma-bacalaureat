@@ -1,0 +1,631 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import "tailwindcss";
+
+/* Match AuthProvider: dark:* must follow the .dark class on <html>, not OS prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+
+  /* Semantic tokens used by bg-primary, text-primary, border-primary, etc. */
+  --color-primary: var(--primary);
+  --color-border: var(--border);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+  --color-primary-950: #1e1b4b;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --border: #cbd5e1;
+  --input: #e2e8f0;
+  --primary: #4338ca;
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #1e293b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #4338ca;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --border: #334155;
+  --input: #1e293b;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #0f172a;
+  --secondary-foreground: #f8fafc;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: #6366f1;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h1 { font-size: 3rem; }
+h2 { font-size: 2.25rem; }
+h3 { font-size: 1.75rem; }
+
+p {
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modern Scholar Paper Utility */
+.scholar-paper {
+  background: var(--background);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border-radius: var(--radius);
+}
+
+.dark .scholar-paper {
+  box-shadow: none;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+/* Fine-line grid utility */
+.scholar-grid {
+  background-image: 
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.math-paper-bg {
+  background-color: #f8fafc;
+  background-image:
+    linear-gradient(rgba(79, 70, 229, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(79, 70, 229, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 42%),
+    radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.06), transparent 38%);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px, auto, auto;
+}
+
+.math-paper-bg--lite .math-equation-fall {
+  will-change: auto;
+}
+
+.support-page-card {
+  contain: layout style paint;
+}
+
+.dark .math-paper-bg {
+  background-color: #020617;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.14) 1px, transparent 1px),
+    linear-gradient(rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 42%),
+    radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.1), transparent 38%);
+}
+
+.math-equation-fall {
+  position: absolute;
+  top: -8%;
+  z-index: 1;
+  max-width: min(42vw, 22rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgba(79, 70, 229, 0.34);
+  text-shadow: 0 0 24px rgba(99, 102, 241, 0.12);
+  animation: math-equation-fall linear forwards;
+  will-change: transform, opacity;
+}
+
+.dark .math-equation-fall {
+  color: rgba(165, 180, 252, 0.34);
+  text-shadow: 0 0 28px rgba(99, 102, 241, 0.18);
+}
+
+@keyframes math-equation-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12vh, 0) rotate(-10deg);
+  }
+
+  12% {
+    opacity: 0.42;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--math-drift, 0px), 112vh, 0) rotate(10deg);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Math notebook page background (light)
+   Four layers:
+     1. Major grid squares  (24 px, thick)
+     2. Minor grid squares  (8 px, hairline)
+     3. Horizontal rule tint (every 24 px row)
+     4. Red left-margin line at 52 px
+   ───────────────────────────────────────────── */
+.math-notebook-bg {
+  background-color: #f4f6fb;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.07) 1px, transparent 1px);
+  background-size: 100% 24px, 24px 100%;
+}
+
+.dark .math-notebook-bg {
+  background-color: #020617;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.09) 1px, transparent 1px);
+  background-size: 100% 24px, 24px 100%;
+}
+
+/* MathRainCurtain — fixed backdrop, isolated from document scroll repaints */
+.math-rain-curtain {
+  contain: layout paint;
+  isolation: isolate;
+  backface-visibility: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 10%,
+    #000 90%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 10%,
+    #000 90%,
+    transparent 100%
+  );
+}
+
+.math-rain-drop {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: rgba(79, 70, 229, 0.2);
+  pointer-events: none;
+  animation: math-rain-fall var(--rain-dur, 16s) var(--rain-delay, 0s) linear infinite;
+}
+
+.dark .math-rain-drop {
+  color: rgba(165, 180, 252, 0.24);
+}
+
+@keyframes math-rain-fall {
+  from {
+    transform: translate3d(var(--rain-drift, 0px), -12vh, 0);
+  }
+  to {
+    transform: translate3d(var(--rain-drift-end, 0px), 110vh, 0);
+  }
+}
+
+.math-rain-paused .math-rain-drop,
+.ambient-paused .math-rain-drop,
+.ambient-paused .dashboard-mesh,
+.ambient-paused .dashboard-aurora,
+.ambient-paused .dashboard-particle {
+  animation-play-state: paused;
+}
+
+/* Scrollable content above fixed ambient — own compositor layer */
+html[data-ambient-page] .page-ambient-content {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+/* backdrop-blur on sticky nav forces full-viewport repaint every scroll frame */
+html[data-ambient-page] nav[class*='backdrop-blur'] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.ambient-backdrop-fixed {
+  contain: layout paint;
+  isolation: isolate;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .math-equation-fall {
+    animation: none;
+    display: none;
+  }
+
+  .math-rain-drop {
+    display: none;
+  }
+}
+
+/* Dashboard ambient layer — pure CSS, no backdrop-filter, no framer-motion.
+   The animations only touch `transform` / `opacity` so they run on the GPU
+   compositor with zero layout / paint work per frame. */
+.dashboard-mesh {
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(99, 102, 241, 0.14), transparent 55%),
+    radial-gradient(ellipse 55% 38% at 100% 40%, rgba(129, 140, 248, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 0% 80%, rgba(79, 70, 229, 0.1), transparent 45%);
+  animation: dashboard-mesh-drift 38s ease-in-out infinite alternate;
+}
+
+.dark .dashboard-mesh {
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(99, 102, 241, 0.22), transparent 55%),
+    radial-gradient(ellipse 55% 38% at 100% 40%, rgba(129, 140, 248, 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 0% 80%, rgba(79, 70, 229, 0.16), transparent 45%);
+}
+
+.dashboard-aurora {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.22), transparent 38%),
+    radial-gradient(circle at 88% 28%, rgba(129, 140, 248, 0.18), transparent 36%),
+    radial-gradient(circle at 28% 92%, rgba(244, 114, 182, 0.10), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.12), transparent 38%);
+  animation: dashboard-aurora-drift 28s ease-in-out infinite alternate;
+}
+
+.dark .dashboard-aurora {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.28), transparent 38%),
+    radial-gradient(circle at 88% 28%, rgba(129, 140, 248, 0.22), transparent 36%),
+    radial-gradient(circle at 28% 92%, rgba(244, 114, 182, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.14), transparent 38%);
+}
+
+@keyframes dashboard-aurora-drift {
+  0%   { transform: translate3d(-2%, -1.2%, 0) scale(1.04); }
+  100% { transform: translate3d(2%, 1.2%, 0) scale(1.08); }
+}
+
+@keyframes dashboard-mesh-drift {
+  0%   { transform: translate3d(1.5%, -1%, 0); }
+  100% { transform: translate3d(-1.5%, 1%, 0); }
+}
+
+/* Floating particles — small, light, drifting */
+.dashboard-particle {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(165, 180, 252, 0.55), rgba(165, 180, 252, 0) 70%);
+}
+
+.dark .dashboard-particle {
+  background: radial-gradient(circle, rgba(165, 180, 252, 0.7), rgba(165, 180, 252, 0) 70%);
+}
+
+.dashboard-particle--a { top: 18%; left: 8%;  width: 6px;  height: 6px;  animation: dashboard-particle-a 22s ease-in-out infinite; }
+.dashboard-particle--b { top: 62%; left: 82%; width: 5px;  height: 5px;  animation: dashboard-particle-b 26s ease-in-out infinite; }
+.dashboard-particle--c { top: 78%; left: 14%; width: 4px;  height: 4px;  animation: dashboard-particle-c 30s ease-in-out infinite; }
+.dashboard-particle--d { top: 32%; left: 70%; width: 7px;  height: 7px;  animation: dashboard-particle-d 34s ease-in-out infinite; }
+.dashboard-particle--e { top: 88%; left: 48%; width: 5px;  height: 5px;  animation: dashboard-particle-e 28s ease-in-out infinite; }
+
+@keyframes dashboard-particle-a {
+  0%,100% { transform: translate3d(0, 0, 0);        opacity: 0.35; }
+  50%     { transform: translate3d(40px, -60px, 0); opacity: 0.85; }
+}
+@keyframes dashboard-particle-b {
+  0%,100% { transform: translate3d(0, 0, 0);         opacity: 0.30; }
+  50%     { transform: translate3d(-50px, -40px, 0); opacity: 0.75; }
+}
+@keyframes dashboard-particle-c {
+  0%,100% { transform: translate3d(0, 0, 0);         opacity: 0.25; }
+  50%     { transform: translate3d(30px, -80px, 0);  opacity: 0.7;  }
+}
+@keyframes dashboard-particle-d {
+  0%,100% { transform: translate3d(0, 0, 0);          opacity: 0.40; }
+  50%     { transform: translate3d(-30px, 50px, 0);   opacity: 0.85; }
+}
+@keyframes dashboard-particle-e {
+  0%,100% { transform: translate3d(0, 0, 0);          opacity: 0.20; }
+  50%     { transform: translate3d(60px, -30px, 0);   opacity: 0.6;  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-mesh,
+  .dashboard-aurora,
+  .dashboard-particle {
+    animation: none;
+  }
+}
+
+/* Solid glass-looking card — opaque so we can drop backdrop-filter (big perf win
+   when many of these are layered above the ambient mesh). */
+.dashboard-glass-card {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--primary) 20%);
+  background: var(--background);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 8px 24px -12px rgb(67 56 202 / 0.18);
+}
+
+.dark .dashboard-glass-card {
+  background: color-mix(in srgb, var(--background) 96%, var(--primary) 4%);
+  box-shadow:
+    0 0 0 1px rgb(99 102 241 / 0.08),
+    0 12px 32px -18px rgb(0 0 0 / 0.6);
+}
+
+/* Compact month calendar — fixed row height, no aspect-square stretch */
+.study-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 2rem;
+  gap: 2px;
+  width: 100%;
+}
+
+.study-calendar-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.study-calendar-empty {
+  display: block;
+  min-height: 0;
+}
+
+.study-calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 2rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.study-calendar-day:disabled {
+  cursor: default;
+}
+
+/* Admin dashboard — section picker cards */
+.admin-section-nav__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-section-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  border-radius: 0.75rem;
+  border: 2px solid var(--border);
+  background: var(--background);
+  padding: 0.875rem 1rem;
+  text-align: left;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-section-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.dark .admin-section-card {
+  border-color: rgb(51 65 85);
+  background: rgb(15 23 42);
+  box-shadow: none;
+}
+
+.admin-section-card--active {
+  border-color: var(--primary);
+  background: rgb(15 23 42);
+  color: #fff;
+  box-shadow: 0 8px 24px -12px rgb(67 56 202 / 0.35);
+}
+
+.dark .admin-section-card--active {
+  background: #fff;
+  color: rgb(15 23 42);
+}
+
+.admin-section-card__icon {
+  display: flex;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: rgb(241 245 249);
+  color: rgb(51 65 85);
+}
+
+.dark .admin-section-card__icon {
+  background: rgb(30 41 59);
+  color: rgb(226 232 240);
+}
+
+.admin-section-card__icon--active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.admin-section-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-section-card__title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgb(15 23 42);
+  word-wrap: break-word;
+}
+
+.dark .admin-section-card__title {
+  color: rgb(248 250 252);
+}
+
+.admin-section-card--active .admin-section-card__title {
+  color: inherit;
+}
+
+.admin-section-card__desc {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgb(71 85 105);
+  word-wrap: break-word;
+}
+
+.dark .admin-section-card__desc {
+  color: rgb(203 213 225);
+}
+
+.admin-section-card--active .admin-section-card__desc {
+  color: rgb(255 255 255 / 0.88);
+}
+
+.dark .admin-section-card--active .admin-section-card__desc {
+  color: rgb(71 85 105);
+}
+
+.admin-section-card__dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 9999px;
+  background: var(--primary);
+}
+
+/* Featured / hero card variant with a soft gradient accent */
+.dashboard-hero-card {
+  position: relative;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--primary) 30%);
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 55%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, #818cf8 14%, transparent), transparent 55%),
+    var(--background);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 18px 48px -24px rgb(67 56 202 / 0.28);
+  overflow: hidden;
+}
+
+.dark .dashboard-hero-card {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.20), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.16), transparent 55%),
+    color-mix(in srgb, var(--background) 94%, var(--primary) 6%);
+}
+
+/* One-shot entrance reveal — used in place of per-section framer-motion variants */
+.dashboard-reveal {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  animation: dashboard-reveal-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes dashboard-reveal-in {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

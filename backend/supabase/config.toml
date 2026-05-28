@@ -1,0 +1,24 @@
+project_id = "dhphstiemdzfglncqyev"
+
+[db]
+major_version = 17
+
+[functions.create-checkout-session]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.stripe-webhook]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.cancel-premium-subscription]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.submit-support-request]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.export-user-data]
+verify_jwt = true
+import_map = "./functions/deno.json"

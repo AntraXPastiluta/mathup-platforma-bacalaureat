@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns"]
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.1",
+    "hono": "npm:hono@4.6.20",
+    "stripe": "https://esm.sh/stripe@17.7.0?target=deno"
+  }
+}
