@@ -28,6 +28,24 @@ import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
+function AcademicContextBox({ className = '' }) {
+  return (
+    <div className={`rounded-[2rem] border-2 border-dashed border-border bg-slate-50/50 p-8 dark:bg-white/2 space-y-6 ${className}`}>
+      <div className="flex items-center gap-3">
+        <div className="size-2 rounded-full bg-primary" />
+        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Context Academic</h4>
+      </div>
+      <p className="text-xs font-medium leading-relaxed text-slate-500 italic">
+        &quot;Studiul matematicii necesită rigoare și perseverență. Fiecare teoremă înțeleasă este o bază solidă pentru succesul tău viitor.&quot;
+      </p>
+      <div className="border-t border-border pt-4">
+        <p className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Bibliografie Recomandată</p>
+        <p className="mt-1 text-[10px] font-bold text-slate-600">Ministerul Educației - Programa 2024</p>
+      </div>
+    </div>
+  )
+}
+
 export function LessonPage() {
   const { lessonId } = useParams()
   const { user, isPremium, openPremiumModal, refreshSessionUser } = useAuth()
@@ -77,6 +95,11 @@ export function LessonPage() {
   }, [lessonId, isPremium, activeProfiles])
 
   useEffect(() => {
+    if (loading) return
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [lessonId, loading, currentPartIndex])
+
+  useEffect(() => {
     if (!quizFeedback) return
     const timer = setTimeout(() => setQuizFeedback(null), 1800)
     return () => clearTimeout(timer)
@@ -89,6 +112,7 @@ export function LessonPage() {
 
   const parts = lesson?.lesson_parts || []
   const supplementaryFiles = (lesson?.lesson_files || []).filter((file) => !file.is_solved_content)
+  const hasSidebar = supplementaryFiles.length > 0
   const hasParts = parts.length > 0
   const canCompleteLesson = hasParts || Boolean(lesson?.content?.trim())
   const currentPart = hasParts ? parts[currentPartIndex] : null
@@ -302,7 +326,7 @@ export function LessonPage() {
   }
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-50 transition-colors duration-500 bg-slate-50 dark:bg-slate-950 pb-32">
+    <div className="min-h-screen text-slate-900 dark:text-slate-50 transition-colors duration-500 bg-slate-50 dark:bg-slate-950 pb-16">
       <Navbar />
       <AnimatePresence>
         {quizFeedback && (
@@ -325,7 +349,7 @@ export function LessonPage() {
       </AnimatePresence>
 
       <main className="container pt-16">
-        <div className="mx-auto max-w-6xl">
+        <div className={hasSidebar ? 'mx-auto max-w-6xl' : 'mx-auto max-w-4xl'}>
           {loading ? (
             <div className="flex h-[60vh] flex-col items-center justify-center gap-8 text-center">
               <div className="size-16 animate-spin rounded-full border-4 border-primary/10 border-t-primary" />
@@ -337,9 +361,9 @@ export function LessonPage() {
                <Button onClick={() => navigate('/dashboard')} variant="outline">Reîntoarcere în Siguranță</Button>
             </div>
           ) : lesson ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div className={hasSidebar ? 'grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_280px]' : 'space-y-10'}>
               {/* Main Content Column */}
-              <div className="lg:col-span-8 space-y-10">
+              <div className="space-y-10">
                 <div className="space-y-6">
                   <motion.div 
                     initial={{ opacity: 0, x: -20 }}
@@ -365,8 +389,9 @@ export function LessonPage() {
 
                 <motion.div
                   key={`${lessonId}-${currentPartIndex}`}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
                   className="relative"
                 >
                   <div className="relative bg-white dark:bg-slate-900 border-2 border-border rounded-[2.5rem] p-10 md:p-16 shadow-2xl shadow-slate-200/50 dark:shadow-none">
@@ -474,70 +499,58 @@ export function LessonPage() {
                 </motion.div>
               </div>
 
-              {/* Marginalia Sidebar (Right Column) */}
-              <aside className="lg:col-span-4 space-y-10">
-                {supplementaryFiles.length > 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="space-y-6"
-                  >
-                    <div className="flex items-center gap-3 border-b-2 border-border pb-4">
-                       <FileText className="size-5 text-primary" />
-                       <h3 className="text-sm font-black uppercase tracking-[0.2em]">Materiale Suport</h3>
-                    </div>
+              {hasSidebar ? (
+              <aside className="space-y-10">
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center gap-3 border-b-2 border-border pb-4">
+                     <FileText className="size-5 text-primary" />
+                     <h3 className="text-sm font-black uppercase tracking-[0.2em]">Materiale Suport</h3>
+                  </div>
 
-                    <div className="grid gap-4">
-                       {supplementaryFiles.map(file => {
-                          const fileHref = getTrustedStorageUrl(file.file_url)
-                          if (!fileHref) return null
-                          const isImage = file.file_type?.startsWith('image/')
-                          
-                          return (
-                            <a 
-                              key={file.id}
-                              href={fileHref}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="group block p-4 rounded-xl border-2 border-border bg-white dark:bg-slate-900 hover:border-primary transition-all duration-300"
-                            >
-                               {isImage ? (
-                                 <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-slate-50 border border-border">
-                                    <img src={fileHref} alt={file.file_name} className="size-full object-cover group-hover:scale-105 transition-transform" />
-                                 </div>
-                               ) : (
-                                 <div className="size-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary mb-3 border border-primary/10">
-                                    <FileText className="size-5" />
-                                 </div>
-                               )}
-                               <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mb-1">{file.file_name}</p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isImage ? 'Vizualizează' : 'Descarcă PDF'}</span>
-                                  <ExternalLink className="size-3 text-slate-300 group-hover:text-primary transition-colors" />
+                  <div className="grid gap-4">
+                     {supplementaryFiles.map(file => {
+                        const fileHref = getTrustedStorageUrl(file.file_url)
+                        if (!fileHref) return null
+                        const isImage = file.file_type?.startsWith('image/')
+                        
+                        return (
+                          <a 
+                            key={file.id}
+                            href={fileHref}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="group block p-4 rounded-xl border-2 border-border bg-white dark:bg-slate-900 hover:border-primary transition-all duration-300"
+                          >
+                             {isImage ? (
+                               <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-slate-50 border border-border">
+                                  <img src={fileHref} alt={file.file_name} className="size-full object-cover group-hover:scale-105 transition-transform" />
                                </div>
-                            </a>
-                          )
-                       })}
-                    </div>
-                  </motion.div>
-                )}
+                             ) : (
+                               <div className="size-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary mb-3 border border-primary/10">
+                                  <FileText className="size-5" />
+                               </div>
+                             )}
+                             <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mb-1">{file.file_name}</p>
+                             <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isImage ? 'Vizualizează' : 'Descarcă PDF'}</span>
+                                <ExternalLink className="size-3 text-slate-300 group-hover:text-primary transition-colors" />
+                             </div>
+                          </a>
+                        )
+                     })}
+                  </div>
+                </motion.div>
 
-                {/* Academic Context Box */}
-                <div className="p-8 rounded-[2rem] border-2 border-dashed border-border bg-slate-50/50 dark:bg-white/2 space-y-6">
-                   <div className="flex items-center gap-3">
-                      <div className="size-2 rounded-full bg-primary" />
-                      <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Context Academic</h4>
-                   </div>
-                   <p className="text-xs font-medium leading-relaxed text-slate-500 italic">
-                      "Studiul matematicii necesită rigoare și perseverență. Fiecare teoremă înțeleasă este o bază solidă pentru succesul tău viitor."
-                   </p>
-                   <div className="pt-4 border-t border-border">
-                      <p className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Bibliografie Recomandată</p>
-                      <p className="text-[10px] font-bold text-slate-600 mt-1">Ministerul Educației - Programa 2024</p>
-                   </div>
-                </div>
+                <AcademicContextBox />
               </aside>
+              ) : (
+                <AcademicContextBox className="max-w-2xl mx-auto" />
+              )}
             </div>
           ) : (
             <div className="text-center py-32 space-y-8 bg-white border-2 border-border rounded-[2.5rem]">
@@ -549,7 +562,7 @@ export function LessonPage() {
         </div>
       </main>
 
-      <footer className="container py-24 text-center opacity-40">
+      <footer className="container py-12 text-center opacity-40">
         <div className="flex flex-col items-center gap-4 grayscale hover:grayscale-0 transition-all duration-700">
           <BrandLogo className="size-10" />
           <div className="space-y-1">

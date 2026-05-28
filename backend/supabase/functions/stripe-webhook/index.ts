@@ -24,7 +24,8 @@ export function createStripeWebhookApp(deps: WebhookDeps = {}) {
     const webhookSecret = readEnv('STRIPE_WEBHOOK_SECRET', env) ?? ''
     const stripePriceId = readEnv('STRIPE_PRICE_ID', env) ?? ''
     const supabaseUrl = readEnv('SUPABASE_URL', env) ?? ''
-    const serviceRoleKey = readEnv('SERVICE_ROLE_KEY', env) ?? ''
+    const serviceRoleKey =
+      readEnv('SERVICE_ROLE_KEY', env) ?? readEnv('SUPABASE_SERVICE_ROLE_KEY', env) ?? ''
 
     if (!stripeSecret || !webhookSecret || !supabaseUrl || !serviceRoleKey || !stripePriceId) {
       return textResponse('Webhook unavailable.', 500, getCorsHeaders(c))

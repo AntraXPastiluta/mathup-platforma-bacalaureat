@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 import { AuthProvider } from './app/providers/AuthProvider'
@@ -24,6 +25,16 @@ import { PrivacyPage } from './features/legal/pages/PrivacyPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
+}
+
 function MaintenanceRoutes() {
   return (
     <Routes>
@@ -47,6 +58,7 @@ function NormalRoutes() {
 
   return (
     <div className="app-shell">
+      <ScrollToTop />
       <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}

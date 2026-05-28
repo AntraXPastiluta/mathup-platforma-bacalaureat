@@ -675,7 +675,7 @@ export function DashboardPage() {
                         </h2>
                       </div>
                       <div className="relative pt-8 pr-14">
-                        <div className="relative h-3 overflow-visible rounded-full bg-muted dark:bg-white/10">
+                        <div className="relative h-3 overflow-visible rounded-full bg-slate-200 dark:bg-white/10">
                           <div
                             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-indigo-400 transition-[width] duration-700 ease-out"
                             style={{ width: `${progressBarPct}%` }}
@@ -687,11 +687,11 @@ export function DashboardPage() {
                             <UserAvatar
                               metadata={user?.user_metadata}
                               size="sm"
-                              className="size-7 ring-2 ring-white dark:ring-slate-900"
+                              className="size-7 ring-2 ring-background dark:ring-slate-900"
                             />
                           </div>
                           <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                            <div className="h-px w-6 border-t border-dashed border-border" />
+                            <div className="h-px w-6 border-t border-dashed border-slate-300 dark:border-border" />
                             <Target className="size-5 text-primary" />
                           </div>
                         </div>

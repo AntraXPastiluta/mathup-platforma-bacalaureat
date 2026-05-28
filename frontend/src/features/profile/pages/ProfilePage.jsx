@@ -23,7 +23,7 @@ import { getProfileMeta } from '../../lessons/profiles'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { getProfilesFromMetadata, normalizeProfile, normalizeTargetGrade, constrainTargetGradeInput } from '../../../services/profileService'
 import { getSelectablePrograms } from '../../../services/premiumAccessService'
-import { isEntitlementActive } from '../../../services/billingService'
+import { isEntitlementActive, syncPremiumCheckout } from '../../../services/billingService'
 import { uploadProfilePhoto } from '../../../services/profilePhotoService'
 import { AVATAR_PRESETS } from '../avatarPresets'
 import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
@@ -68,13 +68,57 @@ function ProfilePageContent({ metadata }) {
   const [avatarPhotoUrl, setAvatarPhotoUrl] = useState(metadata.avatar_photo_url || '')
   const [photoUploading, setPhotoUploading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
+  const [checkoutActivating, setCheckoutActivating] = useState(false)
 
   useEffect(() => {
-    if (searchParams.get('checkout') === 'success') {
-      refreshEntitlement()
-      setSuccessMessage('Abonament Premium activat. Portalul tău academic a fost actualizat.')
+    if (searchParams.get('checkout') !== 'success') return
+
+    let cancelled = false
+
+    async function activatePremiumAfterCheckout() {
+      setCheckoutActivating(true)
+      setErrorMessage('')
+      setSuccessMessage('')
+
+      try {
+        const sessionId = searchParams.get('session_id')
+        if (sessionId) {
+          await syncPremiumCheckout(sessionId)
+        }
+
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          if (cancelled) return
+          const row = await refreshEntitlement()
+          if (isEntitlementActive(row)) {
+            setSuccessMessage('Abonament Premium activat. Portalul tău academic a fost actualizat.')
+            navigate('/profile', { replace: true })
+            return
+          }
+          await new Promise((resolve) => setTimeout(resolve, sessionId ? 600 : 1500))
+        }
+
+        setErrorMessage(
+          'Plata a fost înregistrată, dar activarea Premium durează mai mult. Reîncarcă pagina în câteva minute sau contactează suportul.',
+        )
+        navigate('/profile', { replace: true })
+      } catch (error) {
+        setErrorMessage(
+          toUserFacingError(
+            error,
+            'Nu am putut confirma activarea Premium. Contactează suportul dacă plata a fost debitată.',
+          ),
+        )
+      } finally {
+        if (!cancelled) setCheckoutActivating(false)
+      }
     }
-  }, [searchParams, refreshEntitlement, setSuccessMessage])
+
+    void activatePremiumAfterCheckout()
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, refreshEntitlement, setSuccessMessage, setErrorMessage, navigate])
 
   useEffect(() => {
     if (successMessage || errorMessage) {
@@ -214,6 +258,12 @@ function ProfilePageContent({ metadata }) {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden rounded-[2rem] border-2 border-border bg-white p-10 dark:bg-slate-900 shadow-xl"
           >
+            {checkoutActivating ? (
+              <div className="flex items-center gap-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <div className="size-5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                Confirmăm activarea Premium...
+              </div>
+            ) : (
             <div className="relative z-10 flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-6">
                 <div className="size-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center dark:bg-white dark:text-slate-900 shadow-2xl">
@@ -256,6 +306,7 @@ function ProfilePageContent({ metadata }) {
                 </Button>
               ) : null}
             </div>
+            )}
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">

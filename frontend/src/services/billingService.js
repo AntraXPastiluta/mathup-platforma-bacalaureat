@@ -102,6 +102,65 @@ export async function startPremiumCheckout() {
   window.location.assign(checkoutUrl)
 }
 
+async function invokeSyncPremiumCheckout(accessToken, sessionId) {
+  const { data, error } = await supabase.functions.invoke('sync-premium-checkout', {
+    body: { session_id: sessionId },
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!error) return data
+
+  const message = error.message || ''
+  const contextStatus = error?.context?.status
+  if (contextStatus === 404) {
+    logBillingError('sync-not-deployed', error)
+    throw new Error(CHECKOUT_UNAVAILABLE)
+  }
+
+  const shouldRetryWithFetch =
+    message.includes('Failed to send a request to the Edge Function') ||
+    message.includes('Failed to fetch') ||
+    message.includes('NetworkError')
+
+  if (!shouldRetryWithFetch || !supabaseUrl || !supabaseAnonKey) {
+    logBillingError('sync-invoke', error)
+    throw new Error(CHECKOUT_UNAVAILABLE)
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/sync-premium-checkout`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ session_id: sessionId }),
+  })
+
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    logBillingError('sync-fetch', { status: response.status, payload })
+    throw new Error(CHECKOUT_UNAVAILABLE)
+  }
+
+  return payload
+}
+
+export async function syncPremiumCheckout(sessionId) {
+  const trimmed = typeof sessionId === 'string' ? sessionId.trim() : ''
+  if (!trimmed) {
+    throw new Error('Sesiunea de plată lipsește.')
+  }
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  if (!session?.access_token) {
+    throw new Error('Trebuie să fii autentificat pentru a activa Premium.')
+  }
+
+  return invokeSyncPremiumCheckout(session.access_token, trimmed)
+}
+
 function parseCancelPayload(payload) {
   if (!payload || typeof payload !== 'object') {
     throw new Error(CANCEL_UNAVAILABLE)

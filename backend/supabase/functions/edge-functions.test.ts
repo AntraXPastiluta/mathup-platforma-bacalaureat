@@ -4,6 +4,7 @@ import { createCheckoutSessionApp } from './create-checkout-session/index.ts'
 import { createCancelPremiumSubscriptionApp } from './cancel-premium-subscription/index.ts'
 import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
 import { createStripeWebhookApp } from './stripe-webhook/index.ts'
+import { createSyncPremiumCheckoutApp } from './sync-premium-checkout/index.ts'
 import { createExportUserDataApp } from './export-user-data/index.ts'
 
 const testEnv = {
@@ -44,6 +45,79 @@ function makeCheckoutStripe() {
   }
 
   return { FakeStripe, state }
+}
+
+function makeSyncStripe() {
+  class FakeStripe {
+    checkout = {
+      sessions: {
+        retrieve: async (sessionId: string) => ({
+          id: sessionId,
+          mode: 'subscription',
+          status: 'complete',
+          metadata: { user_id: 'user_123' },
+          client_reference_id: 'user_123',
+          subscription: {
+            id: 'sub_123',
+            status: 'active',
+            cancel_at_period_end: false,
+            current_period_end: 1_900_000_000,
+            currency: 'ron',
+            items: { data: [{ price: { id: 'price_test_123' } }] },
+          },
+          payment_intent: 'pi_123',
+          customer: 'cus_123',
+          amount_total: 4900,
+          currency: 'ron',
+        }),
+      },
+    }
+    subscriptions = {
+      retrieve: async () => ({
+        id: 'sub_123',
+        status: 'active',
+        cancel_at_period_end: false,
+        current_period_end: 1_900_000_000,
+        currency: 'ron',
+        items: { data: [{ price: { id: 'price_test_123' } }] },
+      }),
+    }
+    constructor(public secret: string, public options: unknown) {}
+  }
+
+  return { FakeStripe }
+}
+
+function makePremiumEntitlementDb() {
+  return {
+    from: (table: string) => {
+      if (table === 'premium_entitlements') {
+        return {
+          upsert: async () => ({ error: null }),
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: {
+                  status: 'active',
+                  expires_at: '2026-07-10T21:59:59.000Z',
+                  purchased_at: '2026-05-28T12:00:00.000Z',
+                  stripe_subscription_id: 'sub_123',
+                  cancel_at_period_end: false,
+                },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'premium_orders') {
+        return {
+          upsert: async () => ({ error: null }),
+        }
+      }
+      throw new Error(`Unexpected table ${table}`)
+    },
+  }
 }
 
 function makeCancelStripe() {
@@ -234,7 +308,35 @@ Deno.test('create-checkout-session returns a checkout URL', async () => {
   assert.equal(response.status, 200)
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'http://localhost:5173')
   assert.deepEqual(await response.json(), { url: 'https://checkout.example/session' })
-  assert.equal((state.payload as any)?.success_url, 'http://localhost:5173/profile?checkout=success')
+  assert.equal((state.payload as any)?.success_url, 'http://localhost:5173/profile?checkout=success&session_id={CHECKOUT_SESSION_ID}')
+})
+
+Deno.test('sync-premium-checkout activates entitlement for completed session', async () => {
+  const { FakeStripe } = makeSyncStripe()
+  const app = createSyncPremiumCheckoutApp({
+    createClient: (url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({ id: 'user_123', email: 'student@example.com' })
+      }
+      return makePremiumEntitlementDb()
+    },
+    stripe: FakeStripe as any,
+    env: testEnv,
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ session_id: 'cs_test_123' }),
+  }))
+
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.entitlement?.status, 'active')
 })
 
 Deno.test('cancel-premium-subscription returns 404 when no entitlement exists', async () => {

@@ -199,50 +199,47 @@ export function RoadmapCanvas({
   return (
     <div className={`space-y-4 ${className}`}>
       {!readOnly ? (
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-            <Select
-              value={subjectToAdd}
-              onChange={setSubjectToAdd}
-              placeholder="Alege un subiect"
-              options={availableSubjects.map((subject) => ({
-                value: String(subject.value),
-                label: subject.label,
-              }))}
-              className="w-full sm:max-w-xs"
-            />
-            <Button type="button" onClick={handleAddSubject} disabled={!subjectToAdd} className="rounded-2xl">
-              <Plus className="size-4" />
-              Adaugă subiect
-            </Button>
-            <Button type="button" variant="outline" onClick={handleAddNote} className="rounded-2xl">
-              <Plus className="size-4" />
-              Adaugă notă
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant={connectFromId ? 'default' : 'outline'}
-              onClick={() => setConnectFromId((current) => (current ? null : selectedNodeId))}
-              disabled={!selectedNodeId}
-              className="rounded-2xl"
-            >
-              <ArrowRight className="size-4" />
-              {connectFromId ? 'Alege destinația' : 'Adaugă săgeată'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleDeleteSelection}
-              disabled={!selectedNodeId && !selectedEdgeId}
-              className="rounded-2xl border-destructive/20 text-destructive"
-            >
-              <Trash2 className="size-4" />
-              Șterge selecția
-            </Button>
-          </div>
+        <div className="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
+          <Select
+            value={subjectToAdd}
+            onChange={setSubjectToAdd}
+            placeholder="Alege un subiect"
+            options={availableSubjects.map((subject) => ({
+              value: String(subject.value),
+              label: subject.label,
+            }))}
+            className="w-full min-w-[12rem] max-w-xs flex-[1_1_12rem]"
+          />
+          <Button type="button" size="sm" onClick={handleAddSubject} disabled={!subjectToAdd} className="shrink-0 rounded-xl">
+            <Plus className="size-4" />
+            Adaugă subiect
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={handleAddNote} className="shrink-0 rounded-xl">
+            <Plus className="size-4" />
+            Adaugă notă
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={connectFromId ? 'default' : 'outline'}
+            onClick={() => setConnectFromId((current) => (current ? null : selectedNodeId))}
+            disabled={!selectedNodeId}
+            className="shrink-0 rounded-xl"
+          >
+            <ArrowRight className="size-4" />
+            {connectFromId ? 'Alege destinația' : 'Adaugă săgeată'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleDeleteSelection}
+            disabled={!selectedNodeId && !selectedEdgeId}
+            className="shrink-0 rounded-xl border-destructive/20 text-destructive"
+          >
+            <Trash2 className="size-4" />
+            Șterge selecția
+          </Button>
         </div>
       ) : null}
 

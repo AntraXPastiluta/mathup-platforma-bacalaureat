@@ -19,3 +19,7 @@ import_map = "./supabase/functions/deno.json"
 [functions.export-user-data]
 verify_jwt = true
 import_map = "./supabase/functions/deno.json"
+
+[functions.sync-premium-checkout]
+verify_jwt = true
+import_map = "./supabase/functions/deno.json"

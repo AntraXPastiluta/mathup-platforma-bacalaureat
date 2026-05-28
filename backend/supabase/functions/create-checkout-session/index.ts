@@ -49,7 +49,7 @@ export function createCheckoutSessionApp(deps: CheckoutDeps = {}) {
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price: stripePriceId, quantity: 1 }],
-        success_url: `${appUrl}/profile?checkout=success`,
+        success_url: `${appUrl}/profile?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${appUrl}/profile?checkout=cancelled`,
         customer_email: user.email ?? undefined,
         client_reference_id: user.id,
