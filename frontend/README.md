@@ -181,6 +181,33 @@ Autentificarea Google folosește **Supabase Auth** — nu sunt necesare variabil
 3. Dacă metadata lipsește (profil liceal sau consimțământ legal), `ProtectedRoute` redirecționează la `/complete-profile`.
 4. După completare, utilizatorul accesează dashboard-ul normal.
 
+## Build și deploy
+
+### Local
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Din rădăcina monorepo-ului: `npm run build` (delegă către `frontend/`).
+
+### Vercel
+
+Proiectul se deployează din **rădăcina repo-ului**; `vercel.json` de la root setează:
+
+- Install: `npm install --prefix frontend`
+- Build: `npm run build --prefix frontend`
+- Output: `frontend/dist`
+
+În Vercel Dashboard → **Settings → General → Build & Development Settings**:
+
+- **Build Command:** `npm run build` (evită `vite build` — vite nu e în PATH la root)
+- **Environment Variables:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
+Alternativ: setează **Root Directory** la `frontend` și folosește build-ul implicit Vite din acel folder.
+
 ## Supabase și backend
 
 - **Auth:** sesiuni persistate în browser; reset parolă către originea site-ului; Google OAuth prin Supabase (`signInWithOAuth`).

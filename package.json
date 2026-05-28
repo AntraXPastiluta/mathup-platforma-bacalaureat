@@ -1,0 +1,10 @@
+{
+  "name": "mathup-platforma-bacalaureat",
+  "private": true,
+  "description": "Monorepo MathUP — frontend React (Vite) + backend Supabase",
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "dev": "npm run dev --prefix frontend",
+    "lint": "npm run lint --prefix frontend"
+  }
+}
