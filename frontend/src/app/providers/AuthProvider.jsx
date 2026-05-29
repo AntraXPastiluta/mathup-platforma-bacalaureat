@@ -20,6 +20,10 @@ import {
   hasStreakUpdates,
   persistLoginStreakFromSession,
 } from '../../services/streakService'
+import { clearPendingPostAuthRedirect } from '../../services/lastLocationService'
+import { clearPendingAccountDeletionSession } from '../../services/accountDeletionService'
+import { readAuthCache, writeAuthCache, clearAuthCache } from '../../services/authSessionCache'
+import { setSessionCookie, clearSessionCookie, hasSessionCookie } from '../../shared/utils/sessionCookie'
 import {
   toAuthLoginError,
   toAuthRegisterError,
@@ -64,7 +68,8 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  /** Deferred to avoid Supabase auth deadlocks when called from onAuthStateChange. */
+  /** Amânat cu setTimeout pentru a evita blocajele (deadlock) din clientul Supabase
+   *  atunci când apelăm metode auth direct din callback-ul onAuthStateChange. */
   const scheduleLoginStreakUpdate = useCallback((sessionUser) => {
     if (!sessionUser?.id) return
     setTimeout(() => {
@@ -75,16 +80,58 @@ export function AuthProvider({ children }) {
     }, 0)
   }, [applySessionLoginStreak])
 
-  const syncAdminForUser = useCallback(async (nextUser) => {
+  // Afișează imediat starea premium/admin din cache (localStorage), astfel încât UI-ul
+  // să nu „pâlpâie” cât timp se reconfirmă datele cu serverul în fundal.
+  const applyCachedAuthState = useCallback((userId) => {
+    const cached = readAuthCache(userId)
+    if (!cached) return false
+
+    if (cached.entitlement !== undefined) {
+      setEntitlement(cached.entitlement)
+      setEntitlementLoading(false)
+    }
+    if (cached.admin) {
+      setIsAdmin(cached.admin.isAdmin)
+      setIsPrimaryAdmin(cached.admin.isPrimaryAdmin)
+      setPrimaryAdminEmail(cached.admin.primaryAdminEmail)
+      setAdminLoading(false)
+    }
+    return cached.entitlement !== undefined || cached.admin !== null
+  }, [])
+
+  const clearAuthSessionArtifacts = useCallback(() => {
+    clearAuthCache()
+    clearSessionCookie()
+    setEntitlement(null)
+    setEntitlementLoading(false)
+    setIsAdmin(false)
+    setIsPrimaryAdmin(false)
+    setPrimaryAdminEmail(null)
+    setAdminLoading(false)
+  }, [])
+
+  // `silent: true` reîmprospătează statutul de admin în fundal fără a aprinde spinnerul
+  // de încărcare, atunci când avem deja o valoare validă în cache.
+  const syncAdminForUser = useCallback(async (nextUser, options = {}) => {
+    const silent = Boolean(options.silent)
     if (!nextUser?.email) {
       setIsAdmin(false)
       setIsPrimaryAdmin(false)
       setPrimaryAdminEmail(null)
       setAdminLoading(false)
+      if (nextUser?.id) {
+        writeAuthCache(nextUser.id, {
+          admin: { isAdmin: false, isPrimaryAdmin: false, primaryAdminEmail: null },
+        })
+      }
       return false
     }
 
-    setAdminLoading(true)
+    const cachedAdmin = silent ? readAuthCache(nextUser.id)?.admin : null
+    if (!silent || !cachedAdmin) {
+      setAdminLoading(true)
+    }
+
     try {
       const isAdminUser = await checkCurrentUserIsAdmin()
       setIsAdmin(isAdminUser)
@@ -92,6 +139,9 @@ export function AuthProvider({ children }) {
       if (!isAdminUser) {
         setIsPrimaryAdmin(false)
         setPrimaryAdminEmail(null)
+        writeAuthCache(nextUser.id, {
+          admin: { isAdmin: false, isPrimaryAdmin: false, primaryAdminEmail: null },
+        })
         return false
       }
 
@@ -101,12 +151,21 @@ export function AuthProvider({ children }) {
       ])
       setIsPrimaryAdmin(isPrimaryUser)
       setPrimaryAdminEmail(primaryEmail)
+      writeAuthCache(nextUser.id, {
+        admin: {
+          isAdmin: isAdminUser,
+          isPrimaryAdmin: isPrimaryUser,
+          primaryAdminEmail: primaryEmail,
+        },
+      })
       return isAdminUser
     } catch (error) {
       console.warn('Admin access refresh failed:', error)
-      setIsAdmin(false)
-      setIsPrimaryAdmin(false)
-      setPrimaryAdminEmail(null)
+      if (!cachedAdmin) {
+        setIsAdmin(false)
+        setIsPrimaryAdmin(false)
+        setPrimaryAdminEmail(null)
+      }
       return false
     } finally {
       setAdminLoading(false)
@@ -123,22 +182,31 @@ export function AuthProvider({ children }) {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  const syncEntitlementForUser = useCallback(async (nextUser) => {
+  const syncEntitlementForUser = useCallback(async (nextUser, options = {}) => {
     const userId = nextUser?.id
+    const silent = Boolean(options.silent)
     if (!userId) {
       setEntitlement(null)
       setEntitlementLoading(false)
       return null
     }
 
-    setEntitlementLoading(true)
+    const cachedEntitlement = silent ? readAuthCache(userId)?.entitlement : undefined
+    const hasCachedEntitlement = silent && cachedEntitlement !== undefined
+    if (!hasCachedEntitlement) {
+      setEntitlementLoading(true)
+    }
+
     try {
       const row = await getPremiumEntitlement(userId)
       setEntitlement(row)
+      writeAuthCache(userId, { entitlement: row })
       return row
     } catch (error) {
       console.warn('Premium entitlement refresh failed:', error)
-      setEntitlement(null)
+      if (!hasCachedEntitlement) {
+        setEntitlement(null)
+      }
       return null
     } finally {
       setEntitlementLoading(false)
@@ -148,31 +216,55 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
+    // Pornire în doi pași: întâi citim sesiunea locală (rapid, dar neverificată) pentru a
+    // afișa instant UI-ul, apoi confirmăm utilizatorul cu serverul prin getUser() mai jos.
     const syncSessionState = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      if (!mounted) return
+
+      const sessionUser = currentSession?.user ?? null
+      if (!sessionUser) {
+        setUser(null)
+        setSession(null)
+        setAuthLoading(false)
+        clearAuthSessionArtifacts()
+        return
+      }
+
+      setSession(currentSession)
+      setUser(sessionUser)
+      applyCachedAuthState(sessionUser.id)
+      setAuthLoading(false)
+
+      if (!hasSessionCookie()) {
+        setSessionCookie()
+      }
+
+      scheduleLoginStreakUpdate(sessionUser)
+      void syncEntitlementForUser(sessionUser, { silent: true })
+      void syncAdminForUser(sessionUser, { silent: true })
+
+      // Verificare autoritativă la server: dacă token-ul local e invalid/expirat,
+      // deconectăm utilizatorul ca să nu rămână blocat într-o sesiune „fantomă”.
       const { data: { user: verifiedUser }, error } = await supabase.auth.getUser()
       if (!mounted) return
 
       if (error || !verifiedUser) {
         setUser(null)
         setSession(null)
-        setAuthLoading(false)
-        setEntitlement(null)
-        setEntitlementLoading(false)
-        setIsAdmin(false)
-        setIsPrimaryAdmin(false)
-        setPrimaryAdminEmail(null)
-        setAdminLoading(false)
+        clearAuthSessionArtifacts()
+        try {
+          await supabase.auth.signOut()
+        } catch (signOutError) {
+          console.warn('Session validation sign out:', signOutError)
+        }
         return
       }
 
-      const { data: { session: currentSession } } = await supabase.auth.getSession()
-      if (!mounted) return
-      setSession(currentSession)
+      if (verifiedUser.id !== sessionUser.id) {
+        clearAuthCache(sessionUser.id)
+      }
       setUser(verifiedUser)
-      setAuthLoading(false)
-      scheduleLoginStreakUpdate(verifiedUser)
-      void syncEntitlementForUser(verifiedUser)
-      void syncAdminForUser(verifiedUser)
     }
 
     void syncSessionState()
@@ -180,18 +272,40 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return
       const nextUser = currentSession?.user ?? null
+
+      // La reîmprospătarea token-ului doar actualizăm sesiunea; utilizatorul nu s-a
+      // schimbat, deci evităm reîncărcarea inutilă a datelor de premium/admin.
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(currentSession)
+        setAuthLoading(false)
+        return
+      }
+
+      if (event === 'SIGNED_OUT' || !nextUser) {
+        setSession(null)
+        setUser(null)
+        setAuthLoading(false)
+        clearAuthSessionArtifacts()
+        return
+      }
+
       setSession(currentSession)
       setUser(nextUser)
       setAuthLoading(false)
-      if (
-        nextUser
-        && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
-      ) {
-        scheduleLoginStreakUpdate(nextUser)
+
+      if (!hasSessionCookie()) {
+        setSessionCookie()
       }
-      if (nextUser) {
-        void syncEntitlementForUser(nextUser)
-        void syncAdminForUser(nextUser)
+
+      if (event === 'USER_UPDATED') {
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        applyCachedAuthState(nextUser.id)
+        scheduleLoginStreakUpdate(nextUser)
+        void syncEntitlementForUser(nextUser, { silent: true })
+        void syncAdminForUser(nextUser, { silent: true })
       }
     })
 
@@ -199,9 +313,16 @@ export function AuthProvider({ children }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [syncEntitlementForUser, syncAdminForUser, scheduleLoginStreakUpdate])
+  }, [
+    syncEntitlementForUser,
+    syncAdminForUser,
+    scheduleLoginStreakUpdate,
+    applyCachedAuthState,
+    clearAuthSessionArtifacts,
+  ])
 
-  // Reset streak to 0 when a full UTC calendar day passes with no login and no lesson activity
+  // Resetează seria (streak) la 0 când trece o zi calendaristică UTC completă fără
+  // autentificare și fără activitate la lecții.
   useEffect(() => {
     if (!user?.id || authLoading) return
     const decay = streakDecayPatch(user.user_metadata || {})
@@ -218,7 +339,7 @@ export function AuthProvider({ children }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [user?.id, authLoading, user?.user_metadata?.streak, user?.user_metadata?.last_streak_activity_date])
+  }, [user?.id, authLoading, user?.user_metadata])
 
   const refreshEntitlement = useCallback(async () => {
     return syncEntitlementForUser(user)
@@ -252,7 +373,8 @@ export function AuthProvider({ children }) {
     setErrorMessage('')
     try {
       await createCheckout()
-      // Keep loading true until Stripe redirect — avoids a flash re-render before navigation.
+      // Lăsăm intenționat loading=true până la redirect-ul către Stripe, ca să nu apară
+      // o re-randare scurtă a butonului chiar înainte de navigare.
     } catch (error) {
       setCheckoutLoading(false)
       setErrorMessage(toCheckoutError(error))
@@ -279,7 +401,7 @@ export function AuthProvider({ children }) {
     }
   }, [syncEntitlementForUser, user])
 
-  const register = async ({ email, password, fullName, profile, profiles, legalConsent }) => {
+  const register = useCallback(async ({ email, password, fullName, profile, profiles, legalConsent }) => {
     setLoading(true)
     setErrorMessage('')
     try {
@@ -316,9 +438,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const login = async ({ email, password }) => {
+  const login = useCallback(async ({ email, password }) => {
     setLoading(true)
     setErrorMessage('')
     try {
@@ -339,9 +461,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
     try {
@@ -351,9 +473,9 @@ export function AuthProvider({ children }) {
       setLoading(false)
       throw error
     }
-  }
+  }, [])
 
-  const completeOAuthProfile = async ({ fullName, profile, profiles, legalConsent }) => {
+  const completeOAuthProfile = useCallback(async ({ fullName, profile, profiles, legalConsent }) => {
     setLoading(true)
     setErrorMessage('')
     try {
@@ -384,9 +506,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const requestPasswordReset = async ({ email }) => {
+  const requestPasswordReset = useCallback(async ({ email }) => {
     setLoading(true)
     setErrorMessage('')
     setSuccessMessage('')
@@ -399,9 +521,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const resetPassword = async ({ password }) => {
+  const resetPassword = useCallback(async ({ password }) => {
     setLoading(true)
     setErrorMessage('')
     setSuccessMessage('')
@@ -415,9 +537,9 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     setLoading(true)
     try {
       const { error } = await supabase.auth.signOut()
@@ -427,9 +549,28 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const setProfile = async (profileKey) => {
+  const signOutAfterAccountDeletion = useCallback(async () => {
+    clearPendingAccountDeletionSession()
+    clearPendingPostAuthRedirect()
+    localStorage.removeItem('remember_email')
+
+    setUser(null)
+    setSession(null)
+    clearAuthSessionArtifacts()
+    setPremiumModalOpen(false)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await supabase.auth.signOut({ scope: 'global' })
+    } catch (error) {
+      console.warn('Sign out after account deletion:', error)
+    }
+  }, [clearAuthSessionArtifacts])
+
+  const setProfile = useCallback(async (profileKey) => {
     if (!user) return
     setProfileSaving(true)
     setErrorMessage('')
@@ -448,7 +589,7 @@ export function AuthProvider({ children }) {
     } finally {
       setProfileSaving(false)
     }
-  }
+  }, [user])
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark')
@@ -461,25 +602,38 @@ export function AuthProvider({ children }) {
     return nextUser
   }, [])
 
-  const updateUserMetadata = async (updates) => {
+  const updateUserMetadata = useCallback(async (updates, options = {}) => {
     if (!user) return
-    setProfileSaving(true)
-    setErrorMessage('')
+    // Salvarea ultimei locații se face „silentios” (fără spinner / mesaj de succes),
+    // pentru că e o actualizare automată de fundal, nu o acțiune cerută de utilizator.
+    const updateKeys = Object.keys(updates || {})
+    const onlyLastLocation = updateKeys.length === 1 && updateKeys[0] === 'last_location'
+    const silent = Boolean(options.silent) || onlyLastLocation
+    if (!silent) {
+      setProfileSaving(true)
+      setErrorMessage('')
+    }
     try {
       const { data, error } = await supabase.auth.updateUser({
         data: updates,
       })
       if (error) throw error
       setUser(data.user)
-      setSuccessMessage('Datele au fost actualizate!')
+      if (!silent) {
+        setSuccessMessage('Datele au fost actualizate!')
+      }
       return data.user
     } catch (error) {
-      setErrorMessage(toUserFacingError(error, USER_MESSAGES.save))
+      if (!silent) {
+        setErrorMessage(toUserFacingError(error, USER_MESSAGES.save))
+      }
       throw error
     } finally {
-      setProfileSaving(false)
+      if (!silent) {
+        setProfileSaving(false)
+      }
     }
-  }
+  }, [user])
 
   const contextValue = useMemo(() => ({
     user,
@@ -500,6 +654,7 @@ export function AuthProvider({ children }) {
     requestPasswordReset,
     resetPassword,
     signOut,
+    signOutAfterAccountDeletion,
     setProfile,
     updateUserMetadata,
     refreshSessionUser,
@@ -537,6 +692,7 @@ export function AuthProvider({ children }) {
     requestPasswordReset,
     resetPassword,
     signOut,
+    signOutAfterAccountDeletion,
     setProfile,
     updateUserMetadata,
     refreshSessionUser,

@@ -3,9 +3,11 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 import { AuthProvider } from './app/providers/AuthProvider'
+import { useAuth } from './app/providers/AuthProvider'
 import { MaintenanceModeProvider, useMaintenanceMode } from './app/providers/MaintenanceModeProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
+import { PublicOnlyRoute } from './app/PublicOnlyRoute'
 import { WelcomePage } from './features/auth/pages/WelcomePage'
 import { RegisterPage } from './features/auth/pages/RegisterPage'
 import { LoginPage } from './features/auth/pages/LoginPage'
@@ -24,6 +26,7 @@ import { TermsPage } from './features/legal/pages/TermsPage'
 import { PrivacyPage } from './features/legal/pages/PrivacyPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
+import { persistLastLocation, sanitizeLocation } from './services/lastLocationService'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -36,6 +39,8 @@ function ScrollToTop() {
 }
 
 function MaintenanceRoutes() {
+  // În timpul mentenanței păstrăm accesibile doar /login și /admin, ca administratorii să
+  // se poată autentifica și gestiona platforma; orice altă rută e redirecționată.
   return (
     <Routes>
       <Route path="/maintenance" element={<MaintenancePage />} />
@@ -55,6 +60,21 @@ function MaintenanceRoutes() {
 
 function NormalRoutes() {
   const location = useLocation()
+  const { user, authLoading, updateUserMetadata, isAdmin } = useAuth()
+
+  // Memorăm ultima rută „permisă” vizitată, pentru a relua de acolo la următoarea sesiune.
+  // Rutele admin sunt salvate doar dacă utilizatorul este efectiv admin.
+  useEffect(() => {
+    if (authLoading || !user) return
+
+    const sanitized = sanitizeLocation(location, { allowAdmin: isAdmin })
+    if (!sanitized) return
+
+    void persistLastLocation(updateUserMetadata, sanitized, {
+      allowAdmin: isAdmin,
+      minIntervalMs: 4000,
+    })
+  }, [location, authLoading, user, updateUserMetadata, isAdmin])
 
   return (
     <div className="app-shell">
@@ -70,12 +90,40 @@ function NormalRoutes() {
         >
           <Routes location={location}>
             <Route path="/" element={<WelcomePage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/register"
+              element={(
+                <PublicOnlyRoute>
+                  <RegisterPage />
+                </PublicOnlyRoute>
+              )}
+            />
             <Route path="/termeni-si-conditii" element={<TermsPage />} />
             <Route path="/politica-de-confidentialitate" element={<PrivacyPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route
+              path="/login"
+              element={(
+                <PublicOnlyRoute>
+                  <LoginPage />
+                </PublicOnlyRoute>
+              )}
+            />
+            <Route
+              path="/forgot-password"
+              element={(
+                <PublicOnlyRoute>
+                  <ForgotPasswordPage />
+                </PublicOnlyRoute>
+              )}
+            />
+            <Route
+              path="/reset-password"
+              element={(
+                <PublicOnlyRoute>
+                  <ResetPasswordPage />
+                </PublicOnlyRoute>
+              )}
+            />
             <Route
               path="/complete-profile"
               element={(
@@ -152,7 +200,8 @@ function NormalRoutes() {
 function AppRoutes() {
   const { ready, enabled } = useMaintenanceMode()
 
-  // Fail-open: show normal app until we know maintenance is on (avoids blank screen).
+  // Fail-open: afișăm aplicația normală până când știm sigur că mentenanța e activă,
+  // ca să evităm un ecran gol dacă verificarea stării întârzie sau eșuează.
   if (ready && enabled) {
     return <MaintenanceRoutes />
   }

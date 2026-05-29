@@ -43,6 +43,8 @@ function useRainColumnCount() {
   return useSyncExternalStore(subscribeRainColumns, getRainColumnCount, () => 16)
 }
 
+// Generator pseudo-aleator cu sămânță (LCG): pozițiile „ploii” de ecuații trebuie să fie
+// stabile între re-randări, altfel picăturile ar sări la fiecare update de stare.
 function seededRand(seed) {
   let s = seed
   return () => {
@@ -72,6 +74,7 @@ export function MathRainCurtain() {
     const root = rootRef.current
     document.documentElement.dataset.ambientPage = 'true'
 
+    // Oprim animația când tab-ul nu este vizibil, ca să nu consumăm CPU/baterie degeaba.
     const syncPaused = () => {
       const paused = document.hidden
       root?.classList.toggle('math-rain-paused', paused)

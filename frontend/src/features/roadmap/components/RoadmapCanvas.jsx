@@ -1,20 +1,26 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { ArrowRight, GripVertical, Plus, Trash2 } from 'lucide-react'
-import { Button } from '../../../shared/ui/Button'
-import { Select } from '../../../shared/ui/Select'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { GripVertical } from 'lucide-react'
 import { SUBJECT_PARTS } from '../../lessons/profiles'
+import { useRoadmapViewport } from '../hooks/useRoadmapViewport'
 import {
+  colorToMarkerId,
   createEdge,
   createNoteNode,
   createSubjectNode,
   getImportanceMeta,
   getNodeAnchor,
   getSubjectMeta,
-  IMPORTANCE_GRADES,
-  NODE_COLORS,
+  getWorldSize,
+  GRID_SIZE,
   NODE_HEIGHT,
   NODE_WIDTH,
+  snapToGrid,
+  WORLD_MIN_HEIGHT,
+  WORLD_MIN_WIDTH,
 } from '../utils/canvasLayout'
+import { RoadmapFloatingToolbar } from './RoadmapFloatingToolbar'
+import { RoadmapNodeInspector } from './RoadmapNodeInspector'
+import { RoadmapViewportControls } from './RoadmapViewportControls'
 
 function getEdgePath(fromNode, toNode) {
   const start = getNodeAnchor(fromNode, 'right')
@@ -29,16 +35,56 @@ export function RoadmapCanvas({
   onLayoutChange,
   readOnly = false,
   className = '',
+  fillHeight = false,
+  showViewportControls = true,
+  persistKey = null,
+  fitOnLoad = false,
 }) {
-  const canvasRef = useRef(null)
+  const viewportRef = useRef(null)
   const dragStateRef = useRef(null)
   const [selectedNodeId, setSelectedNodeId] = useState(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState(null)
   const [connectFromId, setConnectFromId] = useState(null)
   const [subjectToAdd, setSubjectToAdd] = useState('')
+  const [snapEnabled, setSnapEnabled] = useState(true)
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
 
   const nodes = layout.nodes
   const edges = layout.edges
+
+  const {
+    scale,
+    offset,
+    showGrid,
+    setShowGrid,
+    fitToContent,
+    resetView,
+    zoomIn,
+    zoomOut,
+    screenToWorld,
+    handleWheel,
+    handlePointerDownPan,
+    handlePointerMovePan,
+    handlePointerUpPan,
+    spacePressed,
+  } = useRoadmapViewport({
+    viewportRef,
+    nodes,
+    persistKey,
+    fitOnLoad,
+  })
+
+  const worldSize = useMemo(
+    () => getWorldSize(nodes, viewportSize.width, viewportSize.height),
+    [nodes, viewportSize.height, viewportSize.width],
+  )
+
+  const edgeColors = useMemo(() => {
+    const colors = new Set()
+    edges.forEach((edge) => colors.add(edge.color))
+    nodes.forEach((node) => colors.add(node.color))
+    return [...colors]
+  }, [edges, nodes])
 
   const availableSubjects = useMemo(
     () => SUBJECT_PARTS.filter((subject) => !nodes.some((node) => node.type === 'subject' && node.subject_part === subject.value)),
@@ -56,51 +102,48 @@ export function RoadmapCanvas({
     })
   }, [onLayoutChange, readOnly])
 
-  const clampPosition = useCallback((x, y) => {
-    const canvas = canvasRef.current
-    if (!canvas) return { x, y }
-
-    const maxX = Math.max(24, canvas.clientWidth - NODE_WIDTH - 24)
-    const maxY = Math.max(24, canvas.clientHeight - NODE_HEIGHT - 24)
-    return {
-      x: Math.min(Math.max(24, x), maxX),
-      y: Math.min(Math.max(24, y), maxY),
+  const clampWorldPosition = useCallback((x, y) => {
+    const maxX = Math.max(24, worldSize.width - NODE_WIDTH - 24)
+    const maxY = Math.max(24, worldSize.height - NODE_HEIGHT - 24)
+    let nextX = Math.min(Math.max(24, x), maxX)
+    let nextY = Math.min(Math.max(24, y), maxY)
+    if (snapEnabled && !readOnly) {
+      nextX = snapToGrid(nextX, GRID_SIZE)
+      nextY = snapToGrid(nextY, GRID_SIZE)
     }
-  }, [])
+    return { x: nextX, y: nextY }
+  }, [readOnly, snapEnabled, worldSize.height, worldSize.width])
 
-  const handlePointerDown = (event, nodeId) => {
+  const handlePointerDownNode = (event, nodeId) => {
     if (readOnly) return
-    if (event.button !== 0) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
+    if (event.button !== 0 || spacePressed) return
 
     const node = nodes.find((item) => item.id === nodeId)
     if (!node) return
 
-    const canvasRect = canvas.getBoundingClientRect()
+    const worldPoint = screenToWorld(event.clientX, event.clientY)
     dragStateRef.current = {
       nodeId,
-      offsetX: event.clientX - canvasRect.left - node.x,
-      offsetY: event.clientY - canvasRect.top - node.y,
+      offsetX: worldPoint.x - node.x,
+      offsetY: worldPoint.y - node.y,
     }
     setSelectedNodeId(nodeId)
     setSelectedEdgeId(null)
     event.currentTarget.setPointerCapture(event.pointerId)
+    event.stopPropagation()
     event.preventDefault()
   }
 
   const handlePointerMove = (event) => {
+    handlePointerMovePan(event)
+
     const dragState = dragStateRef.current
     if (!dragState || readOnly) return
 
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const canvasRect = canvas.getBoundingClientRect()
-    const nextPosition = clampPosition(
-      event.clientX - canvasRect.left - dragState.offsetX,
-      event.clientY - canvasRect.top - dragState.offsetY,
+    const worldPoint = screenToWorld(event.clientX, event.clientY)
+    const nextPosition = clampWorldPosition(
+      worldPoint.x - dragState.offsetX,
+      worldPoint.y - dragState.offsetY,
     )
 
     updateLayout((current) => ({
@@ -114,10 +157,29 @@ export function RoadmapCanvas({
   }
 
   const handlePointerUp = (event) => {
+    handlePointerUpPan(event)
     if (!dragStateRef.current) return
     dragStateRef.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handleViewportPointerDown = (event) => {
+    if (readOnly) {
+      handlePointerDownPan(event)
+      return
+    }
+    if (spacePressed || event.button === 1) {
+      handlePointerDownPan(event)
+      return
+    }
+    if (event.button === 0 && !event.target.closest('[data-roadmap-node]') && !event.target.closest('[data-roadmap-control]')) {
+      if (!connectFromId) {
+        setSelectedNodeId(null)
+        setSelectedEdgeId(null)
+      }
+      handlePointerDownPan(event)
     }
   }
 
@@ -194,238 +256,252 @@ export function RoadmapCanvas({
     }))
   }
 
+  const handleEdgeFieldChange = (edgeId, field, value) => {
+    updateLayout((current) => ({
+      ...current,
+      edges: current.edges.map((edge) => (
+        edge.id === edgeId ? { ...edge, [field]: value } : edge
+      )),
+    }))
+  }
+
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null
+  const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId) || null
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return undefined
+
+    const observer = new ResizeObserver(([entry]) => {
+      setViewportSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      })
+    })
+    observer.observe(el)
+    setViewportSize({ width: el.clientWidth, height: el.clientHeight })
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return undefined
+    const onWheel = (event) => handleWheel(event)
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [handleWheel])
+
+  const containerClass = fillHeight
+    ? `relative h-full min-h-0 flex-1 ${className}`
+    : `relative ${className}`
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {!readOnly ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
-          <Select
-            value={subjectToAdd}
-            onChange={setSubjectToAdd}
-            placeholder="Alege un subiect"
-            options={availableSubjects.map((subject) => ({
-              value: String(subject.value),
-              label: subject.label,
-            }))}
-            className="w-full min-w-[12rem] max-w-xs flex-[1_1_12rem]"
-          />
-          <Button type="button" size="sm" onClick={handleAddSubject} disabled={!subjectToAdd} className="shrink-0 rounded-xl">
-            <Plus className="size-4" />
-            Adaugă subiect
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={handleAddNote} className="shrink-0 rounded-xl">
-            <Plus className="size-4" />
-            Adaugă notă
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={connectFromId ? 'default' : 'outline'}
-            onClick={() => setConnectFromId((current) => (current ? null : selectedNodeId))}
-            disabled={!selectedNodeId}
-            className="shrink-0 rounded-xl"
-          >
-            <ArrowRight className="size-4" />
-            {connectFromId ? 'Alege destinația' : 'Adaugă săgeată'}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleDeleteSelection}
-            disabled={!selectedNodeId && !selectedEdgeId}
-            className="shrink-0 rounded-xl border-destructive/20 text-destructive"
-          >
-            <Trash2 className="size-4" />
-            Șterge selecția
-          </Button>
-        </div>
-      ) : null}
-
-      {!readOnly && selectedNode ? (
-        <div className="grid grid-cols-1 gap-4 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Etichetă</label>
-            <input
-              type="text"
-              value={selectedNode.label}
-              onChange={(event) => handleNodeFieldChange(selectedNode.id, 'label', event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-            />
-          </div>
-          {selectedNode.type === 'subject' ? (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grad de importanță</label>
-              <Select
-                value={selectedNode.importance_grade}
-                onChange={(grade) => handleNodeFieldChange(selectedNode.id, 'importance_grade', Number(grade))}
-                options={IMPORTANCE_GRADES.map((grade) => ({
-                  value: grade.value,
-                  label: `${grade.value} · ${grade.label}`,
-                }))}
-              />
-            </div>
-          ) : null}
-          <div className="space-y-2 md:col-span-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Culoare card</label>
-            <div className="flex flex-wrap gap-2">
-              {NODE_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => handleNodeFieldChange(selectedNode.id, 'color', color)}
-                  className={`size-9 rounded-full border-2 ${selectedNode.color === color ? 'border-slate-900 dark:border-white' : 'border-transparent'}`}
-                  style={{ backgroundColor: color }}
-                  aria-label={`Culoare ${color}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
+    <div className={containerClass}>
       <div
-        ref={canvasRef}
-        className="relative min-h-[620px] overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle,_rgba(148,163,184,0.35)_1px,_transparent_1px)] [background-size:24px_24px] dark:border-slate-800 dark:bg-slate-950/80"
+        ref={viewportRef}
+        className={`relative h-full w-full overflow-hidden border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-950 ${fillHeight ? 'min-h-[480px]' : 'min-h-[620px] rounded-[2rem]'}`}
+        style={{ cursor: spacePressed ? 'grab' : 'default' }}
+        onPointerDown={handleViewportPointerDown}
         onPointerMove={handlePointerMove}
-        onClick={() => {
-          if (!readOnly && !connectFromId) {
-            setSelectedNodeId(null)
-            setSelectedEdgeId(null)
-          }
-        }}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          <defs>
-            {NODE_COLORS.map((color) => (
-              <marker
-                key={color}
-                id={`roadmap-arrow-${color.replace('#', '')}`}
-                markerWidth="10"
-                markerHeight="10"
-                refX="8"
-                refY="5"
-                orient="auto"
-              >
-                <path d="M 0 0 L 10 5 L 0 10 z" fill={color} />
-              </marker>
-            ))}
-          </defs>
-          {edges.map((edge) => {
-            const fromNode = nodes.find((node) => node.id === edge.from)
-            const toNode = nodes.find((node) => node.id === edge.to)
-            if (!fromNode || !toNode) return null
+        <div
+          className="absolute left-0 top-0 origin-top-left"
+          style={{
+            width: worldSize.width || WORLD_MIN_WIDTH,
+            height: worldSize.height || WORLD_MIN_HEIGHT,
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={showGrid ? {
+              backgroundImage: 'radial-gradient(circle, rgba(148,163,184,0.35) 1px, transparent 1px)',
+              backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+            } : {
+              backgroundColor: 'transparent',
+            }}
+          />
 
-            return (
-              <g key={edge.id}>
-                <path
-                  d={getEdgePath(fromNode, toNode)}
-                  fill="none"
-                  stroke={edge.color}
-                  strokeWidth={selectedEdgeId === edge.id ? 4 : 3}
-                  markerEnd={`url(#roadmap-arrow-${edge.color.replace('#', '')})`}
-                  className={readOnly ? '' : 'pointer-events-auto cursor-pointer'}
-                  onClick={(event) => {
-                    if (readOnly) return
-                    event.stopPropagation()
-                    setSelectedEdgeId(edge.id)
-                    setSelectedNodeId(null)
-                  }}
-                />
-                {edge.label ? (
-                  <text
-                    x={(getNodeAnchor(fromNode, 'right').x + getNodeAnchor(toNode, 'left').x) / 2}
-                    y={(getNodeAnchor(fromNode, 'right').y + getNodeAnchor(toNode, 'left').y) / 2 - 8}
-                    textAnchor="middle"
-                    className="fill-slate-500 text-[10px] font-bold"
-                  >
-                    {edge.label}
-                  </text>
-                ) : null}
-              </g>
-            )
-          })}
-        </svg>
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            width={worldSize.width}
+            height={worldSize.height}
+          >
+            <defs>
+              {edgeColors.map((color) => (
+                <marker
+                  key={color}
+                  id={colorToMarkerId(color)}
+                  markerWidth="10"
+                  markerHeight="10"
+                  refX="8"
+                  refY="5"
+                  orient="auto"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill={color} />
+                </marker>
+              ))}
+            </defs>
+            {edges.map((edge) => {
+              const fromNode = nodes.find((node) => node.id === edge.from)
+              const toNode = nodes.find((node) => node.id === edge.to)
+              if (!fromNode || !toNode) return null
 
-        {nodes.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
-            <div className="max-w-md space-y-2">
-              <p className="text-lg font-black text-slate-700 dark:text-slate-200">Canvas gol</p>
-              <p className="text-sm text-muted-foreground">
-                {readOnly
-                  ? 'Administratorul nu a publicat încă elemente pe acest roadmap.'
-                  : 'Adaugă subiecte, note, culori și săgeți pentru a construi roadmap-ul.'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          nodes.map((node) => {
-            const subjectMeta = node.type === 'subject' ? getSubjectMeta(node.subject_part) : null
-            const importanceMeta = getImportanceMeta(node.importance_grade)
-            const isSelected = selectedNodeId === node.id
-            const isConnectSource = connectFromId === node.id
-
-            return (
-              <article
-                key={node.id}
-                className={`absolute rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur dark:bg-slate-900/95 ${isSelected || isConnectSource ? 'ring-2 ring-primary' : 'border-slate-200 dark:border-slate-700'}`}
-                style={{
-                  left: node.x,
-                  top: node.y,
-                  width: NODE_WIDTH,
-                  minHeight: NODE_HEIGHT,
-                  borderColor: isSelected ? node.color : undefined,
-                }}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  handleNodeClick(node.id)
-                }}
-              >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                    {node.type === 'subject' ? (
-                      <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: node.color }}>
-                        Subiect {subjectMeta?.roman}
-                      </p>
-                    ) : (
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notă</p>
-                    )}
-                    <h3 className="text-base font-black text-slate-800 dark:text-white">{node.label}</h3>
-                  </div>
-                  {!readOnly ? (
-                    <button
-                      type="button"
-                      onPointerDown={(event) => handlePointerDown(event, node.id)}
-                      onPointerUp={handlePointerUp}
-                      onPointerCancel={handlePointerUp}
-                      className="rounded-xl border border-slate-200 p-2 text-slate-400 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700"
-                      aria-label={`Mută ${node.label}`}
+              return (
+                <g key={edge.id}>
+                  <path
+                    d={getEdgePath(fromNode, toNode)}
+                    fill="none"
+                    stroke={edge.color}
+                    strokeWidth={selectedEdgeId === edge.id ? 4 : 3}
+                    markerEnd={`url(#${colorToMarkerId(edge.color)})`}
+                    className={readOnly ? '' : 'pointer-events-auto cursor-pointer'}
+                    onClick={(event) => {
+                      if (readOnly) return
+                      event.stopPropagation()
+                      setSelectedEdgeId(edge.id)
+                      setSelectedNodeId(null)
+                    }}
+                  />
+                  {edge.label ? (
+                    <text
+                      x={(getNodeAnchor(fromNode, 'right').x + getNodeAnchor(toNode, 'left').x) / 2}
+                      y={(getNodeAnchor(fromNode, 'right').y + getNodeAnchor(toNode, 'left').y) / 2 - 8}
+                      textAnchor="middle"
+                      className="fill-slate-500 text-[10px] font-bold"
                     >
-                      <GripVertical className="size-4" />
-                    </button>
+                      {edge.label}
+                    </text>
                   ) : null}
-                </div>
+                </g>
+              )
+            })}
+          </svg>
 
-                {node.type === 'subject' ? (
-                  <span
-                    className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
-                    style={{ backgroundColor: node.color }}
-                  >
-                    {importanceMeta.label}
-                  </span>
-                ) : (
-                  <span
-                    className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
-                    style={{ backgroundColor: node.color }}
-                  >
-                    Notă personalizată
-                  </span>
-                )}
-              </article>
-            )
-          })
-        )}
+          {nodes.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
+              <div className="max-w-md space-y-2">
+                <p className="text-lg font-black text-slate-700 dark:text-slate-200">Canvas gol</p>
+                <p className="text-sm text-muted-foreground">
+                  {readOnly
+                    ? 'Administratorul nu a publicat încă elemente pe acest roadmap.'
+                    : 'Adaugă subiecte, note, culori și săgeți pentru a construi roadmap-ul.'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            nodes.map((node) => {
+              const subjectMeta = node.type === 'subject' ? getSubjectMeta(node.subject_part) : null
+              const importanceMeta = getImportanceMeta(node.importance_grade)
+              const isSelected = selectedNodeId === node.id
+              const isConnectSource = connectFromId === node.id
+
+              return (
+                <article
+                  key={node.id}
+                  data-roadmap-node
+                  className={`absolute rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur dark:bg-slate-900/95 ${isSelected || isConnectSource ? 'ring-2 ring-primary' : 'border-slate-200 dark:border-slate-700'}`}
+                  style={{
+                    left: node.x,
+                    top: node.y,
+                    width: NODE_WIDTH,
+                    minHeight: NODE_HEIGHT,
+                    borderColor: isSelected ? node.color : undefined,
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    handleNodeClick(node.id)
+                  }}
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      {node.type === 'subject' ? (
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: node.color }}>
+                          Subiect {subjectMeta?.roman}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notă</p>
+                      )}
+                      <h3 className="text-base font-black text-slate-800 dark:text-white">{node.label}</h3>
+                    </div>
+                    {!readOnly ? (
+                      <button
+                        type="button"
+                        onPointerDown={(event) => handlePointerDownNode(event, node.id)}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        className="rounded-xl border border-slate-200 p-2 text-slate-400 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700"
+                        aria-label={`Mută ${node.label}`}
+                      >
+                        <GripVertical className="size-4" />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {node.type === 'subject' ? (
+                    <span
+                      className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
+                      style={{ backgroundColor: node.color }}
+                    >
+                      {importanceMeta.label}
+                    </span>
+                  ) : (
+                    <span
+                      className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
+                      style={{ backgroundColor: node.color }}
+                    >
+                      Notă personalizată
+                    </span>
+                  )}
+                </article>
+              )
+            })
+          )}
+        </div>
+
+        {!readOnly ? (
+          <RoadmapFloatingToolbar
+            subjectToAdd={subjectToAdd}
+            onSubjectChange={setSubjectToAdd}
+            availableSubjects={availableSubjects}
+            onAddSubject={handleAddSubject}
+            onAddNote={handleAddNote}
+            connectFromId={connectFromId}
+            selectedNodeId={selectedNodeId}
+            onToggleConnect={() => setConnectFromId((current) => (current ? null : selectedNodeId))}
+            onDeleteSelection={handleDeleteSelection}
+            canDelete={Boolean(selectedNodeId || selectedEdgeId)}
+            snapToGrid={snapEnabled}
+            onToggleSnap={() => setSnapEnabled((current) => !current)}
+          />
+        ) : null}
+
+        {!readOnly ? (
+          <RoadmapNodeInspector
+            selectedNode={selectedNode}
+            selectedEdge={selectedEdge}
+            onNodeFieldChange={handleNodeFieldChange}
+            onEdgeFieldChange={handleEdgeFieldChange}
+            onClose={() => {
+              setSelectedNodeId(null)
+              setSelectedEdgeId(null)
+            }}
+          />
+        ) : null}
+
+        {showViewportControls ? (
+          <RoadmapViewportControls
+            scale={scale}
+            showGrid={showGrid}
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            onFit={fitToContent}
+            onReset={resetView}
+            onToggleGrid={() => setShowGrid((current) => !current)}
+          />
+        ) : null}
       </div>
     </div>
   )

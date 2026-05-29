@@ -1,5 +1,5 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import {

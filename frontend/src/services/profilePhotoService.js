@@ -1,8 +1,18 @@
+/**
+ * Încărcarea fotografiei de profil în storage. Validează tipul (doar imagini) și
+ * dimensiunea, și nu permite încărcarea pentru alt cont decât cel autentificat.
+ */
 import { supabase } from '../supabaseClient'
 import { getProfilePhotoExtension } from '../shared/utils/safeUrl'
 
 const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
 
+/**
+ * Încarcă fotografia de profil și returnează URL-ul public al imaginii.
+ *
+ * @param {File} file - Imaginea selectată.
+ * @param {string} [userId] - Verificat opțional contra contului logat.
+ */
 export async function uploadProfilePhoto(file, userId) {
   if (!file?.type?.startsWith('image/')) {
     throw new Error('Poți încărca doar imagini pentru fotografia de profil.')
@@ -21,6 +31,8 @@ export async function uploadProfilePhoto(file, userId) {
     throw new Error('Nu poți încărca o fotografie pentru alt cont.')
   }
 
+  // Stocăm fișierul sub un folder per utilizator, cu nume aleator, ca să evităm
+  // coliziunile și să simplificăm regulile de acces din storage.
   const fileExt = getProfilePhotoExtension(file.name)
   const filePath = `profile-photos/${user.id}/${crypto.randomUUID()}.${fileExt}`
 

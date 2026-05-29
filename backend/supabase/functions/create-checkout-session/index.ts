@@ -1,10 +1,11 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
-import Stripe from 'npm:stripe@17.7.0'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { resolveAppUrl } from '../_shared/checkout.ts'
+import { STRIPE_API_VERSION } from '../_shared/stripe.ts'
 
 type CheckoutDeps = {
   createClient?: typeof createClient
@@ -45,7 +46,7 @@ export function createCheckoutSessionApp(deps: CheckoutDeps = {}) {
       if (authResult instanceof Response) return authResult
 
       const { user } = authResult
-      const stripe = new StripeCtor(stripeSecret, { apiVersion: '2025-02-24.acacia' })
+      const stripe = new StripeCtor(stripeSecret, { apiVersion: STRIPE_API_VERSION })
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price: stripePriceId, quantity: 1 }],
@@ -64,7 +65,8 @@ export function createCheckoutSessionApp(deps: CheckoutDeps = {}) {
       })
 
       return jsonResponse({ url: session.url }, 200, corsHeaders)
-    } catch {
+    } catch (error) {
+      console.error('[create-checkout-session]', error)
       return jsonResponse({ error: 'Checkout session failed.' }, 500, getCorsHeaders(c))
     }
   })

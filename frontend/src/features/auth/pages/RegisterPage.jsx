@@ -11,6 +11,7 @@ import { LegalDocumentModal } from '../../../shared/ui/LegalDocumentModal'
 import { LEGAL_DOCS_VERSION, LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { PROFILES } from '../../lessons/profiles'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
+import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ export function RegisterPage() {
   const [acceptedLegal, setAcceptedLegal] = useState(false)
   const [legalModal, setLegalModal] = useState(null)
   const [legalError, setLegalError] = useState('')
-  const { register, loginWithGoogle, loading, errorMessage, successMessage, theme, toggleTheme } = useAuth()
+  const { register, loginWithGoogle, loading, errorMessage, successMessage, theme, toggleTheme, user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
   const handleGoogleSignIn = async () => {
@@ -41,7 +42,7 @@ export function RegisterPage() {
     }
     setLegalError('')
     try {
-      await register({
+      const authData = await register({
         email: formData.email,
         password: formData.parola,
         fullName: formData.nume,
@@ -51,7 +52,14 @@ export function RegisterPage() {
           version: LEGAL_DOCS_VERSION,
         },
       })
-      navigate('/dashboard')
+      navigate(
+        resolvePostAuthRedirect({
+          user: authData?.session?.user ?? user,
+          isAdmin,
+          fallback: '/dashboard',
+        }),
+        { replace: true },
+      )
     } catch {
       // Eroarea este deja gestionată în provider
     }

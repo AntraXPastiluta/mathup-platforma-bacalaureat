@@ -27,8 +27,9 @@ type AuthUser = {
   user_metadata?: Record<string, unknown>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AdminClient = any
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+type AdminClient = SupabaseClient
 
 export function sanitizeProfileMetadata(metadata: Record<string, unknown> | undefined) {
   const source = metadata ?? {}
@@ -132,8 +133,7 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
   }
 
   const studyRoadmaps = (roadmapsResult.data ?? []).map((row: Record<string, unknown>) => {
-    const subjects = row.user_study_roadmap_subjects
-    const { user_study_roadmap_subjects: _nested, ...roadmap } = row
+    const { user_study_roadmap_subjects: subjects, ...roadmap } = row
     return {
       ...roadmap,
       subjects: Array.isArray(subjects) ? subjects : [],

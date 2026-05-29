@@ -1,5 +1,5 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
@@ -38,16 +38,16 @@ export function createSubmitSupportRequestApp(deps: SupportDeps = {}) {
       const supabaseAnonKey = readEnv('SUPABASE_ANON_KEY', env)
       const serviceRoleKey = readEnv('SERVICE_ROLE_KEY', env) ?? readEnv('SUPABASE_SERVICE_ROLE_KEY', env)
       const emailJsServiceId = readEnv('EMAILJS_SERVICE_ID', env)
-      const emailJsTemplateId = readEnv('EMAILJS_TEMPLATE_ID', env)
       const emailJsPublicKey = readEnv('EMAILJS_PUBLIC_KEY', env)
       const emailJsPrivateKey = readEnv('EMAILJS_PRIVATE_KEY', env)
-      const supportNotifyEmail = readEnv('SUPPORT_NOTIFY_EMAIL', env) ?? ''
+      const emailJsAutoreplyTemplateId = readEnv('EMAILJS_AUTOREPLY_TEMPLATE_ID', env) ?? ''
+      const supportReplyEmail = readEnv('SUPPORT_NOTIFY_EMAIL', env) ?? 'mathupbacalaureat@gmail.com'
 
       if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
         throw new Error('Missing Supabase environment configuration.')
       }
-      if (!emailJsServiceId || !emailJsTemplateId || !emailJsPublicKey || !emailJsPrivateKey) {
-        throw new Error('Missing EmailJS environment configuration.')
+      if (emailJsAutoreplyTemplateId && (!emailJsServiceId || !emailJsPublicKey || !emailJsPrivateKey)) {
+        throw new Error('Missing EmailJS environment configuration for autoreply.')
       }
 
       const authResult = await requireAuthenticatedUser({
@@ -119,66 +119,48 @@ export function createSubmitSupportRequestApp(deps: SupportDeps = {}) {
       }
 
       const categoryLabel = CATEGORY_LABELS[validated.data.category] ?? validated.data.category
-      const emailSubject = `[MathUP Suport] ${validated.data.subject}`
-      const emailBody = [
-        'Mesaj nou de suport MathUP',
-        '',
-        `ID cerere: ${inserted.id}`,
-        `Data: ${inserted.created_at}`,
-        `Utilizator: ${userName || '(fără nume)'}`,
-        `Email: ${userEmail}`,
-        `User ID: ${user.id}`,
-        `Categorie: ${categoryLabel}`,
-        `Subiect: ${validated.data.subject}`,
-        '',
-        'Mesaj:',
-        validated.data.message,
-      ].join('\n')
-
       const displayName = userName || 'Elev MathUP'
       const createdAt = String(inserted.created_at)
-      let emailDelivered = false
-      try {
-        await sendEmailJsNotification({
-          serviceId: emailJsServiceId,
-          templateId: emailJsTemplateId,
-          publicKey: emailJsPublicKey,
-          privateKey: emailJsPrivateKey,
-          fetchImpl,
-          templateParams: {
-            to_email: supportNotifyEmail,
-            reply_to: userEmail,
-            from_name: displayName,
-            from_email: userEmail,
-            email_subject: emailSubject,
-            email_body: emailBody,
-            request_id: inserted.id,
-            created_at: createdAt,
-            user_name: displayName,
-            user_email: userEmail,
-            user_id: user.id,
-            category: validated.data.category,
-            category_label: categoryLabel,
-            subject: validated.data.subject,
-            message: validated.data.message,
-            name: displayName,
-            email: userEmail,
-            title: validated.data.subject,
-            time: createdAt,
-          },
-        })
-        emailDelivered = true
-      } catch (emailError) {
-        const emailMessage = emailError instanceof Error ? emailError.message : ''
-        console.error('[submit-support-request] email notification failed:', emailMessage)
-        if (emailMessage === 'EMAILJS_NON_BROWSER_DISABLED') {
-          console.error(
-            '[submit-support-request] Enable "Allow API requests from non-browser environments" at https://dashboard.emailjs.com/admin/account/security',
-          )
+
+      let autoreplyDelivered = false
+      if (emailJsAutoreplyTemplateId && emailJsServiceId && emailJsPublicKey && emailJsPrivateKey) {
+        try {
+          await sendEmailJsNotification({
+            serviceId: emailJsServiceId,
+            templateId: emailJsAutoreplyTemplateId,
+            publicKey: emailJsPublicKey,
+            privateKey: emailJsPrivateKey,
+            fetchImpl,
+            templateParams: {
+              to_email: userEmail,
+              email: userEmail,
+              reply_to: supportReplyEmail,
+              user_name: displayName,
+              user_email: userEmail,
+              subject: validated.data.subject,
+              category_label: categoryLabel,
+              request_id: inserted.id,
+              created_at: createdAt,
+              message: validated.data.message,
+            },
+          })
+          autoreplyDelivered = true
+        } catch (autoreplyError) {
+          const autoreplyMessage = autoreplyError instanceof Error ? autoreplyError.message : ''
+          console.error('[submit-support-request] autoreply failed:', autoreplyMessage)
+          if (autoreplyMessage === 'EMAILJS_NON_BROWSER_DISABLED') {
+            console.error(
+              '[submit-support-request] Enable "Allow API requests from non-browser environments" at https://dashboard.emailjs.com/admin/account/security',
+            )
+          }
         }
       }
 
-      return jsonResponse({ id: inserted.id, email_delivered: emailDelivered }, 200, corsHeaders)
+      return jsonResponse(
+        { id: inserted.id, autoreply_delivered: autoreplyDelivered },
+        200,
+        corsHeaders,
+      )
     } catch (error) {
       console.error('[submit-support-request]', error)
       return jsonResponse({ error: 'Nu am putut trimite mesajul. Încearcă din nou.' }, 500, getCorsHeaders(c))

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
-import { Moon, Sun, ArrowRight, BookOpen, GraduationCap, Trophy } from 'lucide-react'
+import { Moon, Sun, BookOpen, GraduationCap, Trophy } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'

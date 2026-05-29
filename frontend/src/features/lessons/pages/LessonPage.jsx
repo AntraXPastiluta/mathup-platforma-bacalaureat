@@ -129,6 +129,8 @@ export function LessonPage() {
     if (Array.isArray(question.options)) return { type: 'end', partId: '' }
     return question.options?.placement || { type: 'end', partId: '' }
   }
+  // Întrebările pot fi ancorate „după o anumită parte” (apar doar pe acea parte) sau, în
+  // mod implicit, la finalul lecției (apar doar pe ultima parte).
   const visibleQuizQuestions = quizQuestions.filter((question) => {
     const placement = getQuestionPlacement(question)
     if (placement.type === 'after_part') return currentPart?.id === placement.partId
@@ -198,11 +200,15 @@ export function LessonPage() {
     }
 
     try {
+      // Corectitudinea este evaluată pe server (submitQuizAnswer); clientul nu primește
+      // niciodată indexul răspunsului corect, ca să nu poată fi extras din rețea.
       const isCorrect = await submitQuizAnswer({
         questionId: question.id,
         selectedIndex: selectedAnswer,
       })
       setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
+      // Înregistrarea încercării (pentru statistici) e „fire-and-forget” și doar pentru
+      // utilizatorii Premium; o eroare aici nu trebuie să blocheze fluxul de quiz.
       if (isPremium && user?.id && lesson?.id) {
         void recordQuizAttempt({
           lessonId: lesson.id,
@@ -279,6 +285,8 @@ export function LessonPage() {
                         key={`${question.id}-${optionIndex}`}
                         type="button"
                         onClick={() => {
+                          // La reselectarea unei opțiuni, anulăm rezultatul anterior ca
+                          // utilizatorul să poată reverifica răspunsul.
                           setQuizSelections((prev) => ({ ...prev, [question.id]: optionIndex }))
                           setQuizResults((prev) => {
                             const next = { ...prev }

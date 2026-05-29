@@ -1,11 +1,12 @@
 /// <reference path="../edge-modules.d.ts" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
-import Stripe from 'npm:stripe@17.7.0'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { subscriptionPeriodEndIso } from '../_shared/premium.ts'
+import { STRIPE_API_VERSION } from '../_shared/stripe.ts'
 
 type CancelDeps = {
   createClient?: typeof createClient
@@ -27,7 +28,7 @@ export function createCancelPremiumSubscriptionApp(deps: CancelDeps = {}) {
       const stripeSecret = readEnv('STRIPE_SECRET_KEY', env)
       const supabaseUrl = readEnv('SUPABASE_URL', env)
       const supabaseAnonKey = readEnv('SUPABASE_ANON_KEY', env)
-      const serviceRoleKey = readEnv('SERVICE_ROLE_KEY', env) ?? ''
+      const serviceRoleKey = readEnv('SERVICE_ROLE_KEY', env) ?? readEnv('SUPABASE_SERVICE_ROLE_KEY', env) ?? ''
 
       if (!stripeSecret || !supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
         throw new Error('Missing Stripe or Supabase environment configuration.')
@@ -56,7 +57,7 @@ export function createCancelPremiumSubscriptionApp(deps: CancelDeps = {}) {
         return jsonResponse({ error: 'Nu există un abonament Premium activ de anulat.' }, 404, corsHeaders)
       }
 
-      const stripe = new StripeCtor(stripeSecret, { apiVersion: '2025-02-24.acacia' })
+      const stripe = new StripeCtor(stripeSecret, { apiVersion: STRIPE_API_VERSION })
       const subscription = await stripe.subscriptions.retrieve(entitlement.stripe_subscription_id)
       const expiresAt = subscriptionPeriodEndIso(subscription, env)
 
@@ -96,7 +97,8 @@ export function createCancelPremiumSubscriptionApp(deps: CancelDeps = {}) {
         expires_at: updatedExpiresAt,
         message: 'Abonamentul Premium se anulează la sfârșitul perioadei curente.',
       }, 200, corsHeaders)
-    } catch {
+    } catch (error) {
+      console.error('[cancel-premium-subscription]', error)
       return jsonResponse({ error: 'Subscription cancellation failed.' }, 500, getCorsHeaders(c))
     }
   })

@@ -40,8 +40,7 @@ export function buildAccountSection(user) {
 
 export function mapStudyRoadmaps(rows) {
   return (rows ?? []).map((row) => {
-    const subjects = row.user_study_roadmap_subjects
-    const { user_study_roadmap_subjects: _nested, ...roadmap } = row
+    const { user_study_roadmap_subjects: subjects, ...roadmap } = row
     return {
       ...roadmap,
       subjects: Array.isArray(subjects) ? subjects : [],

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Map, PlusCircle, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Map, PanelLeft, PanelRight, PlusCircle, Trash2 } from 'lucide-react'
 import {
   addRoadmap,
   addRoadmapStep,
@@ -23,6 +23,8 @@ export function RoadmapsSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [stepsOpen, setStepsOpen] = useState(false)
   const [roadmapForm, setRoadmapForm] = useState({
     title: '',
     description: '',
@@ -56,10 +58,21 @@ export function RoadmapsSection() {
   }
 
   useEffect(() => {
-    loadRoadmapsAdmin()
+    let cancelled = false
+
+    void (async () => {
+      await loadRoadmapsAdmin()
+    })()
+
     getAllLessonsAdmin()
-      .then(setLessons)
+      .then((data) => {
+        if (!cancelled) setLessons(data)
+      })
       .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const selectRoadmap = (roadmap) => {
@@ -186,225 +199,252 @@ export function RoadmapsSection() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-      <div className="lg:col-span-4 space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2">
-            <Map className="size-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tight text-slate-800 dark:text-white">Roadmaps</h2>
+    <div className="flex h-[calc(100vh-12rem)] min-h-[560px] overflow-hidden rounded-3xl border border-slate-300 bg-slate-100 dark:border-white/10 dark:bg-slate-950">
+      {sidebarOpen ? (
+        <aside className="flex w-80 shrink-0 flex-col border-r border-slate-300 bg-white dark:border-white/10 dark:bg-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Map className="size-5 text-primary" />
+              <h2 className="text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">Roadmaps</h2>
+            </div>
+            <button
+              type="button"
+              onClick={startNewRoadmap}
+              className="rounded-xl border border-primary/30 bg-primary/10 p-2 text-primary"
+              aria-label="Roadmap nou"
+            >
+              <PlusCircle className="size-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={startNewRoadmap}
-            className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/10 active:scale-95"
-          >
-            <PlusCircle className="size-4" />
-            Nou Roadmap
-          </button>
-        </div>
-        {error ? <AlertMessage message={error} variant="error" onClose={() => setError('')} /> : null}
-        {success ? <AlertMessage message={success} variant="success" onClose={() => setSuccess('')} /> : null}
-        <div className="space-y-2 rounded-3xl border border-slate-300 bg-white p-3 dark:border-white/10 dark:bg-white/5">
-          {roadmaps.length === 0 ? (
-            <p className="p-6 text-center text-sm text-slate-400">Nu există roadmaps configurate.</p>
-          ) : (
-            roadmaps.map((roadmap) => (
-              <button
-                key={roadmap.id}
-                type="button"
-                onClick={() => selectRoadmap(roadmap)}
-                className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
-                  selectedRoadmapId === roadmap.id
-                    ? 'border-primary bg-primary/15 shadow-md ring-1 ring-primary/20'
-                    : 'border-transparent hover:bg-slate-100 dark:hover:bg-white/5'
-                }`}
-              >
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                  {getProfileMeta(roadmap.profile).shortLabel}
-                </p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{roadmap.title}</p>
-                <p className="text-[10px] font-bold text-muted-foreground">
-                  {(roadmap.study_roadmap_steps ?? []).length} pași
-                </p>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
 
-      <div className="lg:col-span-8 space-y-6">
-        <div className="rounded-3xl border border-slate-300 bg-white p-8 shadow-xl dark:border-white/10 dark:bg-white/5">
-          <h3 className="mb-6 text-lg font-black text-slate-800 dark:text-white">
-            {selectedRoadmapId ? 'Editează roadmap' : 'Roadmap nou'}
-          </h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Titlu</label>
-              <input
-                type="text"
-                value={roadmapForm.title}
-                onChange={(e) => setRoadmapForm({ ...roadmapForm, title: e.target.value })}
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Descriere</label>
-              <textarea
-                rows={3}
-                value={roadmapForm.description}
-                onChange={(e) => setRoadmapForm({ ...roadmapForm, description: e.target.value })}
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Program</label>
-              <select
-                value={roadmapForm.profile}
-                onChange={(e) => setRoadmapForm({ ...roadmapForm, profile: e.target.value })}
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-              >
-                {PROFILES.map((profile) => (
-                  <option key={profile.key} value={profile.key}>
-                    {profile.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ordine</label>
-              <input
-                type="number"
-                value={roadmapForm.order_index}
-                onChange={(e) =>
-                  setRoadmapForm({ ...roadmapForm, order_index: parseInt(e.target.value, 10) || 0 })
-                }
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-              />
-            </div>
+          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+            {roadmaps.length === 0 ? (
+              <p className="p-4 text-center text-sm text-slate-400">Nu există roadmaps configurate.</p>
+            ) : (
+              roadmaps.map((roadmap) => (
+                <button
+                  key={roadmap.id}
+                  type="button"
+                  onClick={() => selectRoadmap(roadmap)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
+                    selectedRoadmapId === roadmap.id
+                      ? 'border-primary bg-primary/15 shadow-md ring-1 ring-primary/20'
+                      : 'border-transparent hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    {getProfileMeta(roadmap.profile).shortLabel}
+                  </p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">{roadmap.title}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground">
+                    {(roadmap.study_roadmap_steps ?? []).length} pași
+                  </p>
+                </button>
+              ))
+            )}
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button onClick={handleSaveRoadmap} className="rounded-2xl" disabled={loading}>
-              Salvează roadmap
-            </Button>
-            {selectedRoadmapId ? (
-              <Button
-                variant="outline"
-                onClick={() => handleDeleteRoadmap(selectedRoadmapId)}
-                className="rounded-2xl border-destructive/20 text-destructive"
-              >
-                Șterge roadmap
-              </Button>
-            ) : null}
-          </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-300 bg-white p-8 shadow-xl dark:border-white/10 dark:bg-white/5 space-y-4">
-          <div>
-            <h3 className="text-lg font-black text-slate-800 dark:text-white">Canvas roadmap</h3>
-            <p className="text-sm text-muted-foreground">
-              Adaugă subiecte, note, culori și săgeți. Salvează roadmap-ul ca să publice layout-ul pentru elevii Premium.
+          <div className="space-y-3 border-t border-slate-200 p-4 dark:border-white/10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              {selectedRoadmapId ? 'Editează metadata' : 'Roadmap nou'}
             </p>
+            <input
+              type="text"
+              value={roadmapForm.title}
+              onChange={(e) => setRoadmapForm({ ...roadmapForm, title: e.target.value })}
+              placeholder="Titlu"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            />
+            <textarea
+              rows={2}
+              value={roadmapForm.description}
+              onChange={(e) => setRoadmapForm({ ...roadmapForm, description: e.target.value })}
+              placeholder="Descriere"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <select
+              value={roadmapForm.profile}
+              onChange={(e) => setRoadmapForm({ ...roadmapForm, profile: e.target.value })}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            >
+              {PROFILES.map((profile) => (
+                <option key={profile.key} value={profile.key}>
+                  {profile.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={roadmapForm.order_index}
+              onChange={(e) =>
+                setRoadmapForm({ ...roadmapForm, order_index: parseInt(e.target.value, 10) || 0 })
+              }
+              placeholder="Ordine"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleSaveRoadmap} size="sm" className="rounded-xl" disabled={loading}>
+                Salvează
+              </Button>
+              {selectedRoadmapId ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteRoadmap(selectedRoadmapId)}
+                  className="rounded-xl border-destructive/20 text-destructive"
+                >
+                  Șterge
+                </Button>
+              ) : null}
+            </div>
           </div>
-          <RoadmapCanvas layout={roadmapCanvas} onLayoutChange={setRoadmapCanvas} />
+        </aside>
+      ) : null}
+
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-center gap-2 border-b border-slate-300 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setSidebarOpen((current) => !current)}
+            className="rounded-xl"
+          >
+            <PanelLeft className="size-4" />
+            {sidebarOpen ? <ChevronLeft className="size-3" /> : null}
+          </Button>
+          <p className="min-w-0 flex-1 truncate text-xs font-black uppercase tracking-widest text-slate-500">
+            {roadmapForm.title || 'Canvas roadmap'}
+          </p>
+          {selectedRoadmapId ? (
+            <Button
+              type="button"
+              size="sm"
+              variant={stepsOpen ? 'default' : 'outline'}
+              onClick={() => setStepsOpen((current) => !current)}
+              className="rounded-xl"
+            >
+              <PanelRight className="size-4" />
+              Pași
+            </Button>
+          ) : null}
         </div>
 
-        {selectedRoadmapId ? (
-          <div className="rounded-3xl border border-slate-300 bg-white p-8 shadow-xl dark:border-white/10 dark:bg-white/5 space-y-6">
-            <h3 className="text-lg font-black text-slate-800 dark:text-white">Pași recomandați</h3>
-            <div className="space-y-2">
-              {(selectedRoadmap?.study_roadmap_steps ?? []).map((step, index) => (
-                <div
-                  key={step.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-300 px-4 py-3 dark:border-white/10"
-                >
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      Pasul {index + 1}
-                    </p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{step.title}</p>
-                    {step.requires_premium ? (
-                      <p className="text-[10px] font-black uppercase text-primary">Premium</p>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteRoadmapStep(step.id)}
-                    className="rounded-xl bg-destructive/10 p-2 text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-slate-300 pt-6 dark:border-white/10">
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Titlu pas</label>
-                <input
-                  type="text"
-                  value={roadmapStepForm.title}
-                  onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, title: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Descriere pas</label>
-                <input
-                  type="text"
-                  value={roadmapStepForm.description}
-                  onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, description: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lecție asociată</label>
-                <select
-                  value={roadmapStepForm.lesson_id}
-                  onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, lesson_id: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-                >
-                  <option value="">Fără lecție</option>
-                  {lessons
-                    .filter((lesson) => lesson.profile === roadmapForm.profile)
-                    .map((lesson) => (
-                      <option key={lesson.id} value={lesson.id}>
-                        {lesson.title}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ordine pas</label>
-                <input
-                  type="number"
-                  value={roadmapStepForm.order_index}
-                  onChange={(e) =>
-                    setRoadmapStepForm({
-                      ...roadmapStepForm,
-                      order_index: parseInt(e.target.value, 10) || 1,
-                    })
-                  }
-                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold dark:border-white/10 dark:bg-white/5"
-                />
-              </div>
-              <label className="flex items-center gap-3 md:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={roadmapStepForm.requires_premium}
-                  onChange={(e) =>
-                    setRoadmapStepForm({ ...roadmapStepForm, requires_premium: e.target.checked })
-                  }
-                />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                  Pas disponibil doar pentru Premium
-                </span>
-              </label>
-              <Button onClick={handleAddRoadmapStep} className="rounded-2xl md:col-span-2" disabled={loading}>
-                Adaugă pas
-              </Button>
-            </div>
+        {(error || success) ? (
+          <div className="absolute inset-x-3 top-14 z-30 space-y-2">
+            {error ? <AlertMessage message={error} variant="error" onClose={() => setError('')} /> : null}
+            {success ? <AlertMessage message={success} variant="success" onClose={() => setSuccess('')} /> : null}
           </div>
         ) : null}
+
+        <div className="min-h-0 flex-1">
+          <RoadmapCanvas
+            layout={roadmapCanvas}
+            onLayoutChange={setRoadmapCanvas}
+            fillHeight
+            fitOnLoad={Boolean(selectedRoadmapId)}
+            persistKey={selectedRoadmapId ? `admin-${selectedRoadmapId}` : null}
+          />
+        </div>
       </div>
+
+      {stepsOpen && selectedRoadmapId ? (
+        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-300 bg-white dark:border-white/10 dark:bg-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-white/10">
+            <h3 className="text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">Pași recomandați</h3>
+            <button
+              type="button"
+              onClick={() => setStepsOpen(false)}
+              className="text-slate-400 hover:text-primary"
+              aria-label="Închide panel pași"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+            {(selectedRoadmap?.study_roadmap_steps ?? []).map((step, index) => (
+              <div
+                key={step.id}
+                className="flex items-center justify-between rounded-2xl border border-slate-300 px-4 py-3 dark:border-white/10"
+              >
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Pasul {index + 1}
+                  </p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">{step.title}</p>
+                  {step.requires_premium ? (
+                    <p className="text-[10px] font-black uppercase text-primary">Premium</p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteRoadmapStep(step.id)}
+                  className="rounded-xl bg-destructive/10 p-2 text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3 border-t border-slate-200 p-4 dark:border-white/10">
+            <input
+              type="text"
+              value={roadmapStepForm.title}
+              onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, title: e.target.value })}
+              placeholder="Titlu pas"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              type="text"
+              value={roadmapStepForm.description}
+              onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, description: e.target.value })}
+              placeholder="Descriere pas"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <select
+              value={roadmapStepForm.lesson_id}
+              onChange={(e) => setRoadmapStepForm({ ...roadmapStepForm, lesson_id: e.target.value })}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="">Fără lecție</option>
+              {lessons
+                .filter((lesson) => lesson.profile === roadmapForm.profile)
+                .map((lesson) => (
+                  <option key={lesson.id} value={lesson.id}>
+                    {lesson.title}
+                  </option>
+                ))}
+            </select>
+            <input
+              type="number"
+              value={roadmapStepForm.order_index}
+              onChange={(e) =>
+                setRoadmapStepForm({
+                  ...roadmapStepForm,
+                  order_index: parseInt(e.target.value, 10) || 1,
+                })
+              }
+              placeholder="Ordine pas"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold dark:border-white/10 dark:bg-white/5"
+            />
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={roadmapStepForm.requires_premium}
+                onChange={(e) =>
+                  setRoadmapStepForm({ ...roadmapStepForm, requires_premium: e.target.checked })
+                }
+              />
+              Doar Premium
+            </label>
+            <Button onClick={handleAddRoadmapStep} size="sm" className="w-full rounded-xl" disabled={loading}>
+              Adaugă pas
+            </Button>
+          </div>
+        </aside>
+      ) : null}
     </div>
   )
 }

@@ -1,10 +1,11 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
-import Stripe from 'npm:stripe@17.7.0'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { syncCheckoutSession } from '../_shared/stripe-webhook.ts'
+import { STRIPE_API_VERSION } from '../_shared/stripe.ts'
 
 type SyncCheckoutDeps = {
   createClient?: typeof createClient
@@ -52,7 +53,7 @@ export function createSyncPremiumCheckoutApp(deps: SyncCheckoutDeps = {}) {
         return jsonResponse({ error: 'Missing checkout session id.' }, 400, corsHeaders)
       }
 
-      const stripe = new StripeCtor(stripeSecret, { apiVersion: '2025-02-24.acacia' })
+      const stripe = new StripeCtor(stripeSecret, { apiVersion: STRIPE_API_VERSION })
       const session = await stripe.checkout.sessions.retrieve(sessionId)
 
       if (session.mode !== 'subscription') {

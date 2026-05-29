@@ -1,5 +1,5 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
-import Stripe from 'npm:stripe@17.7.0'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { assertSubscriptionPrice, entitlementStatusFromSubscription, subscriptionPeriodEndIso } from './premium.ts'
 
 export async function upsertEntitlement({
@@ -151,7 +151,7 @@ export async function syncCheckoutSession(options: {
     subscriptionId: fullSubscription.id,
     customerId,
     amountPaid: fullSession.amount_total ? fullSession.amount_total / 100 : null,
-    currency: fullSession.currency,
+    currency: fullSession.currency ?? null,
     expiresAt: subscriptionPeriodEndIso(fullSubscription),
     status: entitlementStatusFromSubscription(fullSubscription),
     cancelAtPeriodEnd: fullSubscription.cancel_at_period_end,

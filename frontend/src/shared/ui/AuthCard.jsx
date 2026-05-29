@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 export function AuthCard({ children, title, description, footer, className = '' }) {
+  const [documentMark] = useState(() => Math.floor(Math.random() * 1000))
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -42,7 +44,7 @@ export function AuthCard({ children, title, description, footer, className = '' 
         
         {/* Subtle numbering or academic mark */}
         <div className="absolute bottom-6 right-8 text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.5em] select-none pointer-events-none">
-          Document MU-{Math.floor(Math.random() * 1000)}
+          Document MU-{documentMark}
         </div>
       </div>
     </motion.div>

@@ -1,6 +1,12 @@
+/**
+ * Serviciu de administrare a conținutului didactic: lecții, întrebări de quiz,
+ * fișiere atașate, părți de lecție și variante rezolvate. Fiecare operațiune
+ * verifică în prealabil rolul de admin de curriculum.
+ */
 import { supabase } from '../supabaseClient'
 import { requireCurriculumAdmin } from './curriculumAdminService'
 
+// Limite de validare pentru fișierele încărcate la lecții.
 const MAX_LESSON_FILE_BYTES = 20 * 1024 * 1024
 const ALLOWED_LESSON_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'doc', 'docx'])
 
@@ -220,6 +226,13 @@ export async function deleteLessonPart(id) {
   if (error) throw error
 }
 
+/**
+ * Încarcă un fișier în bucket-ul „materials” după validarea dimensiunii,
+ * extensiei și tipului MIME, și returnează URL-ul public împreună cu metadatele.
+ *
+ * @param {File} file - Fișierul selectat de utilizator.
+ * @returns {Promise<{ url: string, path: string, name: string, type: string }>}
+ */
 export async function uploadFileToStorage(file) {
   await requireCurriculumAdmin()
 
@@ -242,11 +255,14 @@ export async function uploadFileToStorage(file) {
     doc: ['application/msword'],
     docx: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   }
+  // Verificăm că tipul MIME real corespunde extensiei, pentru a împiedica
+  // încărcarea unui fișier cu extensie falsificată (ex. .pdf cu conținut HTML).
   const allowedMimes = allowedMimeByExt[fileExt]
   if (allowedMimes && file.type && !allowedMimes.includes(file.type)) {
     throw new Error('Tipul de fișier nu corespunde extensiei.')
   }
 
+  // Nume generat aleator pentru a evita coliziunile și a nu expune numele original în URL.
   const fileName = `${crypto.randomUUID()}.${fileExt}`
   const filePath = `lesson-materials/${fileName}`
 

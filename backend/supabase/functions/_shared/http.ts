@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { readEnv, type EnvSource } from './env.ts'
 
 export type CorsHeaders = Record<string, string>
@@ -68,8 +68,10 @@ export function textResponse(text: string, status: number, corsHeaders: CorsHead
   return withCorsHeaders(new Response(text, { status }), corsHeaders)
 }
 
+type AppContext = Context<{ Variables: { corsHeaders: CorsHeaders } }>
+
 export function createCorsMiddleware() {
-  return async (c: any, next: () => Promise<void>) => {
+  return async (c: AppContext, next: () => Promise<void>) => {
     c.set('corsHeaders', buildCorsHeaders(c.req.raw))
     await next()
     const corsHeaders = c.get('corsHeaders') as CorsHeaders | undefined
@@ -80,7 +82,7 @@ export function createCorsMiddleware() {
   }
 }
 
-export function getCorsHeaders(c: any) {
+export function getCorsHeaders(c: AppContext) {
   return (c.get('corsHeaders') as CorsHeaders | undefined) ?? {}
 }
 

@@ -1,25 +1,37 @@
+/**
+ * Serviciu pentru rolurile de administrare a curriculei. Distinge două niveluri:
+ * adminii de curriculum (pot edita conținutul) și administratorul principal
+ * (poate gestiona lista de admini). Verificările de rol se bazează pe funcții
+ * RPC din baza de date, dublate de politicile RLS.
+ */
 import { supabase } from '../supabaseClient'
 
+/** Normalizează un email (trim + lowercase) și returnează null dacă nu e valid. */
 export function normalizeAdminEmail(email) {
   const value = String(email || '').trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return null
   return value
 }
 
+/** Verifică dacă un email coincide cu cel al administratorului principal. */
 export function isEmailPrimaryAdmin(email, primaryAdminEmail) {
   if (!primaryAdminEmail) return false
   return normalizeAdminEmail(email) === primaryAdminEmail
 }
 
+/** Returnează true dacă utilizatorul curent este admin de curriculum. */
 export async function checkCurrentUserIsAdmin() {
   const { data, error } = await supabase.rpc('is_curriculum_admin')
   if (error) {
+    // Funcția RPC lipsește (ex. migrare neaplicată) — tratăm ca „nu e admin”
+    // în loc să blocăm aplicația cu o eroare.
     if (error.code === 'PGRST202' || error.code === '42883') return false
     throw error
   }
   return Boolean(data)
 }
 
+/** Returnează true dacă utilizatorul curent este administratorul principal. */
 export async function checkCurrentUserIsPrimaryAdmin() {
   const { data, error } = await supabase.rpc('is_primary_admin')
   if (error) {
@@ -39,6 +51,7 @@ export async function fetchPrimaryAdminEmail() {
   return normalizeAdminEmail(data) || null
 }
 
+/** Aruncă eroare dacă utilizatorul curent nu e admin de curriculum (gardă reutilizabilă). */
 export async function requireCurriculumAdmin() {
   const isAdmin = await checkCurrentUserIsAdmin()
   if (!isAdmin) {
@@ -46,6 +59,7 @@ export async function requireCurriculumAdmin() {
   }
 }
 
+/** Aruncă eroare dacă utilizatorul curent nu e administratorul principal. */
 export async function requirePrimaryAdmin() {
   const isPrimary = await checkCurrentUserIsPrimaryAdmin()
   if (!isPrimary) {
@@ -64,6 +78,10 @@ export async function getCurriculumAdminEmails() {
   return data ?? []
 }
 
+/**
+ * Adaugă un email în lista de admini de curriculum. Doar administratorul
+ * principal poate face asta, iar emailul trebuie să aparțină unui cont existent.
+ */
 export async function addCurriculumAdminEmail(email) {
   await requirePrimaryAdmin()
 
@@ -72,6 +90,7 @@ export async function addCurriculumAdminEmail(email) {
     throw new Error('Introdu o adresă de email validă.')
   }
 
+  // Acordăm rol de admin doar unei persoane care are deja cont în aplicație.
   const { data: userExists, error: lookupError } = await supabase.rpc('auth_user_email_exists', {
     p_email: normalized,
   })
@@ -94,6 +113,7 @@ export async function addCurriculumAdminEmail(email) {
     .single()
 
   if (error) {
+    // 42501 / RLS = blocat de politicile bazei de date; 23505 = email deja prezent.
     if (error.code === '42501' || error.message?.includes('row-level security')) {
       throw new Error('Doar administratorul principal poate adăuga administratori.')
     }
@@ -106,6 +126,7 @@ export async function addCurriculumAdminEmail(email) {
   return data
 }
 
+/** Elimină un admin de curriculum; administratorul principal nu poate fi șters. */
 export async function removeCurriculumAdminEmail(id, email) {
   await requirePrimaryAdmin()
 

@@ -1,6 +1,15 @@
+/**
+ * Răspunsuri la quiz: verificarea corectitudinii și înregistrarea încercărilor.
+ * Verificarea răspunsului se face server-side (RPC), pentru a nu expune răspunsul
+ * corect în client; tabela locală reține doar dacă utilizatorul a nimerit sau nu.
+ */
 import { supabase } from '../supabaseClient'
 import { requireSelfUserId } from './sessionGuard'
 
+/**
+ * Trimite răspunsul ales la o întrebare și returnează dacă a fost corect.
+ * Logica de verificare rulează în baza de date (RPC `submit_quiz_answer`).
+ */
 export async function submitQuizAnswer({ questionId, selectedIndex }) {
   const { data, error } = await supabase.rpc('submit_quiz_answer', {
     p_question_id: questionId,
@@ -11,10 +20,15 @@ export async function submitQuizAnswer({ questionId, selectedIndex }) {
   return Boolean(data?.correct)
 }
 
+// Numără întrebările unice (un utilizator poate avea o singură încercare per întrebare).
 function countDistinctQuestions(rows) {
   return new Set((rows ?? []).map((row) => row.question_id)).size
 }
 
+/**
+ * Înregistrează (sau actualizează) încercarea utilizatorului la o întrebare.
+ * Păstrăm o singură încercare per întrebare, deci facem update dacă există deja.
+ */
 export async function recordQuizAttempt({ lessonId, questionId, isCorrect }) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
@@ -56,10 +70,12 @@ export async function recordQuizAttempt({ lessonId, questionId, isCorrect }) {
   if (error) throw error
 }
 
+/** Scurtătură pentru înregistrarea unei greșeli (răspuns incorect). */
 export async function recordQuizMistake({ lessonId, questionId }) {
   return recordQuizAttempt({ lessonId, questionId, isCorrect: false })
 }
 
+/** Numărul de întrebări la care utilizatorul a greșit (distincte). */
 export async function getQuizMistakeCount(userId) {
   await requireSelfUserId(userId)
   const { data, error } = await supabase
@@ -72,6 +88,7 @@ export async function getQuizMistakeCount(userId) {
   return countDistinctQuestions(data)
 }
 
+/** Numărul de întrebări la care utilizatorul a răspuns corect (distincte). */
 export async function getQuizCorrectCount(userId) {
   await requireSelfUserId(userId)
   const { data, error } = await supabase

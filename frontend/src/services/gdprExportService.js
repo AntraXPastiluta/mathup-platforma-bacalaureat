@@ -1,3 +1,9 @@
+/**
+ * Export GDPR al datelor utilizatorului. Strategia preferată e o edge function
+ * (care vede toate datele), iar dacă aceasta e indisponibilă se cade pe un export
+ * construit direct din client, folosind doar tabelele accesibile prin RLS.
+ * Rezultatul e descărcat ca fișier JSON.
+ */
 import { supabase } from '../supabaseClient'
 import { assembleExportPayload, mapStudyRoadmaps } from '../utils/gdprExportBuilder'
 
@@ -22,6 +28,7 @@ function parseExportPayload(payload) {
   return payload
 }
 
+// Declanșează descărcarea payload-ului ca fișier JSON, printr-un <a> temporar.
 function triggerJsonDownload(data) {
   const date = new Date().toISOString().slice(0, 10)
   const filename = `mathup-export-${date}.json`
@@ -45,6 +52,8 @@ function isEdgeFunctionUnavailable(error, contextStatus) {
   )
 }
 
+// La exportul din client, o tabelă inaccesibilă nu trebuie să rateze tot exportul;
+// de aceea erorile individuale sunt logate și înlocuite cu liste/valori goale.
 async function queryOptional(builder) {
   const { data, error } = await builder
   if (error) {
@@ -63,6 +72,8 @@ async function queryOptionalSingle(builder) {
   return data
 }
 
+// Construiește exportul direct din client interogând în paralel toate tabelele
+// relevante. Folosit doar ca rezervă când edge function-ul nu e disponibil.
 async function buildClientSideExport(user) {
   const userId = user.id
 
@@ -206,6 +217,10 @@ async function invokeExportUserData(accessToken) {
   }
 }
 
+/**
+ * Punctul de intrare public: generează exportul datelor utilizatorului curent
+ * și declanșează descărcarea fișierului JSON.
+ */
 export async function exportAndDownloadUserData() {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
@@ -223,6 +238,8 @@ export async function exportAndDownloadUserData() {
     payload = await invokeExportUserData(session.access_token)
   } catch (edgeError) {
     const message = edgeError?.message || ''
+    // Erorile de business (limita de rate, lipsa autentificării) trebuie propagate;
+    // doar indisponibilitatea funcției justifică fallback-ul pe export din client.
     if (message.includes('3 exporturi') || message.includes('autentificat')) {
       throw edgeError
     }

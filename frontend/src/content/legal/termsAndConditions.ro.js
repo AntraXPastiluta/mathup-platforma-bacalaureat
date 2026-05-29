@@ -8,7 +8,7 @@ export function getTermsAndConditionsSections() {
         `Bun venit pe ${PLATFORM.name}, platformă accesibilă la adresa web ${PLATFORM.url} (numită în continuare „Platforma” sau „Aplicația”).`,
         'Aplicația este o platformă SaaS (Software as a Service) educațională, concepută ca un proiect de startup pentru pregătirea elevilor în vederea susținerii examenului de Bacalaureat la matematică.',
         'Prin crearea unui cont și utilizarea serviciilor noastre, vă exprimați acordul deplin și necondiționat cu prezenții Termeni și Condiții.',
-        `Ultima actualizare: 28 mai 2026. Versiune document: ${LEGAL_DOCS_VERSION}.`,
+        `Ultima actualizare: 29 mai 2026. Versiune document: ${LEGAL_DOCS_VERSION}.`,
       ],
     },
     {
@@ -67,12 +67,29 @@ export function getTermsAndConditionsSections() {
       paragraphs: [
         'MathUP colectează și prelucrează date cu caracter personal (nume, prenume, adresa de e-mail, parola criptată și statisticile de progres la matematică) în conformitate cu Regulamentul (UE) 2016/679 (GDPR).',
         'Datele sunt colectate strict pentru crearea contului, personalizarea experienței de învățare și funcționarea tehnică a aplicației.',
-        `Fiind un proiect de testare, datele dumneavoastră sunt în siguranță, nu vor fi vândute și nu vor fi transmise către terți. Utilizatorul are dreptul de a solicita ștergerea definitivă a contului și a datelor asociate printr-un e-mail trimis la adresa de contact a proiectului (${OPERATOR.email}).`,
-        'Pentru detalii complete, consultați Politica de Confidențialitate MathUP.',
+        'Fiind un proiect de testare, datele dumneavoastră sunt în siguranță, nu vor fi vândute și nu vor fi transmise către terți.',
+        'Pentru detalii complete privind drepturile GDPR (acces, rectificare, portabilitate, ștergere), consultați Politica de Confidențialitate MathUP.',
       ],
     },
     {
-      title: '8. Legea Aplicabilă și Litigii',
+      title: '8. Ștergerea contului',
+      paragraphs: [
+        'Utilizatorul autentificat poate solicita ștergerea definitivă a contului MathUP și a datelor asociate direct din aplicație, fără a fi necesar un e-mail prealabil către operator.',
+        'Procedura este disponibilă în pagina Profil, secțiunea „Zonă Periculoasă”, prin opțiunea „Șterge Contul”.',
+      ],
+      list: [
+        'La inițierea ștergerii, Platforma trimite un cod numeric de confirmare de 6 cifre la adresa de e-mail asociată contului.',
+        'Codul este valabil 15 minute de la trimitere. Dacă expiră, poate fi solicitat un cod nou (maximum 3 solicitări la o oră).',
+        'Ștergerea devine efectivă numai după introducerea corectă a codului în fereastra de confirmare din aplicație.',
+        'Procesul este ireversibil: se șterg contul de autentificare, progresul la lecții, rezultatele quiz-urilor, roadmaps-urile personale, mesajele de suport și celelalte date legate de cont.',
+        'Dacă există un abonament Premium activ, acesta este încheiat odată cu ștergerea contului; plățile deja efectuate nu sunt rambursabile, conform secțiunii 4.',
+      ],
+      afterList: [
+        `Dacă nu puteți finaliza ștergerea din aplicație (de exemplu, nu mai aveți acces la e-mailul contului), ne puteți contacta la ${OPERATOR.email} sau la ${OPERATOR.dpoEmail} pentru asistență.`,
+      ],
+    },
+    {
+      title: '9. Legea Aplicabilă și Litigii',
       paragraphs: [
         `Prezenții termeni sunt guvernați de legislația din România. Orice neînțelegere sau dispută apărută în legătură cu utilizarea platformei ${PLATFORM.url} se va soluționa pe cale amiabilă între utilizator și echipa de dezvoltare.`,
         `Pentru întrebări: ${OPERATOR.email}.`,

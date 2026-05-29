@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Confirmare ștergere cont – MathUP</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Inter,Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+  <!-- Preheader -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+    Codul tău de confirmare pentru ștergerea contului MathUP este {{deletion_code}}. Valabil {{expires_minutes}} minute.
+  </div>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <!-- Card principal -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;background-color:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+
+          <!-- Header roșu – atenționare -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);padding:28px 32px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.85);">
+                MathUP · Securitate cont
+              </p>
+              <h1 style="margin:0;font-size:22px;font-weight:800;line-height:1.3;color:#ffffff;letter-spacing:-0.02em;">
+                Confirmare ștergere cont
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Salut -->
+          <tr>
+            <td style="padding:32px 32px 8px;">
+              <p style="margin:0;font-size:16px;line-height:1.6;color:#0f172a;">
+                Bună, <strong>{{user_name}}</strong>,
+              </p>
+              <p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#475569;">
+                Am primit o solicitare de <strong>ștergere permanentă</strong> a contului tău MathUP
+                (<a href="mailto:{{user_email}}" style="color:#dc2626;font-weight:600;text-decoration:none;">{{user_email}}</a>).
+                Introdu codul de mai jos în aplicație pentru a confirma această acțiune.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Codul de confirmare -->
+          <tr>
+            <td style="padding:24px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fff5f5;border:2px solid #fca5a5;border-radius:12px;">
+                <tr>
+                  <td style="padding:24px;text-align:center;">
+                    <p style="margin:0 0 12px;font-size:10px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:#ef4444;">
+                      Codul tău de confirmare
+                    </p>
+                    <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:0.3em;color:#dc2626;font-family:Courier New,Courier,monospace;">
+                      {{deletion_code}}
+                    </p>
+                    <p style="margin:12px 0 0;font-size:12px;color:#ef4444;font-weight:600;">
+                      Valabil {{expires_minutes}} minute
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Avertisment -->
+          <tr>
+            <td style="padding:0 32px 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fef2f2;border:1px solid #fca5a5;border-radius:12px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 10px;font-size:10px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:#dc2626;">
+                      Atenție – acțiune ireversibilă
+                    </p>
+                    <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:#7f1d1d;">
+                      <li>Contul tău, istoricul de progres și toate datele vor fi șterse definitiv.</li>
+                      <li>Abonamentul Premium activ va fi anulat și nu va fi rambursat.</li>
+                      <li>Nu vei mai putea recupera datele după confirmare.</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Dacă nu ai solicitat -->
+          <tr>
+            <td style="padding:0 32px 32px;">
+              <p style="margin:0;padding:16px 20px;background-color:#f0fdf4;border-radius:12px;font-size:13px;line-height:1.6;color:#166534;">
+                <strong>Nu ai solicitat ștergerea contului?</strong> Ignoră acest email în siguranță — codul expiră automat
+                în {{expires_minutes}} de minute și nu se va întâmpla nimic. Dacă crezi că cineva a accesat contul tău,
+                îți recomandăm să îți schimbi parola imediat.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#64748b;">
+                MathUP – Pregătire Bacalaureat Matematică
+              </p>
+              <p style="margin:0 0 8px;font-size:11px;line-height:1.6;color:#94a3b8;">
+                Acesta este un mesaj automat de securitate. Te rugăm să nu răspunzi direct la acest email.
+              </p>
+              <p style="margin:0;font-size:11px;color:#94a3b8;">
+                <a href="https://mathup-bacalureat.vercel.app" style="color:#dc2626;text-decoration:none;">mathup-bacalureat.vercel.app</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Sub-footer legal -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;">
+          <tr>
+            <td style="padding:20px 16px;text-align:center;font-size:10px;line-height:1.5;color:#94a3b8;">
+              © MathUP · Platformă educațională pentru examenul de Bacalaureat la matematică
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

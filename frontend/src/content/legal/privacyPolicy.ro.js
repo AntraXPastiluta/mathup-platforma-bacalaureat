@@ -1,4 +1,4 @@
-import { LEGAL_DOCS_VERSION, OPERATOR, PLATFORM } from './legalConstants'
+import { LEGAL_DOCS_VERSION, OPERATOR } from './legalConstants'
 
 export function getPrivacyPolicySections() {
   return [
@@ -37,7 +37,7 @@ export function getPrivacyPolicySections() {
     {
       title: '3. Cât timp păstrăm datele dumneavoastră?',
       paragraphs: [
-        'Datele asociate contului dumneavoastră sunt păstrate atât timp cât contul este activ pe platformă. Deoarece MathUP este un proiect de startup, conturile și datele aferente vor fi șterse definitiv în momentul încheierii fazei de testare/evaluare a proiectului sau la cererea expresă a utilizatorului.',
+        'Datele asociate contului dumneavoastră sunt păstrate atât timp cât contul este activ pe platformă. La ștergerea contului inițiată din Profil (cu confirmare prin cod pe e-mail), datele sunt eliminate definitiv din sistemele noastre, cu excepția eventualelor înregistrări tehnice anonimizate sau obligatorii prevăzute de lege.',
       ],
     },
     {
@@ -49,6 +49,7 @@ export function getPrivacyPolicySections() {
         'Vercel Inc. – Pentru găzduirea infrastructurii web a aplicației.',
         'Supabase – Pentru stocarea securizată a tabelelor cu utilizatori, autentificare și date de progres.',
         'Stripe (mod test) – Pentru simularea plăților; nu stocăm date reale de card bancar pe serverele noastre.',
+        'EmailJS – Pentru trimiterea codului de confirmare la ștergerea contului și a mesajelor automate de suport către utilizator.',
       ],
     },
     {
@@ -65,12 +66,13 @@ export function getPrivacyPolicySections() {
       list: [
         'Dreptul de acces: Puteți solicita o confirmare a faptului că datele dumneavoastră sunt sau nu prelucrate de noi.',
         'Dreptul de rectificare: Puteți solicita corectarea datelor inexacte din cont.',
-        'Dreptul la ștergere („dreptul de a fi uitat”): Puteți solicita ștergerea completă a contului dumneavoastră și a tuturor statisticilor de progres asociate.',
-        'Dreptul la portabilitate: Puteți cere exportul datelor dumneavoastră într-un format structurat (JSON), direct din pagina Profil — secțiunea „Datele mele (GDPR)”, sau prin e-mail la DPO.',
+        'Dreptul la ștergere („dreptul de a fi uitat”): Puteți șterge definitiv contul și toate datele asociate din pagina Profil → secțiunea „Zonă Periculoasă” → „Șterge Contul”. Veți primi pe e-mail un cod de confirmare de 6 cifre (valabil 15 minute), pe care îl introduceți în aplicație pentru a finaliza ștergerea.',
+        'Dreptul la portabilitate: Puteți descărca o copie structurată a datelor (JSON) din pagina Profil — secțiunea „Datele mele (GDPR)”.',
       ],
       afterList: [
         'Exportul din Profil include datele de cont, progresul la lecții, rezultatele quiz-urilor, informațiile despre abonamentul Premium și mesajele trimise către suport. Sunt permise maximum 3 exporturi la 24 de ore.',
-        `Pentru celelalte drepturi (acces, rectificare, ștergere) sau dacă aveți nevoie de asistență, puteți trimite un e-mail la: ${OPERATOR.dpoEmail}.`,
+        'Recomandăm exportul datelor înainte de ștergerea contului, deoarece după confirmare datele nu mai pot fi recuperate.',
+        `Pentru exercitarea drepturilor de acces și rectificare, pentru probleme la ștergerea contului sau dacă aveți nevoie de asistență, puteți trimite un e-mail la: ${OPERATOR.dpoEmail}.`,
       ],
     },
     {

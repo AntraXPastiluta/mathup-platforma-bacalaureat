@@ -20,11 +20,14 @@ export function resolveLessonVideoEmbedSrc(videoUrl) {
   if (!['http:', 'https:'].includes(url.protocol)) return null
   if (!EMBED_VIDEO_HOSTS.has(url.hostname.toLowerCase())) return null
 
+  // Acceptăm doar host-uri YouTube cunoscute și extragem ID-ul video (din ?v= sau din
+  // ultimul segment de cale), pentru a evita injectarea unui iframe arbitrar.
   const videoId = url.searchParams.get('v')
     || url.pathname.split('/').filter(Boolean).pop()
 
   if (!videoId || !/^[A-Za-z0-9_-]{6,}$/.test(videoId)) return null
 
+  // Folosim domeniul -nocookie pentru a reduce urmărirea (tracking) utilizatorului.
   return `https://www.youtube-nocookie.com/embed/${videoId}`
 }
 
@@ -55,6 +58,9 @@ export function assertTrustedDownloadUrl(url) {
     throw new Error('Fișierul nu are o adresă validă.')
   }
 
+  // Triplă verificare anti-SSRF/phishing: forțăm HTTPS, același origin ca Supabase și
+  // calea publică de storage. Astfel butoanele de descărcare nu pot fi deturnate spre
+  // adrese externe controlate de atacator.
   if (target.protocol !== 'https:') {
     throw new Error('Descărcarea este permisă doar prin HTTPS.')
   }

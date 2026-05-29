@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Crown, Loader2, Sparkles, X } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
@@ -17,24 +17,25 @@ export function PremiumUpgradeModal() {
     errorMessage,
   } = useAuth()
 
-  const [checkoutPending, setCheckoutPending] = useState(false)
+  const [checkoutPendingRaw, setCheckoutPendingRaw] = useState(false)
+  const checkoutPending = premiumModalOpen && checkoutPendingRaw
   const isCheckoutBusy = checkoutPending || checkoutLoading
 
   const handleCheckout = useCallback(async () => {
     if (isCheckoutBusy) return
-    setCheckoutPending(true)
+    setCheckoutPendingRaw(true)
     try {
       await startPremiumCheckout()
     } catch {
-      setCheckoutPending(false)
+      setCheckoutPendingRaw(false)
     }
   }, [isCheckoutBusy, startPremiumCheckout])
 
-  useEffect(() => {
-    if (!premiumModalOpen) {
-      setCheckoutPending(false)
-    }
-  }, [premiumModalOpen])
+  const handleClose = useCallback(() => {
+    if (isCheckoutBusy) return
+    setCheckoutPendingRaw(false)
+    closePremiumModal()
+  }, [closePremiumModal, isCheckoutBusy])
 
   return (
     <AnimatePresence>
@@ -45,7 +46,7 @@ export function PremiumUpgradeModal() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          onClick={isCheckoutBusy ? undefined : closePremiumModal}
+          onClick={isCheckoutBusy ? undefined : handleClose}
         >
           <motion.div
             className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-primary/20 bg-white p-8 shadow-2xl dark:bg-slate-900"
@@ -57,7 +58,7 @@ export function PremiumUpgradeModal() {
           >
             <button
               type="button"
-              onClick={closePremiumModal}
+              onClick={handleClose}
               disabled={isCheckoutBusy}
               className="absolute right-4 top-4 rounded-full border border-slate-200 p-2 text-slate-500 transition-colors hover:text-primary disabled:opacity-40 dark:border-white/10"
             >

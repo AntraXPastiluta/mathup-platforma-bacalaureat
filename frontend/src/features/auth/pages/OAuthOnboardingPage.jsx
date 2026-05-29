@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Moon, Sun, BarChart3 } from 'lucide-react'
@@ -11,6 +11,7 @@ import { LegalDocumentModal } from '../../../shared/ui/LegalDocumentModal'
 import { LEGAL_DOCS_VERSION, LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { PROFILES } from '../../lessons/profiles'
 import { needsProfileSetup } from '../../../services/profileService'
+import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 
 function getDisplayNameFromMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return ''
@@ -19,23 +20,17 @@ function getDisplayNameFromMetadata(metadata) {
 }
 
 export function OAuthOnboardingPage() {
-  const { user, authLoading, completeOAuthProfile, loading, errorMessage, theme, toggleTheme } = useAuth()
+  const { user, authLoading, completeOAuthProfile, loading, errorMessage, theme, toggleTheme, isAdmin } = useAuth()
   const navigate = useNavigate()
+  const suggestedName = getDisplayNameFromMetadata(user?.user_metadata)
   const [formData, setFormData] = useState({
     nume: '',
     profiles: [PROFILES[0].key],
   })
+  const [nameTouched, setNameTouched] = useState(false)
   const [acceptedLegal, setAcceptedLegal] = useState(false)
   const [legalModal, setLegalModal] = useState(null)
   const [legalError, setLegalError] = useState('')
-
-  useEffect(() => {
-    if (!user) return
-    const displayName = getDisplayNameFromMetadata(user.user_metadata)
-    if (displayName) {
-      setFormData((prev) => ({ ...prev, nume: displayName }))
-    }
-  }, [user])
 
   if (authLoading) {
     return <div className="page-message">Se incarca sesiunea...</div>
@@ -46,7 +41,7 @@ export function OAuthOnboardingPage() {
   }
 
   if (!needsProfileSetup(user)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={resolvePostAuthRedirect({ user, isAdmin, fallback: '/dashboard' })} replace />
   }
 
   const handleSubmit = async (event) => {
@@ -57,15 +52,22 @@ export function OAuthOnboardingPage() {
     }
     setLegalError('')
     try {
-      await completeOAuthProfile({
-        fullName: formData.nume.trim(),
+      const result = await completeOAuthProfile({
+        fullName: (nameTouched ? formData.nume : (formData.nume || suggestedName)).trim(),
         profiles: formData.profiles,
         legalConsent: {
           acceptedAt: new Date().toISOString(),
           version: LEGAL_DOCS_VERSION,
         },
       })
-      navigate('/dashboard')
+      navigate(
+        resolvePostAuthRedirect({
+          user: result?.user ?? user,
+          isAdmin,
+          fallback: '/dashboard',
+        }),
+        { replace: true },
+      )
     } catch {
       // Eroarea este deja gestionată în provider
     }
@@ -125,8 +127,11 @@ export function OAuthOnboardingPage() {
                   id="oauth-nume"
                   type="text"
                   className={inputClass}
-                  value={formData.nume}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, nume: event.target.value }))}
+                  value={nameTouched ? formData.nume : (formData.nume || suggestedName)}
+                  onChange={(event) => {
+                    setNameTouched(true)
+                    setFormData((prev) => ({ ...prev, nume: event.target.value }))
+                  }}
                   placeholder="Ex: Andrei Ionescu"
                   required
                 />

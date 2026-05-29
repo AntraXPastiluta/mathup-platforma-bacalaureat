@@ -1,5 +1,5 @@
 import { readEnv, type EnvSource } from './env.ts'
-import type Stripe from 'npm:stripe@17.7.0'
+import type Stripe from 'stripe'
 
 export function seasonEndIso(envSource?: EnvSource) {
   const configured = readEnv('PREMIUM_SEASON_END', envSource)
@@ -14,14 +14,21 @@ export function capExpiresAt(iso: string, envSource?: EnvSource) {
   return new Date(Math.min(candidate, seasonEnd)).toISOString()
 }
 
+// Stripe subscription statuses that keep Premium access switched on.
+// `past_due` is intentionally included so a user keeps access during Stripe's
+// payment-retry grace period instead of being locked out the instant a renewal
+// charge fails. Every other status (canceled, unpaid, paused, incomplete, ...)
+// falls through to 'refunded' and revokes the entitlement.
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
+  'active',
+  'trialing',
+  'past_due',
+])
+
 export function entitlementStatusFromSubscription(subscription: Stripe.Subscription) {
-  if (subscription.status === 'active' || subscription.status === 'trialing') {
-    return 'active' as const
-  }
-  if (subscription.status === 'past_due') {
-    return 'active' as const
-  }
-  return 'refunded' as const
+  return ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status)
+    ? ('active' as const)
+    : ('refunded' as const)
 }
 
 export function subscriptionPeriodEndIso(subscription: Stripe.Subscription, envSource?: EnvSource) {

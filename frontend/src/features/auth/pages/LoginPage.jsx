@@ -9,6 +9,7 @@ import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
+import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 
 export function LoginPage() {
   const [formData, setFormData] = useState(() => {
@@ -19,7 +20,7 @@ export function LoginPage() {
     }
   })
   const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('remember_email'))
-  const { login, loginWithGoogle, loading, errorMessage, successMessage, theme, toggleTheme } = useAuth()
+  const { login, loginWithGoogle, loading, errorMessage, theme, toggleTheme, user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
   const handleGoogleSignIn = async () => {
@@ -33,7 +34,7 @@ export function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     try {
-      await login({
+      const authData = await login({
         email: formData.email,
         password: formData.parola
       })
@@ -44,7 +45,14 @@ export function LoginPage() {
         localStorage.removeItem('remember_email')
       }
 
-      navigate('/dashboard')
+      navigate(
+        resolvePostAuthRedirect({
+          user: authData?.session?.user ?? user,
+          isAdmin,
+          fallback: '/dashboard',
+        }),
+        { replace: true },
+      )
     } catch {
       // Eroarea este deja gestionată în provider
     }
@@ -111,7 +119,6 @@ export function LoginPage() {
             }
           >
             <form onSubmit={handleSubmit} className="space-y-8">
-              <AlertMessage type="success" message={successMessage} />
               <AlertMessage message={errorMessage} />
 
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={loading} />

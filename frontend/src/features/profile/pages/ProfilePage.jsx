@@ -2,17 +2,15 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { 
-  User, 
   Camera, 
   Check, 
   BarChart3, 
-  Sparkles, 
-  Save, 
   ArrowLeft,
   Target,
-  FileText,
   Crown,
   Download,
+  Trash2,
+  ShieldAlert,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
@@ -28,8 +26,23 @@ import { uploadProfilePhoto } from '../../../services/profilePhotoService'
 import { AVATAR_PRESETS } from '../avatarPresets'
 import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { exportAndDownloadUserData } from '../../../services/gdprExportService'
+import {
+  requestAccountDeletion,
+  confirmAccountDeletion,
+  readPendingAccountDeletionSession,
+  savePendingAccountDeletionSession,
+  clearPendingAccountDeletionSession,
+} from '../../../services/accountDeletionService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
+import { AccountDeletionModal } from '../components/AccountDeletionModal'
+
+// After a successful Stripe checkout the webhook may not have written the
+// entitlement yet, so we poll a few times before giving up. When we already
+// pushed the session id ourselves the sync is faster, so we poll more eagerly.
+const ENTITLEMENT_POLL_ATTEMPTS = 8
+const ENTITLEMENT_POLL_DELAY_WITH_SESSION_MS = 600
+const ENTITLEMENT_POLL_DELAY_WITHOUT_SESSION_MS = 1500
 
 export function ProfilePage() {
   const { user } = useAuth()
@@ -56,6 +69,7 @@ function ProfilePageContent({ metadata }) {
     cancelPremiumLoading,
     refreshEntitlement,
     isAdmin,
+    signOutAfterAccountDeletion,
   } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -69,6 +83,22 @@ function ProfilePageContent({ metadata }) {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [checkoutActivating, setCheckoutActivating] = useState(false)
+  const [deletionStep, setDeletionStep] = useState(() => readPendingAccountDeletionSession(user?.id)?.step ?? null)
+  const [deletionCode, setDeletionCode] = useState(() => readPendingAccountDeletionSession(user?.id)?.code ?? '')
+  const [deletionLoading, setDeletionLoading] = useState(false)
+  const [deletionError, setDeletionError] = useState('')
+  const [deletionModalOpen, setDeletionModalOpen] = useState(
+    () => readPendingAccountDeletionSession(user?.id)?.step === 'awaiting_code',
+  )
+
+  useEffect(() => {
+    if (!user?.id) return
+    if (deletionStep === 'awaiting_code') {
+      savePendingAccountDeletionSession(user.id, { code: deletionCode })
+      return
+    }
+    clearPendingAccountDeletionSession()
+  }, [user?.id, deletionStep, deletionCode])
 
   useEffect(() => {
     if (searchParams.get('checkout') !== 'success') return
@@ -86,7 +116,11 @@ function ProfilePageContent({ metadata }) {
           await syncPremiumCheckout(sessionId)
         }
 
-        for (let attempt = 0; attempt < 8; attempt += 1) {
+        const pollDelayMs = sessionId
+          ? ENTITLEMENT_POLL_DELAY_WITH_SESSION_MS
+          : ENTITLEMENT_POLL_DELAY_WITHOUT_SESSION_MS
+
+        for (let attempt = 0; attempt < ENTITLEMENT_POLL_ATTEMPTS; attempt += 1) {
           if (cancelled) return
           const row = await refreshEntitlement()
           if (isEntitlementActive(row)) {
@@ -94,7 +128,7 @@ function ProfilePageContent({ metadata }) {
             navigate('/profile', { replace: true })
             return
           }
-          await new Promise((resolve) => setTimeout(resolve, sessionId ? 600 : 1500))
+          await new Promise((resolve) => setTimeout(resolve, pollDelayMs))
         }
 
         setErrorMessage(
@@ -222,7 +256,48 @@ function ProfilePageContent({ metadata }) {
     try {
       await cancelPremiumSubscription()
     } catch (error) {
-      console.error('Failed to cancel premium subscription:', error)
+      setErrorMessage(
+        toUserFacingError(error, 'Nu am putut anula abonamentul Premium. Încearcă din nou sau contactează suportul.'),
+      )
+    }
+  }
+
+  const handleCancelDeletion = () => {
+    setDeletionStep(null)
+    setDeletionCode('')
+    setDeletionError('')
+    clearPendingAccountDeletionSession()
+    setDeletionModalOpen(false)
+  }
+
+  const handleRequestDeletion = async () => {
+    setDeletionError('')
+    setDeletionLoading(true)
+    try {
+      await requestAccountDeletion()
+      setDeletionStep('awaiting_code')
+      setDeletionCode('')
+    } catch (error) {
+      setDeletionError(error?.message || 'Nu am putut trimite codul. Încearcă din nou.')
+    } finally {
+      setDeletionLoading(false)
+    }
+  }
+
+  const handleConfirmDeletion = async () => {
+    setDeletionError('')
+    setDeletionLoading(true)
+    try {
+      await confirmAccountDeletion(deletionCode)
+      setDeletionModalOpen(false)
+      setDeletionStep(null)
+      setDeletionCode('')
+      clearPendingAccountDeletionSession()
+      navigate('/', { replace: true })
+      await signOutAfterAccountDeletion()
+    } catch (error) {
+      setDeletionError(error?.message || 'Nu am putut șterge contul. Încearcă din nou.')
+      setDeletionLoading(false)
     }
   }
 
@@ -537,11 +612,58 @@ function ProfilePageContent({ metadata }) {
                       Anulează
                    </Button>
                 </div>
+
+                {/* Danger Zone – account deletion */}
+                <div className="space-y-4 rounded-2xl border-2 border-red-200 bg-red-50/60 p-6 dark:border-red-900/40 dark:bg-red-950/20">
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className="mt-0.5 size-5 shrink-0 text-red-500" />
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 ml-0 mb-0">
+                        Zonă Periculoasă
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Ștergerea contului este <strong>permanentă și ireversibilă</strong>. Vei pierde
+                        tot istoricul de progres, abonamentul Premium și datele salvate.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDeletionError('')
+                        setDeletionModalOpen(true)
+                      }}
+                      disabled={deletionLoading || profileSaving}
+                      className="h-14 w-full rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-950/30 sm:w-auto sm:min-w-[280px]"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Trash2 className="size-4" />
+                        {deletionStep === 'awaiting_code' ? 'Continuă ștergerea contului' : 'Șterge Contul'}
+                      </span>
+                    </Button>
+                </div>
               </motion.div>
             </section>
           </div>
         </div>
       </main>
+
+      <AccountDeletionModal
+        open={deletionModalOpen}
+        onClose={() => {
+          if (!deletionLoading) setDeletionModalOpen(false)
+        }}
+        phase={deletionStep}
+        deletionCode={deletionCode}
+        onDeletionCodeChange={setDeletionCode}
+        loading={deletionLoading}
+        error={deletionError}
+        onRequestCode={handleRequestDeletion}
+        onConfirm={handleConfirmDeletion}
+        onCancel={handleCancelDeletion}
+      />
 
       <footer className="container py-24 text-center opacity-40">
         <div className="flex flex-col items-center gap-4 grayscale hover:grayscale-0 transition-all duration-700">

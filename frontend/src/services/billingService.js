@@ -1,3 +1,9 @@
+/**
+ * Serviciu pentru abonamentul Premium prin Stripe: citirea entitlement-ului,
+ * pornirea unui checkout, sincronizarea după plată și anularea abonamentului.
+ * Toate apelurile către edge functions au un fallback pe fetch direct pentru
+ * cazurile în care SDK-ul supabase-js eșuează la nivel de transport.
+ */
 import { supabase } from '../supabaseClient'
 import { USER_MESSAGES } from '../shared/utils/userFacingError'
 import { checkCurrentUserIsAdmin } from './curriculumAdminService'
@@ -9,9 +15,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const CHECKOUT_UNAVAILABLE = USER_MESSAGES.checkout
 const CANCEL_UNAVAILABLE = USER_MESSAGES.cancelPremium
 
+/** Citește entitlement-ul Premium al unui utilizator (cu verificare de acces). */
 export async function getPremiumEntitlement(userId) {
   if (!userId) return null
 
+  // Adminii pot interoga entitlement-ul oricărui cont; ceilalți utilizatori își pot citi
+  // doar propriul rând (verificare suplimentară pe lângă politicile RLS din baza de date).
   const isAdmin = await checkCurrentUserIsAdmin().catch(() => false)
   if (!isAdmin) {
     await requireSelfUserId(userId)
@@ -27,12 +36,15 @@ export async function getPremiumEntitlement(userId) {
   return data
 }
 
+/** Premium e activ doar dacă statutul e „active” și data de expirare e în viitor. */
 export function isEntitlementActive(entitlement) {
   if (!entitlement || entitlement.status !== 'active') return false
   if (!entitlement.expires_at) return false
   return new Date(entitlement.expires_at).getTime() > Date.now()
 }
 
+// Logăm erorile de billing doar în dezvoltare, ca să nu expunem detalii tehnice
+// utilizatorilor în producție (unde primesc doar mesajul generic prietenos).
 function logBillingError(context, error) {
   if (import.meta.env.DEV) {
     console.error(`[billing:${context}]`, error)
@@ -46,6 +58,8 @@ function parseCheckoutPayload(payload) {
   return payload.url
 }
 
+// Creează o sesiune de checkout Stripe și returnează URL-ul către care
+// utilizatorul trebuie redirecționat pentru plată.
 async function invokeCheckoutSession(accessToken) {
   const returnOrigin = window.location.origin
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
@@ -62,6 +76,8 @@ async function invokeCheckoutSession(accessToken) {
     throw new Error(CHECKOUT_UNAVAILABLE)
   }
 
+  // Clientul supabase-js eșuează uneori la nivel de transport (CORS/preflight, rețea),
+  // deși funcția există. În aceste cazuri reîncercăm cu un fetch direct către endpoint.
   const shouldRetryWithFetch =
     message.includes('Failed to send a request to the Edge Function') ||
     message.includes('Failed to fetch') ||
@@ -91,6 +107,7 @@ async function invokeCheckoutSession(accessToken) {
   return parseCheckoutPayload(payload)
 }
 
+/** Pornește fluxul de cumpărare Premium și redirecționează către pagina Stripe. */
 export async function startPremiumCheckout() {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
@@ -146,6 +163,13 @@ async function invokeSyncPremiumCheckout(accessToken, sessionId) {
   return payload
 }
 
+/**
+ * Sincronizează manual statutul Premium pe baza unei sesiuni Stripe finalizate.
+ * Folosit la întoarcerea pe pagina de succes, ca rezervă în cazul în care
+ * webhook-ul Stripe încă nu a actualizat baza de date.
+ *
+ * @param {string} sessionId - ID-ul sesiunii de checkout Stripe.
+ */
 export async function syncPremiumCheckout(sessionId) {
   const trimmed = typeof sessionId === 'string' ? sessionId.trim() : ''
   if (!trimmed) {
@@ -214,6 +238,7 @@ async function invokeCancelPremiumSubscription(accessToken) {
   return parseCancelPayload(payload)
 }
 
+/** Anulează abonamentul Premium recurent al utilizatorului curent. */
 export async function cancelPremiumSubscription() {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError

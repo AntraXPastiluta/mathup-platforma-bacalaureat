@@ -23,6 +23,8 @@ export async function cloneLessonDetails({
   questions,
   files,
 }) {
+  // Reținem corespondența ID vechi → ID nou pentru părți, deoarece întrebările de quiz pot
+  // fi ancorate „după o anumită parte” și trebuie să pointeze către partea clonată corectă.
   const partIdMap = new Map()
 
   for (const part of parts) {

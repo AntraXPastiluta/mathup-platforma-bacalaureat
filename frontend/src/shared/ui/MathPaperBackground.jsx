@@ -75,10 +75,7 @@ export function MathPaperBackground() {
   }, [])
 
   useEffect(() => {
-    if (disabled) {
-      setFlakes([])
-      return undefined
-    }
+    if (disabled) return undefined
 
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     prefersReducedMotion.current = media.matches
@@ -89,8 +86,10 @@ export function MathPaperBackground() {
     }
 
     media.addEventListener('change', onMotionChange)
-    setFlakes([])
-    spawnFlakes(liteMode ? 2 : 4)
+    queueMicrotask(() => {
+      setFlakes([])
+      spawnFlakes(liteMode ? 2 : 4)
+    })
 
     const idleTimer = window.setInterval(() => spawnFlakes(1), idleMs)
 

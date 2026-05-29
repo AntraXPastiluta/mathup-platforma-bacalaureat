@@ -26,3 +26,11 @@ import_map = "./functions/deno.json"
 [functions.sync-premium-checkout]
 verify_jwt = true
 import_map = "./functions/deno.json"
+
+[functions.request-account-deletion]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.confirm-account-deletion]
+verify_jwt = true
+import_map = "./functions/deno.json"

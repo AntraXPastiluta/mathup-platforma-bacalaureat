@@ -1,3 +1,9 @@
+/**
+ * Setări globale ale platformei: modul de mentenanță și data examenului BAC.
+ * Fiecare valoare se citește preferabil printr-o funcție RPC, cu fallback pe
+ * interogarea directă a tabelei `platform_settings` atunci când backend-ul
+ * (RPC/coloană) nu e încă migrat.
+ */
 import { parseMaintenanceFlag } from '../app/config/maintenance'
 import {
   formatBacExamDateInput,
@@ -12,6 +18,8 @@ export const MAINTENANCE_CONTACT_EMAIL = 'mathupbacalaureat@gmail.com'
 const BAC_EXAM_MIGRATION_HINT =
   'Rulează migrarea Supabase: din folderul backend, `npx supabase db push` (sau SQL din supabase/migrations/20260628120000_bac_exam_date.sql în Dashboard).'
 
+// Detectează cazurile în care suportul de backend pentru data BAC lipsește
+// (funcție/coloană/tabel inexistent, sau 404/400), ca să putem cădea elegant pe fallback.
 function isBacExamBackendMissing(error) {
   if (!error) return false
   const code = String(error.code || '')
@@ -30,6 +38,7 @@ function isBacExamBackendMissing(error) {
   )
 }
 
+/** Citește starea modului de mentenanță (cu fallback pe tabelă dacă RPC lipsește). */
 export async function fetchMaintenanceMode() {
   const { data, error } = await supabase.rpc('get_maintenance_mode')
   if (error) {
@@ -41,6 +50,7 @@ export async function fetchMaintenanceMode() {
   return parseMaintenanceFlag(data)
 }
 
+/** Activează/dezactivează modul de mentenanță (doar administratorul principal). */
 export async function setMaintenanceMode(enabled) {
   await requirePrimaryAdmin()
 
@@ -65,6 +75,7 @@ export async function fetchMaintenanceModeFromTable() {
   return Boolean(data?.maintenance_enabled)
 }
 
+/** Citește data examenului BAC (cu fallback pe tabelă, apoi pe valoarea implicită). */
 export async function fetchBacExamDate() {
   const { data, error } = await supabase.rpc('get_bac_exam_date')
   if (!error) return parseBacExamDate(data)
@@ -89,6 +100,7 @@ async function fetchBacExamDateFromTable() {
   return parseBacExamDate(data?.bac_exam_date)
 }
 
+/** Setează data examenului BAC (doar admin principal); fără backend, indică migrarea necesară. */
 export async function setBacExamDate(date) {
   await requirePrimaryAdmin()
 

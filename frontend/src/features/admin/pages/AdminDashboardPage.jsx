@@ -15,8 +15,8 @@ const RoadmapsSection = lazy(() =>
 const SolvedVariantsSection = lazy(() =>
   import('../components/SolvedVariantsSection').then((m) => ({ default: m.SolvedVariantsSection })),
 )
-const PremiumUsersSection = lazy(() =>
-  import('../components/PremiumUsersSection').then((m) => ({ default: m.PremiumUsersSection })),
+const SupportTicketsSection = lazy(() =>
+  import('../components/SupportTicketsSection').then((m) => ({ default: m.SupportTicketsSection })),
 )
 const AccesSection = lazy(() =>
   import('../components/AccesSection').then((m) => ({ default: m.AccesSection })),
@@ -29,7 +29,7 @@ const SECTION_LOADERS = {
   curriculum: CurriculumSection,
   roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
-  premium: PremiumUsersSection,
+  support: SupportTicketsSection,
   admins: AccesSection,
   platform: PlatformSection,
 }

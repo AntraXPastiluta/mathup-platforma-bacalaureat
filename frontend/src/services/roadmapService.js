@@ -1,6 +1,12 @@
+/**
+ * CRUD pentru parcursurile de învățare („roadmaps”) administrate de echipă.
+ * Citirea per profil e publică (pentru elevi), dar toate operațiunile de scriere
+ * și listarea completă necesită rol de admin de curriculum.
+ */
 import { supabase } from '../supabaseClient'
 import { requireCurriculumAdmin } from './curriculumAdminService'
 
+/** Parcursurile vizibile elevilor pentru un anumit program, cu pașii lor ordonați. */
 export async function getRoadmapsForProfile(profile) {
   const { data, error } = await supabase
     .from('study_roadmaps')
@@ -13,6 +19,7 @@ export async function getRoadmapsForProfile(profile) {
   return data ?? []
 }
 
+/** Toate parcursurile, indiferent de program — pentru panoul de administrare. */
 export async function getAllRoadmapsAdmin() {
   await requireCurriculumAdmin()
   const { data, error } = await supabase

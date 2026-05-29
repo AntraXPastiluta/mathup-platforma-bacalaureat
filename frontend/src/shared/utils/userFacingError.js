@@ -18,6 +18,10 @@ export const USER_MESSAGES = {
   config: 'Aplicația nu este configurată corect. Contactează suportul.',
 }
 
+// Strategie de tip „allowlist”: afișăm utilizatorului doar mesaje cunoscute ca sigure
+// (din SAFE_MESSAGE_PREFIXES) și care NU conțin termeni tehnici. Orice altceva e înlocuit
+// cu un mesaj generic, ca să nu scurgem detalii de infrastructură (Supabase, Stripe,
+// erori SQL etc.) care ar putea ajuta un atacator.
 const TECHNICAL_PATTERN =
   /supabase|stripe|edge function|postgres|relation |column |row-level|rls|jwt|\.env|pgrst|violates|duplicate key|failed to fetch|networkerror|checkout-session|stripe-webhook|cancel-premium|service_role|anon key|not found|42883|23505|scholar-bac|app_url|webhook|apikey|authorization header|unauthorized\.|method not allowed/i
 

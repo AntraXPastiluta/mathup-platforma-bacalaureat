@@ -1,3 +1,8 @@
+/**
+ * Trimiterea solicitărilor de suport de către utilizatori. Apelează o edge
+ * function (care salvează tichetul și trimite emailurile), cu fallback pe fetch
+ * direct la erori de rețea. Intrările sunt validate și trunchiate înainte de trimitere.
+ */
 import { supabase } from '../supabaseClient'
 import { USER_MESSAGES } from '../shared/utils/userFacingError'
 
@@ -22,6 +27,7 @@ function parseSupportPayload(payload) {
   return {
     id: payload.id,
     emailDelivered: payload.email_delivered === true,
+    autoreplyDelivered: payload.autoreply_delivered === true,
   }
 }
 
@@ -49,6 +55,8 @@ async function invokeSubmitSupportRequest(accessToken, body) {
     throw new Error(SUPPORT_UNAVAILABLE)
   }
 
+  // Doar erorile de transport justifică reîncercarea prin fetch direct; erorile
+  // de business (rate limit, validare) au fost deja tratate mai sus.
   const shouldRetryWithFetch =
     message.includes('Failed to send a request to the Edge Function') ||
     message.includes('Failed to fetch') ||
@@ -86,6 +94,10 @@ async function invokeSubmitSupportRequest(accessToken, body) {
 
 const SUPPORT_CATEGORIES = new Set(['billing', 'technical', 'content', 'other'])
 
+/**
+ * Validează și trimite o solicitare de suport pentru utilizatorul autentificat.
+ * Subiectul și mesajul sunt trunchiate defensiv (120 / 2000 de caractere).
+ */
 export async function submitSupportRequest({ category, subject, message }) {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
@@ -111,5 +123,8 @@ export async function submitSupportRequest({ category, subject, message }) {
   })
 }
 
-export const SUPPORT_SAVED_EMAIL_PENDING =
-  'Mesajul a fost înregistrat. Notificarea pe email nu s-a trimis momentan — îți răspundem tot pe emailul contului în cel mult 48 de ore.'
+export const SUPPORT_SAVED_WITH_AUTOREPLY =
+  'Solicitare înregistrată. Ți-am trimis un email de confirmare pe adresa contului. Un consultant academic va analiza mesajul în cel mult 48 de ore.'
+
+export const SUPPORT_SAVED_WITHOUT_AUTOREPLY =
+  'Solicitare înregistrată. Un consultant academic va analiza mesajul în cel mult 48 de ore.'

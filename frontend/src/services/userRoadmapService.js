@@ -1,6 +1,13 @@
+/**
+ * CRUD pentru parcursurile de studiu personale ale elevului (planșele cu materii
+ * și pozițiile lor). Fiecare operațiune verifică proprietatea: un utilizator poate
+ * citi și modifica doar parcursurile propriului cont.
+ */
 import { supabase } from '../supabaseClient'
 import { requireAuthenticatedUser, requireSelfUserId } from './sessionGuard'
 
+// Gardă: confirmă că parcursul există și aparține utilizatorului curent înainte
+// de orice modificare, ca dublură la nivel de aplicație peste politicile RLS.
 async function requireOwnedRoadmap(roadmapId) {
   const user = await requireAuthenticatedUser()
   const { data, error } = await supabase
@@ -66,6 +73,11 @@ export async function deleteUserRoadmap(id) {
   if (error) throw error
 }
 
+/**
+ * Înlocuiește complet materiile unui parcurs: șterge rândurile existente și
+ * inserează noul set. Strategia „delete + insert” evită reconcilierea complicată
+ * a pozițiilor când utilizatorul rearanjează planșa.
+ */
 export async function replaceUserRoadmapSubjects(roadmapId, subjects) {
   await requireOwnedRoadmap(roadmapId)
   const { error: deleteError } = await supabase
@@ -94,6 +106,7 @@ export async function replaceUserRoadmapSubjects(roadmapId, subjects) {
   return data ?? []
 }
 
+/** Salvează întreg workspace-ul (titlu + materii) într-un singur apel din interfață. */
 export async function saveUserRoadmapWorkspace({ roadmapId, title, subjects }) {
   const roadmap = await updateUserRoadmap(roadmapId, { title })
   const savedSubjects = await replaceUserRoadmapSubjects(roadmapId, subjects)

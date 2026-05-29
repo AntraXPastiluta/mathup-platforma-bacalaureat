@@ -12,6 +12,12 @@ interface ImportMeta {
 }
 
 declare module 'node:assert/strict' {
-  const assert: any
+  interface AssertStrict {
+    equal(actual: unknown, expected: unknown, message?: string): void
+    deepEqual(actual: unknown, expected: unknown, message?: string): void
+    match(value: string, regex: RegExp, message?: string): void
+  }
+
+  const assert: AssertStrict
   export default assert
 }

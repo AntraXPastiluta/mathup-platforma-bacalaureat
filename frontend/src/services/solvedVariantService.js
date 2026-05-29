@@ -1,6 +1,12 @@
+/**
+ * Variantele rezolvate disponibile elevului. Sursele sunt două: tabela nouă
+ * `program_solved_variants` (per program) și fișierele „legacy” atașate lecțiilor
+ * marcate ca material rezolvat. Rezultatele sunt unificate și sortate descrescător.
+ */
 import { supabase } from '../supabaseClient'
 import { normalizeProfilesList } from './profileService'
 
+// Normalizează un rând din tabela nouă (per program) la forma comună de variantă.
 function mapProgramVariant(row) {
   return {
     id: row.id,
@@ -13,6 +19,7 @@ function mapProgramVariant(row) {
   }
 }
 
+// Normalizează un fișier de lecție „legacy” (rezolvat) la aceeași formă de variantă.
 function mapLegacyLessonVariant(row) {
   return {
     id: row.id,
@@ -25,6 +32,7 @@ function mapLegacyLessonVariant(row) {
   }
 }
 
+/** Returnează variantele rezolvate pentru programele date, combinând ambele surse. */
 export async function getSolvedVariantsForProfiles(profileKeys) {
   const keys = normalizeProfilesList(profileKeys)
   if (keys.length === 0) return []
@@ -52,6 +60,8 @@ export async function getSolvedVariantsForProfiles(profileKeys) {
       .order('created_at', { ascending: false }),
   ])
 
+  // PGRST205 = tabela `program_solved_variants` nu există încă (migrare neaplicată);
+  // în acest caz ignorăm sursa nouă și ne bazăm doar pe fișierele legacy.
   if (programResult.error && programResult.error.code !== 'PGRST205') {
     throw programResult.error
   }

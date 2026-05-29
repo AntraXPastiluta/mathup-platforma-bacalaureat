@@ -23,6 +23,17 @@ import { normalizeProfilesList } from '../../../services/profileService'
 import { ALLOWED_LESSON_FILE_EXTENSIONS } from '../constants'
 import { cloneLessonToProfiles } from '../utils/lessonClone'
 
+// Toggle a program key inside a lesson's profile list. A lesson must always
+// belong to at least one program, so removing the last remaining key is a
+// no-op signalled by returning null (callers keep the previous state).
+function toggleProfileInList(currentProfiles, key) {
+  const list = normalizeProfilesList(currentProfiles?.length ? currentProfiles : ['mate_info'])
+  const isSelected = list.includes(key)
+  if (isSelected && list.length <= 1) return null
+  if (isSelected) return list.filter((profileKey) => profileKey !== key)
+  return [...list, key]
+}
+
 export function useAdminCurriculum() {
   const [lessons, setLessons] = useState([])
   const [selectedLesson, setSelectedLesson] = useState(null)
@@ -149,22 +160,16 @@ export function useAdminCurriculum() {
 
   const toggleNewLessonProfile = (key) => {
     setNewLessonData((prev) => {
-      const list = normalizeProfilesList(prev.profiles?.length ? prev.profiles : ['mate_info'])
-      const has = list.includes(key)
-      if (has && list.length <= 1) return prev
-      if (has) return { ...prev, profiles: list.filter((k) => k !== key) }
-      return { ...prev, profiles: [...list, key] }
+      const nextProfiles = toggleProfileInList(prev.profiles, key)
+      return nextProfiles ? { ...prev, profiles: nextProfiles } : prev
     })
   }
 
   const toggleEditLessonProfile = (key) => {
     setEditLessonData((prev) => {
       if (!prev) return prev
-      const list = normalizeProfilesList(prev.profiles?.length ? prev.profiles : ['mate_info'])
-      const has = list.includes(key)
-      if (has && list.length <= 1) return prev
-      if (has) return { ...prev, profiles: list.filter((k) => k !== key) }
-      return { ...prev, profiles: [...list, key] }
+      const nextProfiles = toggleProfileInList(prev.profiles, key)
+      return nextProfiles ? { ...prev, profiles: nextProfiles } : prev
     })
   }
 
@@ -219,6 +224,9 @@ export function useAdminCurriculum() {
       setError('Titlul lecției este obligatoriu.')
       return
     }
+    // O lecție aparține unui singur program în baza de date. Dacă adminul selectează mai
+    // multe programe, primul devine programul lecției curente, iar restul (extraProfiles)
+    // primesc copii independente ale lecției (vezi cloneLessonToProfiles mai jos).
     const profiles = normalizeProfilesList(editLessonData.profiles || [])
     const [primary, ...extraProfiles] = profiles
     const payload = {
@@ -427,6 +435,8 @@ export function useAdminCurriculum() {
     setParts(parts.map((p) => (p.id === id ? { ...p, [field]: value } : p)))
   }
 
+  // Compatibilitate cu două formate de stocare a opțiunilor: vechiul format era un array
+  // simplu, iar cel nou este un obiect { choices, placement }.
   const getQuestionOptions = (question) => {
     return Array.isArray(question.options) ? question.options : question.options?.choices || []
   }

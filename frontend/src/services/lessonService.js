@@ -1,12 +1,20 @@
+/**
+ * Citirea lecțiilor pentru elevi. Spre deosebire de adminService, aici se aplică
+ * reguli de acces: elevii primesc un set restrâns de coloane la quiz, iar
+ * conținutul premium e mascat în funcție de drepturile utilizatorului.
+ */
 import { supabase } from '../supabaseClient'
 import { DEFAULT_PROFILE } from '../features/lessons/profiles'
 import { normalizeProfile, normalizeProfilesList } from './profileService'
 import { checkCurrentUserIsAdmin } from './curriculumAdminService'
 import { maskLessonForAccess } from './premiumAccessService'
 
+// Coloanele expuse elevilor la quiz exclud intenționat răspunsul corect
+// (`correct_answer`), pentru a nu-l putea citi din rețea.
 const LESSON_COLUMNS = 'id,title,content,video_url,difficulty,order_index,profile,subject_part,is_premium,preview_part_count'
 const STUDENT_QUIZ_COLUMNS = 'id,lesson_id,question_text,options,image_url,created_at'
 
+/** Returnează lecțiile unui singur program (profil), ordonate pe subiect și index. */
 export async function getLessons(profile = DEFAULT_PROFILE) {
   const safeProfile = normalizeProfile(profile)
   const { data, error } = await supabase
@@ -20,7 +28,8 @@ export async function getLessons(profile = DEFAULT_PROFILE) {
   return data ?? []
 }
 
-/** Lessons for one or more BAC programs (profiles). Optionally merges Subiectul III from every program (free global access). */
+/** Lecțiile pentru unul sau mai multe programe BAC (profiluri). Opțional adaugă și
+ *  lecțiile de Subiectul III din toate programele (acces gratuit global). */
 export async function getLessonsForProfiles(profileKeys, options = {}) {
   const { includeSubjectThreeForAllProfiles = false } = options
   const keys = normalizeProfilesList(profileKeys)
@@ -54,6 +63,8 @@ export async function getLessonsForProfiles(profileKeys, options = {}) {
     .order('order_index', { ascending: true })
 
   if (s3Error) throw s3Error
+  // Deduplicare: lecțiile de Subiectul III pot apărea deja în lista principală
+  // dacă fac parte din programele utilizatorului; le adăugăm doar pe cele noi.
   const seen = new Set(mainList.map((l) => l.id))
   const merged = [...mainList]
   for (const lesson of subjectThreeLessons ?? []) {
@@ -65,7 +76,16 @@ export async function getLessonsForProfiles(profileKeys, options = {}) {
   return merged
 }
 
+/**
+ * Încarcă o lecție completă (părți, fișiere, quiz). Dacă `accessContext` e dat,
+ * rezultatul e mascat conform drepturilor utilizatorului (Premium/program).
+ *
+ * @param {string} lessonId
+ * @param {{ isPremium: boolean, activeProfiles: string[] } | null} accessContext
+ */
 export async function getLessonById(lessonId, accessContext = null) {
+  // Doar adminii primesc toate coloanele quiz-ului (inclusiv răspunsul corect). Elevii
+  // primesc un set restrâns de coloane, ca să nu poată extrage răspunsurile din rețea.
   const isAdmin = await checkCurrentUserIsAdmin().catch(() => false)
   const quizSelect = isAdmin
     ? 'quiz_questions(*)'

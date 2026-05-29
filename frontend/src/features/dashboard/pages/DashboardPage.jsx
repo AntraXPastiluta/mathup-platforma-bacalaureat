@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
-  Download,
   Flame,
   GraduationCap,
   Map,
@@ -32,7 +31,6 @@ import {
   getDaysUntilExam,
   getDefaultBacExamDate,
 } from '../../../shared/utils/bacExamDate'
-import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
@@ -394,7 +392,6 @@ export function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true)
   const [roadmaps, setRoadmaps] = useState([])
   const [solvedVariants, setSolvedVariants] = useState([])
-  const [downloadingVariantId, setDownloadingVariantId] = useState(null)
   const [quizMistakeCount, setQuizMistakeCount] = useState(0)
   const [quizCorrectCount, setQuizCorrectCount] = useState(0)
   const [error, setError] = useState('')
@@ -411,9 +408,8 @@ export function DashboardPage() {
 
   const activeProfiles = useMemo(
     () => getProfilesFromMetadata(user?.user_metadata),
-    [user?.user_metadata?.profile, user?.user_metadata?.profiles],
+    [user?.user_metadata],
   )
-  const activeProfilesKey = activeProfiles.join('|')
   const streak = Number(user?.user_metadata?.streak) || 0
   const lastActivityKey = user?.user_metadata?.last_streak_activity_date || null
 
@@ -463,7 +459,7 @@ export function DashboardPage() {
     return () => {
       mounted = false
     }
-  }, [user?.id, activeProfilesKey, isPremium])
+  }, [user?.id, activeProfiles, isPremium])
 
   const completedSet = useMemo(
     () => new Set(progressRows.filter((item) => item.completed).map((item) => item.lesson_id)),
@@ -541,21 +537,12 @@ export function DashboardPage() {
     return `Pregătire BAC · ${programsSummary}`
   }, [activeProfiles, programsSummary])
 
-  const handleDownloadVariant = async (variant) => {
-    setDownloadingVariantId(variant.id)
-    setError('')
-    try {
-      await downloadRemoteFile(variant.file_url, variant.file_name)
-    } catch (downloadError) {
-      setError(toUserFacingError(downloadError, USER_MESSAGES.download))
-    } finally {
-      setDownloadingVariantId(null)
-    }
-  }
-
   const progressPct = overallProgress.progressPercent
   const progressBarPct = Math.max(progressPct, 4)
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'elev'
+  const dashboardTabBase = 'flex-1 rounded-lg py-2.5 text-sm font-bold uppercase tracking-wide transition-all duration-300'
+  const dashboardTabActive = 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+  const dashboardTabInactive = mutedText
 
   return (
     <div className="relative min-h-screen text-foreground transition-colors duration-500">
@@ -637,22 +624,16 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveView('topics')}
-                className={`flex-1 rounded-lg py-2.5 text-sm font-bold uppercase tracking-wide transition-all duration-300 ${
-                  activeView === 'topics'
-                    ? 'bg-background text-foreground shadow-md shadow-primary/10'
-                    : mutedText
-                }`}
+                className={`${dashboardTabBase} ${activeView === 'topics' ? dashboardTabActive : dashboardTabInactive}`}
+                aria-pressed={activeView === 'topics'}
               >
                 Lecții
               </button>
               <button
                 type="button"
                 onClick={() => setActiveView('progress')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-bold uppercase tracking-wide transition-all duration-300 ${
-                  activeView === 'progress'
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                    : mutedText
-                }`}
+                className={`${dashboardTabBase} flex items-center justify-center gap-2 ${activeView === 'progress' ? dashboardTabActive : dashboardTabInactive}`}
+                aria-pressed={activeView === 'progress'}
               >
                 Progres
                 <span className={`rounded-md px-2 py-0.5 text-xs ${
@@ -709,7 +690,7 @@ export function DashboardPage() {
 
                     <div className="lg:border-l lg:border-border lg:pl-6">
                       <StatRow icon={GraduationCap} label="Data examen" value={formatShortDate(bacExamDate)} />
-                      <StatRow icon={Target} label="Medie / țintă" value={targetScoreLabel} iconClass="text-primary" />
+                      <StatRow icon={Target} label="Notă țintă" value={targetScoreLabel} iconClass="text-primary" />
                       <StatRow icon={Flame} label="Streak" value={String(streak)} iconClass="text-orange-500" />
                       <StatRow
                         icon={CheckCircle2}
@@ -876,23 +857,6 @@ export function DashboardPage() {
                   )
                 })}
 
-                {isPremium && solvedVariants.length > 0 && (
-                  <Reveal delay={360} className="space-y-2">
-                    <p className={`px-1 text-xs font-black uppercase tracking-widest text-primary`}>Descărcări rapide</p>
-                    {solvedVariants.slice(0, 3).map((variant) => (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        disabled={downloadingVariantId === variant.id}
-                        onClick={() => handleDownloadVariant(variant)}
-                        className={`${cardClass} flex w-full items-center gap-3 px-4 py-3 text-left disabled:opacity-50`}
-                      >
-                        <Download className="size-4 text-primary" />
-                        <span className={`min-w-0 flex-1 truncate text-sm font-medium ${headingText}`}>{variant.file_name}</span>
-                      </button>
-                    ))}
-                  </Reveal>
-                )}
               </div>
             )}
           </div>

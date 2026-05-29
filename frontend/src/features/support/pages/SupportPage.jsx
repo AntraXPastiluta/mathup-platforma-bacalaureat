@@ -7,7 +7,11 @@ import { Navbar } from '../../../shared/ui/Navbar'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
-import { submitSupportRequest, SUPPORT_SAVED_EMAIL_PENDING } from '../../../services/supportService'
+import {
+  submitSupportRequest,
+  SUPPORT_SAVED_WITH_AUTOREPLY,
+  SUPPORT_SAVED_WITHOUT_AUTOREPLY,
+} from '../../../services/supportService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 const CATEGORIES = [
@@ -85,9 +89,7 @@ export function SupportPage() {
       })
       setForm(INITIAL_FORM)
       setSuccess(
-        result.emailDelivered
-          ? 'Solicitare înregistrată. Un consultant academic va analiza mesajul în cel mult 48 ore.'
-          : SUPPORT_SAVED_EMAIL_PENDING,
+        result.autoreplyDelivered ? SUPPORT_SAVED_WITH_AUTOREPLY : SUPPORT_SAVED_WITHOUT_AUTOREPLY,
       )
     } catch (submitError) {
       setError(toUserFacingError(submitError, USER_MESSAGES.supportSubmit))

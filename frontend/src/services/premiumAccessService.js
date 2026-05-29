@@ -1,3 +1,9 @@
+/**
+ * Reguli de acces la conținut (funcții pure, fără rețea). Decide ce poate vedea
+ * sau descărca un utilizator în funcție de: statutul Premium, programele la care
+ * e înscris și regula specială pentru Subiectul III (gratuit pentru toți).
+ * `maskLessonForAccess` aplică aceste reguli ascunzând conținutul neautorizat.
+ */
 import { DEFAULT_PROFILE, PROFILES } from '../features/lessons/profiles'
 import { normalizeProfilesList } from './profileService'
 
@@ -53,6 +59,7 @@ export function canAccessLessonContent(lesson, isPremium, activeProfiles) {
   return false
 }
 
+/** Acces la o anumită parte a lecției: fie acces complet, fie doar părțile de previzualizare. */
 export function canAccessLessonPart(lesson, partIndex, isPremium, activeProfiles) {
   if (!lesson) return false
   if (hasFullLessonAccess(lesson, isPremium, activeProfiles)) return true
@@ -83,6 +90,9 @@ export function canTrackLessonCompletion(lesson, isPremium, activeProfiles) {
   return hasFullLessonAccess(lesson, isPremium, activeProfiles)
 }
 
+// Returnează o copie a lecției din care s-au eliminat părțile/fișierele/quiz-ul la care
+// utilizatorul nu are drept, ca să nu trimitem niciodată conținut blocat către client.
+// Pentru previzualizare păstrăm doar primele `previewCount` părți.
 export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
   if (!lesson) return null
   if (!canAccessLessonForUser(lesson, isPremium, activeProfiles)) return null

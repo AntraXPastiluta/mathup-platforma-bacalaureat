@@ -1,11 +1,17 @@
+/**
+ * Învelitor peste API-ul de autentificare Supabase: sesiune curentă,
+ * înregistrare, login cu parolă, login Google (OAuth), logout și resetarea parolei.
+ */
 import { supabase } from '../supabaseClient'
 
+/** Returnează sesiunea activă (sau null dacă utilizatorul nu este logat). */
 export async function getCurrentSession() {
   const { data, error } = await supabase.auth.getSession()
   if (error) throw error
   return data.session
 }
 
+/** Abonează un callback la schimbările de stare ale autentificării (login/logout/refresh). */
 export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange(callback)
 }
@@ -15,6 +21,7 @@ export async function signUpWithEmail({ name, email, password, emailRedirectTo }
     email: email.trim(),
     password,
     options: {
+      // Dacă numele lipsește, folosim „Elev” ca valoare implicită afișată în interfață.
       data: { full_name: name?.trim() || 'Elev' },
       emailRedirectTo,
     },
@@ -64,6 +71,8 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       redirectTo: getOAuthRedirectUrl(),
+      // access_type=offline + prompt=consent forțează Google să emită un refresh
+      // token, astfel încât sesiunea să poată fi reînnoită fără re-login.
       queryParams: { access_type: 'offline', prompt: 'consent' },
     },
   })

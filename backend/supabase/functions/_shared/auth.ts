@@ -1,14 +1,19 @@
 import { jsonResponse } from './http.ts'
-
-type CreateClient = (supabaseUrl: string, supabaseAnonKey: string, options: {
-  global?: { headers?: Record<string, string> }
-}) => any
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 type AuthUser = {
   id: string
   email?: string | null
   user_metadata?: Record<string, unknown>
 }
+
+type CreateClient = (
+  supabaseUrl: string,
+  supabaseAnonKey: string,
+  options: {
+    global?: { headers?: Record<string, string> }
+  },
+) => SupabaseClient
 
 export async function requireAuthenticatedUser(options: {
   req: Request

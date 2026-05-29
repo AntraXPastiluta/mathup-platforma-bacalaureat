@@ -1,9 +1,10 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
-import Stripe from 'npm:stripe@17.7.0'
+import '@supabase/functions-js/edge-runtime'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, textResponse } from '../_shared/http.ts'
 import { syncCheckoutSession, syncSubscriptionEntitlement, upsertEntitlement } from '../_shared/stripe-webhook.ts'
+import { STRIPE_API_VERSION } from '../_shared/stripe.ts'
 
 type WebhookDeps = {
   stripe?: typeof Stripe
@@ -31,7 +32,7 @@ export function createStripeWebhookApp(deps: WebhookDeps = {}) {
       return textResponse('Webhook unavailable.', 500, getCorsHeaders(c))
     }
 
-    const stripe = new StripeCtor(stripeSecret, { apiVersion: '2025-02-24.acacia' })
+    const stripe = new StripeCtor(stripeSecret, { apiVersion: STRIPE_API_VERSION })
     const signature = c.req.header('stripe-signature')
     if (!signature) {
       return textResponse('Missing Stripe signature.', 400, getCorsHeaders(c))
@@ -120,7 +121,7 @@ export function createStripeWebhookApp(deps: WebhookDeps = {}) {
             subscriptionId: data.stripe_subscription_id,
             customerId: data.stripe_customer_id,
             amountPaid: charge.amount_refunded ? charge.amount_refunded / 100 : null,
-            currency: charge.currency,
+            currency: charge.currency ?? null,
             expiresAt: new Date().toISOString(),
             status: 'refunded',
             cancelAtPeriodEnd: false,

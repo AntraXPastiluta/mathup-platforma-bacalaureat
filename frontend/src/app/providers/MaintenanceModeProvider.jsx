@@ -5,6 +5,8 @@ import { fetchMaintenanceMode } from '../../services/platformSettingsService'
 const MaintenanceModeContext = createContext(null)
 
 export function MaintenanceModeProvider({ children }) {
+  // Override din variabilă de mediu: dacă e setat, mentenanța e forțată activă și nu mai
+  // interogăm baza de date (folosit pentru deploy-uri de urgență când backend-ul e jos).
   const envOverride = isEnvMaintenanceOverride()
   const [ready, setReady] = useState(envOverride)
   const [enabled, setEnabled] = useState(envOverride)
@@ -34,8 +36,24 @@ export function MaintenanceModeProvider({ children }) {
   )
 
   useEffect(() => {
-    void load()
-  }, [load])
+    if (envOverride) return undefined
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const fromDb = await fetchMaintenanceMode()
+        if (!cancelled) setEnabled(parseMaintenanceFlag(fromDb))
+      } catch {
+        if (!cancelled) setEnabled(false)
+      } finally {
+        if (!cancelled) setReady(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [envOverride])
 
   const refresh = useCallback(async () => {
     await load({ silent: true })
@@ -55,6 +73,7 @@ export function MaintenanceModeProvider({ children }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useMaintenanceMode() {
   const context = useContext(MaintenanceModeContext)
   if (!context) {
