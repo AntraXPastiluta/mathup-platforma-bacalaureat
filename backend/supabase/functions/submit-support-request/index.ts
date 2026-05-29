@@ -118,6 +118,20 @@ export function createSubmitSupportRequestApp(deps: SupportDeps = {}) {
         throw insertError ?? new Error('Insert failed')
       }
 
+      // Seed the conversation so the chat thread has a single source of truth.
+      // Non-fatal: the ticket row still keeps the original message as a fallback.
+      const { error: seedError } = await adminClient
+        .from('support_request_messages')
+        .insert({
+          ticket_id: inserted.id,
+          author_user_id: user.id,
+          author_role: 'user',
+          body: validated.data.message,
+        })
+      if (seedError) {
+        console.error('[submit-support-request] seed message failed:', seedError)
+      }
+
       const categoryLabel = CATEGORY_LABELS[validated.data.category] ?? validated.data.category
       const displayName = userName || 'Elev MathUP'
       const createdAt = String(inserted.created_at)

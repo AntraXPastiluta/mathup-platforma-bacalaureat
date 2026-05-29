@@ -5,6 +5,7 @@ import { buildCorsHeaders } from './_shared/http.ts'
 import { createCheckoutSessionApp } from './create-checkout-session/index.ts'
 import { createCancelPremiumSubscriptionApp } from './cancel-premium-subscription/index.ts'
 import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
+import { createSendSupportMessageApp } from './send-support-message/index.ts'
 import { createStripeWebhookApp } from './stripe-webhook/index.ts'
 import { createSyncPremiumCheckoutApp } from './sync-premium-checkout/index.ts'
 import { createExportUserDataApp } from './export-user-data/index.ts'
@@ -248,6 +249,11 @@ function makeSupportDb() {
         }),
       },
       from: (table: string) => {
+        if (table === 'support_request_messages') {
+          return {
+            insert: () => Promise.resolve({ error: null }),
+          }
+        }
         if (table !== 'support_requests') throw new Error(`Unexpected table ${table}`)
         return {
           select: () => ({
@@ -272,6 +278,105 @@ function makeSupportDb() {
     state,
   }
 }
+
+type ChatTicket = {
+  id: string
+  user_id: string
+  assigned_admin_id: string | null
+  status: string
+}
+
+function makeSendMessageApp(options: {
+  user: TestAuthUser
+  isAdmin?: boolean
+  ticket: ChatTicket
+  userMessageCount?: number
+}) {
+  const state: { inserted?: Record<string, unknown>; statusUpdate?: Record<string, unknown> } = {}
+
+  const authClient = asSupabaseClient({
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: options.user }, error: null }),
+    },
+    rpc: (fn: string) =>
+      Promise.resolve({
+        data: fn === 'is_curriculum_admin' ? Boolean(options.isAdmin) : null,
+        error: null,
+      }),
+  })
+
+  const serviceClient = asSupabaseClient({
+    from: (table: string) => {
+      if (table === 'support_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: options.ticket, error: null }),
+            }),
+          }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: () => {
+              state.statusUpdate = patch
+              return Promise.resolve({ error: null })
+            },
+          }),
+        }
+      }
+      if (table === 'support_request_messages') {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                gte: () => Promise.resolve({ count: options.userMessageCount ?? 0, error: null }),
+              }),
+            }),
+          }),
+          insert: (row: Record<string, unknown>) => ({
+            select: () => ({
+              single: () => {
+                state.inserted = row
+                return Promise.resolve({
+                  data: {
+                    id: 'msg_123',
+                    ticket_id: row.ticket_id,
+                    author_user_id: row.author_user_id,
+                    author_role: row.author_role,
+                    body: row.body,
+                    created_at: '2026-05-29T00:00:00.000Z',
+                  },
+                  error: null,
+                })
+              },
+            }),
+          }),
+        }
+      }
+      throw new Error(`Unexpected table ${table}`)
+    },
+  })
+
+  const app = createSendSupportMessageApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => (key === 'anon_test_123' ? authClient : serviceClient),
+  })
+
+  return { app, state }
+}
+
+function sendMessageRequest(body: Record<string, unknown>, withAuth = true) {
+  const headers: Record<string, string> = {
+    Origin: 'http://localhost:5173',
+    'Content-Type': 'application/json',
+  }
+  if (withAuth) headers.Authorization = 'Bearer token'
+  return new Request('http://localhost', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+}
+
+const CHAT_TICKET_ID = '11111111-1111-1111-1111-111111111111'
 
 function makeWebhookStripe() {
   const state: { rawBody?: string; signature?: string; eventType?: string } = {}
@@ -541,4 +646,73 @@ Deno.test('stripe-webhook accepts raw bodies and returns ok', async () => {
   assert.equal(await response.text(), 'ok')
   assert.equal(state.rawBody, rawBody)
   assert.equal(state.signature, 'sig_123')
+})
+
+Deno.test('send-support-message returns 401 without authorization', async () => {
+  const { app } = makeSendMessageApp({
+    user: { id: 'user_123' },
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: null, status: 'open' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Salut' }, false))
+  assert.equal(response.status, 401)
+})
+
+Deno.test('send-support-message rejects an empty body', async () => {
+  const { app } = makeSendMessageApp({
+    user: { id: 'user_123' },
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: null, status: 'open' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: '   ' }))
+  assert.equal(response.status, 400)
+})
+
+Deno.test('send-support-message lets the ticket owner post as user', async () => {
+  const { app, state } = makeSendMessageApp({
+    user: { id: 'user_123', email: 'student@example.com' },
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'in_progress' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Mai am o întrebare' }))
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.message.author_role, 'user')
+  assert.equal(state.inserted?.author_role, 'user')
+})
+
+Deno.test('send-support-message blocks an admin who has not claimed the ticket', async () => {
+  const { app } = makeSendMessageApp({
+    user: { id: 'admin_2' },
+    isAdmin: true,
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'in_progress' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Preiau eu' }))
+  assert.equal(response.status, 403)
+})
+
+Deno.test('send-support-message lets the assigned admin reply', async () => {
+  const { app, state } = makeSendMessageApp({
+    user: { id: 'admin_1' },
+    isAdmin: true,
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'open' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Te ajut imediat' }))
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.message.author_role, 'admin')
+  // An admin reply on an untouched ticket moves it into progress.
+  assert.equal(state.statusUpdate?.status, 'in_progress')
+})
+
+Deno.test('send-support-message refuses a closed ticket', async () => {
+  const { app } = makeSendMessageApp({
+    user: { id: 'user_123' },
+    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'closed' },
+  })
+
+  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Încă o dată' }))
+  assert.equal(response.status, 409)
 })

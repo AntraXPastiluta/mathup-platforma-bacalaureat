@@ -128,3 +128,60 @@ export const SUPPORT_SAVED_WITH_AUTOREPLY =
 
 export const SUPPORT_SAVED_WITHOUT_AUTOREPLY =
   'Solicitare înregistrată. Un consultant academic va analiza mesajul în cel mult 48 de ore.'
+
+const MESSAGE_SELECT =
+  'id, category, subject, message, status, created_at, assigned_admin_id, assigned_at, ' +
+  'support_request_messages(id, author_role, body, created_at)'
+
+/**
+ * Listează tichetele utilizatorului curent împreună cu firul de conversație.
+ * Politicile RLS limitează automat rezultatul la tichetele proprii.
+ */
+export async function getMySupportTickets() {
+  const { data, error } = await supabase
+    .from('support_requests')
+    .select(MESSAGE_SELECT)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Trimite un mesaj în chatul unui tichet prin edge function. Funcția decide
+ * rolul (elev vs admin asignat) pe baza identității și a tichetului, deci
+ * același apel deservește ambele părți ale conversației.
+ */
+export async function sendSupportMessage(ticketId, body) {
+  const text = String(body || '').trim().slice(0, 2000)
+  if (!text) {
+    throw new Error('Mesajul nu poate fi gol.')
+  }
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  if (!session?.access_token) {
+    throw new Error('Trebuie să fii autentificat pentru a trimite un mesaj.')
+  }
+
+  const { data, error } = await supabase.functions.invoke('send-support-message', {
+    body: { ticket_id: ticketId, body: text },
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  })
+
+  if (error) {
+    let serverMessage = ''
+    try {
+      const context = error.context
+      if (context && typeof context.json === 'function') {
+        const payload = await context.json()
+        serverMessage = typeof payload?.error === 'string' ? payload.error : ''
+      }
+    } catch (parseError) {
+      logSupportError('send-message-parse', parseError)
+    }
+    throw new Error(serverMessage || USER_MESSAGES.save)
+  }
+
+  return data?.message ?? null
+}

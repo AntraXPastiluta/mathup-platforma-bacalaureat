@@ -114,7 +114,9 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
       .eq('user_id', userId),
     admin
       .from('support_requests')
-      .select('id,category,subject,message,status,created_at')
+      .select(
+        'id,category,subject,message,status,created_at,assigned_at,support_request_messages(author_role,body,created_at)',
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
   ])

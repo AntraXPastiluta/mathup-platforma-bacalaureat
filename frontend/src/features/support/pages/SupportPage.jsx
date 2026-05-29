@@ -1,18 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, MessageCircle, Send } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, MessageCircle, Send } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import {
+  getMySupportTickets,
+  sendSupportMessage,
   submitSupportRequest,
   SUPPORT_SAVED_WITH_AUTOREPLY,
   SUPPORT_SAVED_WITHOUT_AUTOREPLY,
 } from '../../../services/supportService'
+import {
+  buildTicketThread,
+  formatTicketDate,
+  SUPPORT_CATEGORY_LABELS,
+  SUPPORT_STATUS_LABELS,
+} from '../../../services/supportConstants'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+import { SupportChatPanel } from '../components/SupportChatPanel'
+
+const POLL_INTERVAL_MS = 20000
+
+function statusBadgeClass(status) {
+  if (status === 'open') return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+  if (status === 'in_progress') return 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
+  return 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+}
 
 const CATEGORIES = [
   { value: 'billing', label: 'Facturare' },
@@ -58,6 +75,12 @@ export function SupportPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  const [myTickets, setMyTickets] = useState([])
+  const [ticketsLoading, setTicketsLoading] = useState(false)
+  const [ticketsError, setTicketsError] = useState('')
+  const [expandedTicketId, setExpandedTicketId] = useState(null)
+  const [sendingTicketId, setSendingTicketId] = useState(null)
+
   const userEmail = user?.email || ''
   const userName = user?.user_metadata?.full_name?.trim() || 'Elev'
 
@@ -65,6 +88,79 @@ export function SupportPage() {
     () => CATEGORY_EXAMPLES[form.category] ?? CATEGORY_EXAMPLES.technical,
     [form.category],
   )
+
+  const loadMyTickets = useCallback(async ({ silent = false } = {}) => {
+    if (!user) return
+    if (!silent) {
+      setTicketsLoading(true)
+      setTicketsError('')
+    }
+    try {
+      const rows = await getMySupportTickets()
+      setMyTickets(rows)
+    } catch (loadError) {
+      if (!silent) setTicketsError(toUserFacingError(loadError, USER_MESSAGES.load))
+    } finally {
+      if (!silent) setTicketsLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return undefined
+    let cancelled = false
+
+    ;(async () => {
+      setTicketsLoading(true)
+      setTicketsError('')
+      try {
+        const rows = await getMySupportTickets()
+        if (!cancelled) setMyTickets(rows)
+      } catch (loadError) {
+        if (!cancelled) setTicketsError(toUserFacingError(loadError, USER_MESSAGES.load))
+      } finally {
+        if (!cancelled) setTicketsLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  // Refresh quietly while a conversation is open so admin replies show up.
+  useEffect(() => {
+    if (!expandedTicketId) return undefined
+    const id = setInterval(() => loadMyTickets({ silent: true }), POLL_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [expandedTicketId, loadMyTickets])
+
+  const handleSendMessage = async (ticket, text) => {
+    setSendingTicketId(ticket.id)
+    try {
+      const message = await sendSupportMessage(ticket.id, text)
+      if (message) {
+        setMyTickets((current) =>
+          current.map((item) =>
+            item.id === ticket.id
+              ? {
+                  ...item,
+                  support_request_messages: [
+                    ...(item.support_request_messages ?? []),
+                    message,
+                  ],
+                }
+              : item,
+          ),
+        )
+      }
+      return true
+    } catch (sendError) {
+      setTicketsError(toUserFacingError(sendError, USER_MESSAGES.save))
+      return false
+    } finally {
+      setSendingTicketId(null)
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -91,6 +187,8 @@ export function SupportPage() {
       setSuccess(
         result.autoreplyDelivered ? SUPPORT_SAVED_WITH_AUTOREPLY : SUPPORT_SAVED_WITHOUT_AUTOREPLY,
       )
+      await loadMyTickets({ silent: true })
+      if (result.id) setExpandedTicketId(result.id)
     } catch (submitError) {
       setError(toUserFacingError(submitError, USER_MESSAGES.supportSubmit))
     } finally {
@@ -232,6 +330,94 @@ export function SupportPage() {
               )}
             </div>
           </form>
+        </motion.section>
+
+        <motion.section
+          className="relative mt-10 rounded-[2.5rem] border-2 border-border bg-white p-8 shadow-2xl dark:bg-slate-900 md:p-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <header className="mb-8 flex flex-col gap-2 border-b-2 border-border pb-6">
+            <div className="inline-flex w-fit items-center gap-2 rounded bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-primary">
+              <MessageCircle className="size-3.5" />
+              Conversațiile mele
+            </div>
+            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
+              Solicitările tale
+            </h2>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Urmărește răspunsurile echipei și continuă conversația direct aici.
+            </p>
+          </header>
+
+          {ticketsError && <AlertMessage message={ticketsError} type="error" />}
+
+          {ticketsLoading ? (
+            <div className="flex min-h-[20vh] items-center justify-center">
+              <div className="size-10 animate-spin rounded-full border-4 border-primary/10 border-t-primary" />
+            </div>
+          ) : myTickets.length === 0 ? (
+            <p className="py-10 text-center text-sm font-semibold text-slate-400">
+              Nu ai solicitări încă. Trimite un mesaj folosind formularul de mai sus.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {myTickets.map((ticket) => {
+                const expanded = expandedTicketId === ticket.id
+                const categoryLabel = SUPPORT_CATEGORY_LABELS[ticket.category] ?? ticket.category
+                const statusLabel = SUPPORT_STATUS_LABELS[ticket.status] ?? ticket.status
+                const closed = ticket.status === 'closed'
+
+                return (
+                  <article
+                    key={ticket.id}
+                    className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-slate-50 dark:bg-white/5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedTicketId(expanded ? null : ticket.id)}
+                      className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-white dark:hover:bg-slate-800/40"
+                    >
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${statusBadgeClass(ticket.status)}`}>
+                            {statusLabel}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 ring-1 ring-border dark:bg-slate-900 dark:text-slate-300">
+                            {categoryLabel}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            {formatTicketDate(ticket.created_at)}
+                          </span>
+                        </div>
+                        <h3 className="truncate text-base font-black tracking-tight text-slate-900 dark:text-white">
+                          {ticket.subject}
+                        </h3>
+                      </div>
+                      {expanded ? (
+                        <ChevronUp className="mt-1 size-5 shrink-0 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="mt-1 size-5 shrink-0 text-slate-400" />
+                      )}
+                    </button>
+
+                    {expanded && (
+                      <div className="border-t-2 border-border px-5 py-5">
+                        <SupportChatPanel
+                          messages={buildTicketThread(ticket)}
+                          selfRole="user"
+                          peerLabel="Echipă MathUP"
+                          onSend={(text) => handleSendMessage(ticket, text)}
+                          sending={sendingTicketId === ticket.id}
+                          closed={closed}
+                        />
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </motion.section>
       </main>
 

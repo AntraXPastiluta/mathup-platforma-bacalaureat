@@ -39,6 +39,7 @@ import { UserAvatar } from '../../../shared/ui/UserAvatar'
 import { SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { DashboardAmbient } from '../components/DashboardAmbient'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
+import { SupportWidget } from '../../support/components/SupportWidget'
 
 const DAY_LABELS_RO = ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ']
 const MONTH_LABELS_RO = [
@@ -862,6 +863,8 @@ export function DashboardPage() {
           </div>
         )}
       </main>
+
+      <SupportWidget />
     </div>
   )
 }

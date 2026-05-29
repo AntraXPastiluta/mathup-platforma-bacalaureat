@@ -6,6 +6,13 @@ export const MAX_MESSAGE_LENGTH = 2000
 export const RATE_LIMIT_COUNT = 5
 export const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
+// Chat replies share the message length cap; users get a looser hourly cap than
+// ticket creation because a live conversation needs several quick exchanges.
+export const CHAT_RATE_LIMIT_COUNT = 30
+export const CHAT_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export const CATEGORY_LABELS: Record<string, string> = {
   billing: 'Facturare',
   technical: 'Problemă tehnică',
@@ -40,6 +47,25 @@ export function validatePayload(payload: SupportPayload) {
   }
 
   return { data: { category, subject, message } }
+}
+
+export type SupportMessagePayload = {
+  ticket_id?: string
+  body?: string
+}
+
+export function validateMessagePayload(payload: SupportMessagePayload) {
+  const ticketId = typeof payload.ticket_id === 'string' ? payload.ticket_id.trim() : ''
+  const body = normalizeText(payload.body, MAX_MESSAGE_LENGTH)
+
+  if (!UUID_PATTERN.test(ticketId)) {
+    return { error: 'Ticket invalid.' as const }
+  }
+  if (!body) {
+    return { error: 'Mesajul nu poate fi gol.' as const }
+  }
+
+  return { data: { ticketId, body } }
 }
 
 export async function sendEmailJsNotification(options: {
