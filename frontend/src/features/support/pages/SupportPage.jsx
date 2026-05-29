@@ -427,6 +427,7 @@ export function SupportPage() {
                         <SupportChatPanel
                           messages={buildTicketThread(ticket)}
                           selfRole="user"
+                          selfUserId={user?.id ?? null}
                           peerLabel="Echipă MathUP"
                           onSend={(text) => handleSendMessage(ticket, text)}
                           sending={sendingTicketId === ticket.id}

@@ -15,6 +15,7 @@ const MAX_MESSAGE_LENGTH = 2000
 export function SupportChatPanel({
   messages = [],
   selfRole,
+  selfUserId = null,
   peerLabel = 'Echipă MathUP',
   onSend,
   sending = false,
@@ -57,7 +58,14 @@ export function SupportChatPanel({
           </p>
         ) : (
           messages.map((message) => {
-            const mine = message.author_role === selfRole
+            // Prefer author identity so a message is "mine" only when this exact
+            // account wrote it. This keeps alignment correct even with several
+            // admins on one ticket. The synthesized seed message has no
+            // author_user_id, so fall back to the role for that single case.
+            const mine =
+              message.author_user_id != null && selfUserId != null
+                ? message.author_user_id === selfUserId
+                : message.author_role === selfRole
             const label = mine ? 'Tu' : peerLabel
             return (
               <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>

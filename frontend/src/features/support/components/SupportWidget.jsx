@@ -291,6 +291,7 @@ export function SupportWidget() {
                 <SupportChatPanel
                   messages={buildTicketThread(activeTicket)}
                   selfRole="user"
+                  selfUserId={user?.id ?? null}
                   peerLabel="Echipă MathUP"
                   onSend={(text) => handleSendMessage(activeTicket, text)}
                   sending={sendingTicketId === activeTicket.id}

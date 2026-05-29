@@ -131,7 +131,7 @@ export const SUPPORT_SAVED_WITHOUT_AUTOREPLY =
 
 const MESSAGE_SELECT =
   'id, category, subject, message, status, created_at, assigned_admin_id, assigned_at, ' +
-  'support_request_messages(id, author_role, body, created_at)'
+  'support_request_messages(id, author_role, author_user_id, body, created_at)'
 
 /**
  * Listează tichetele utilizatorului curent împreună cu firul de conversație.

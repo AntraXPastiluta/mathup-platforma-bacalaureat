@@ -386,6 +386,7 @@ export function SupportTicketsSection() {
                     <SupportChatPanel
                       messages={buildTicketThread(ticket)}
                       selfRole="admin"
+                      selfUserId={adminId}
                       peerLabel={ticket.user_name || 'Elev'}
                       onSend={(text) => handleSend(ticket, text)}
                       sending={sendingId === ticket.id}
