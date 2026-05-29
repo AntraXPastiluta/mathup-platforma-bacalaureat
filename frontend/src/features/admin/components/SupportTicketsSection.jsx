@@ -14,6 +14,8 @@ import {
 } from '../../../services/supportAdminService'
 import { buildTicketThread, formatTicketDate } from '../../../services/supportConstants'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+import { useNotifications } from '../../../app/providers/NotificationProvider'
+import { useSupportRealtime } from '../../support/hooks/useSupportRealtime'
 import { SupportChatPanel } from '../../support/components/SupportChatPanel'
 
 const ASSIGNMENT_FILTERS = [
@@ -21,8 +23,6 @@ const ASSIGNMENT_FILTERS = [
   { id: 'unassigned', label: 'Nepreluate' },
   { id: 'mine', label: 'Preluate de mine' },
 ]
-
-const POLL_INTERVAL_MS = 20000
 
 function statusBadgeClass(status) {
   if (status === 'open') return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
@@ -32,6 +32,7 @@ function statusBadgeClass(status) {
 
 export function SupportTicketsSection() {
   const { user } = useAuth()
+  const { markTicketAsRead } = useNotifications()
   const adminId = user?.id ?? null
 
   const [tickets, setTickets] = useState([])
@@ -78,12 +79,54 @@ export function SupportTicketsSection() {
     }
   }, [])
 
-  // Live-ish chat: refresh quietly while a conversation is open.
+  // Live chat + ticket feed via realtime instead of polling. Admins receive all
+  // rows per RLS, so new tickets and replies appear without reloading.
+  const mergeRealtimeMessage = useCallback((message) => {
+    setTickets((current) => {
+      let found = false
+      const next = current.map((ticket) => {
+        if (ticket.id !== message.ticket_id) return ticket
+        found = true
+        const existing = ticket.support_request_messages ?? []
+        if (existing.some((item) => item.id === message.id)) return ticket
+        const nextStatus = ticket.status === 'open' ? 'in_progress' : ticket.status
+        return {
+          ...ticket,
+          status: nextStatus,
+          support_request_messages: [...existing, message],
+        }
+      })
+      return found ? next : current
+    })
+  }, [])
+
+  const handleRealtimeTicketInsert = useCallback((ticket) => {
+    setTickets((current) => {
+      if (current.some((item) => item.id === ticket.id)) return current
+      return [{ ...ticket, support_request_messages: [] }, ...current]
+    })
+  }, [])
+
+  const handleRealtimeTicketUpdate = useCallback((ticket) => {
+    setTickets((current) =>
+      current.map((item) =>
+        item.id === ticket.id ? { ...item, ...ticket } : item,
+      ),
+    )
+  }, [])
+
+  useSupportRealtime({
+    enabled: Boolean(adminId),
+    userId: adminId,
+    onMessage: mergeRealtimeMessage,
+    onTicketInsert: handleRealtimeTicketInsert,
+    onTicketUpdate: handleRealtimeTicketUpdate,
+  })
+
+  // Expanding a ticket clears its unread notifications for this admin.
   useEffect(() => {
-    if (!expandedId) return undefined
-    const id = setInterval(() => loadTickets({ silent: true }), POLL_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [expandedId, loadTickets])
+    if (expandedId) void markTicketAsRead(expandedId)
+  }, [expandedId, markTicketAsRead])
 
   const filteredTickets = useMemo(() => {
     if (assignmentFilter === 'unassigned') {

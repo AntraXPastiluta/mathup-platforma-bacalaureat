@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 import { AuthProvider } from './app/providers/AuthProvider'
 import { useAuth } from './app/providers/AuthProvider'
+import { NotificationProvider } from './app/providers/NotificationProvider'
 import { MaintenanceModeProvider, useMaintenanceMode } from './app/providers/MaintenanceModeProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
@@ -213,9 +214,11 @@ export default function App() {
   return (
     <MaintenanceModeProvider>
       <AuthProvider>
-        <MathPaperBackground />
-        <PremiumUpgradeModal />
-        <AppRoutes />
+        <NotificationProvider>
+          <MathPaperBackground />
+          <PremiumUpgradeModal />
+          <AppRoutes />
+        </NotificationProvider>
       </AuthProvider>
     </MaintenanceModeProvider>
   )

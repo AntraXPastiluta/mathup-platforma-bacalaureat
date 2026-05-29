@@ -21,9 +21,9 @@ import {
   SUPPORT_STATUS_LABELS,
 } from '../../../services/supportConstants'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+import { useNotifications } from '../../../app/providers/NotificationProvider'
+import { useSupportRealtime } from '../hooks/useSupportRealtime'
 import { SupportChatPanel } from '../components/SupportChatPanel'
-
-const POLL_INTERVAL_MS = 20000
 
 function statusBadgeClass(status) {
   if (status === 'open') return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
@@ -70,6 +70,7 @@ const INITIAL_FORM = {
 export function SupportPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { markTicketAsRead } = useNotifications()
   const [form, setForm] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -127,12 +128,32 @@ export function SupportPage() {
     }
   }, [user])
 
-  // Refresh quietly while a conversation is open so admin replies show up.
+  // Live-merge incoming chat messages instead of polling. RLS limits the stream
+  // to the current user's own tickets.
+  const mergeRealtimeMessage = useCallback((message) => {
+    setMyTickets((current) => {
+      let found = false
+      const next = current.map((ticket) => {
+        if (ticket.id !== message.ticket_id) return ticket
+        found = true
+        const existing = ticket.support_request_messages ?? []
+        if (existing.some((item) => item.id === message.id)) return ticket
+        return { ...ticket, support_request_messages: [...existing, message] }
+      })
+      return found ? next : current
+    })
+  }, [])
+
+  useSupportRealtime({
+    enabled: Boolean(user),
+    userId: user?.id ?? null,
+    onMessage: mergeRealtimeMessage,
+  })
+
+  // Opening a thread clears its unread notifications.
   useEffect(() => {
-    if (!expandedTicketId) return undefined
-    const id = setInterval(() => loadMyTickets({ silent: true }), POLL_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [expandedTicketId, loadMyTickets])
+    if (expandedTicketId) void markTicketAsRead(expandedTicketId)
+  }, [expandedTicketId, markTicketAsRead])
 
   const handleSendMessage = async (ticket, text) => {
     setSendingTicketId(ticket.id)

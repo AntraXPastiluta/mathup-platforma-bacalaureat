@@ -10,13 +10,17 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
+import { useNotifications } from '../../app/providers/NotificationProvider'
 import { Button } from './Button'
 import { UserAvatar } from './UserAvatar'
 import { BrandLogo } from './BrandLogo'
+import { NotificationBell } from './NotificationBell'
 
 export function Navbar() {
   const navigate = useNavigate()
   const { user, signOut, isAdmin, theme, toggleTheme, isPremium, openPremiumModal } = useAuth()
+  const { unreadByType } = useNotifications()
+  const adminTicketUnread = unreadByType?.support_new_ticket ?? 0
 
   return (
     <nav className="sticky top-0 z-50 border-b-2 border-border bg-white/95 dark:bg-slate-950/95 transition-all duration-500">
@@ -80,17 +84,19 @@ export function Navbar() {
                      </Button>
                    )}
 
-                   <Button
-                     variant="ghost"
-                     size="icon"
-                     onClick={() => navigate('/support')}
-                     className="rounded-lg text-slate-600 dark:text-slate-400"
-                     title="Centru de Ajutor"
-                   >
-                     <MessageCircle className="size-5" />
-                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/support')}
+                    className="rounded-lg text-slate-600 dark:text-slate-400"
+                    title="Centru de Ajutor"
+                  >
+                    <MessageCircle className="size-5" />
+                  </Button>
 
-                   <div className="mx-2 h-8 w-px bg-border hidden sm:block" />
+                  <NotificationBell />
+
+                  <div className="mx-2 h-8 w-px bg-border hidden sm:block" />
 
                    <button
                      onClick={() => navigate('/profile')}
@@ -100,17 +106,22 @@ export function Navbar() {
                      <UserAvatar metadata={user.user_metadata} size="sm" />
                    </button>
 
-                   {isAdmin && (
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       onClick={() => navigate('/admin')}
-                       className="hidden md:flex border-primary/40 text-primary rounded-lg font-black"
-                     >
-                       <LayoutDashboard className="size-4" />
-                       Admin
-                     </Button>
-                   )}
+                  {isAdmin && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigate(adminTicketUnread > 0 ? '/admin?section=support' : '/admin')}
+                      className="relative hidden md:flex border-primary/40 text-primary rounded-lg font-black"
+                    >
+                      <LayoutDashboard className="size-4" />
+                      Admin
+                      {adminTicketUnread > 0 && (
+                        <span className="absolute -right-1.5 -top-1.5 flex min-w-[1.05rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black leading-4 text-white ring-2 ring-white dark:ring-slate-950">
+                          {adminTicketUnread > 9 ? '9+' : adminTicketUnread}
+                        </span>
+                      )}
+                    </Button>
+                  )}
                    
                    <Button 
                      variant="ghost" 

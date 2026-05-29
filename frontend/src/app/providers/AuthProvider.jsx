@@ -182,6 +182,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem('theme', theme)
   }, [theme])
 
+  // Realtime subscriptions respect Row Level Security only when the socket knows
+  // the user's JWT. Keep it in sync with the current session (and clear it on
+  // sign-out) so postgres_changes deliver exactly the rows the user may read.
+  useEffect(() => {
+    const token = session?.access_token ?? null
+    try {
+      supabase.realtime.setAuth(token)
+    } catch (realtimeAuthError) {
+      console.warn('Realtime auth sync failed:', realtimeAuthError)
+    }
+  }, [session?.access_token])
+
   const syncEntitlementForUser = useCallback(async (nextUser, options = {}) => {
     const userId = nextUser?.id
     const silent = Boolean(options.silent)

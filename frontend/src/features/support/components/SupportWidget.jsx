@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, MessageCircle, Plus, Send, X } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
+import { useNotifications } from '../../../app/providers/NotificationProvider'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import {
@@ -17,9 +18,8 @@ import {
   SUPPORT_STATUS_LABELS,
 } from '../../../services/supportConstants'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+import { useSupportRealtime } from '../hooks/useSupportRealtime'
 import { SupportChatPanel } from './SupportChatPanel'
-
-const POLL_INTERVAL_MS = 20000
 
 const CATEGORIES = [
   { value: 'technical', label: 'Problemă tehnică' },
@@ -48,6 +48,8 @@ function statusBadgeClass(status) {
  */
 export function SupportWidget() {
   const { user } = useAuth()
+  const { unreadByType, markTicketAsRead } = useNotifications()
+  const replyUnread = unreadByType?.support_reply ?? 0
   const [open, setOpen] = useState(false)
   const [view, setView] = useState('list')
 
@@ -80,19 +82,37 @@ export function SupportWidget() {
     }
   }, [user])
 
-  // Load tickets the first time the widget is opened.
+  // Load tickets whenever the widget opens. The first open shows a spinner;
+  // subsequent opens refresh quietly so anything that arrived while the realtime
+  // subscription was paused (widget closed) is reconciled.
   useEffect(() => {
-    if (!open || !user || hasLoadedRef.current) return
+    if (!open || !user) return
+    const silent = hasLoadedRef.current
     hasLoadedRef.current = true
-    loadMyTickets()
+    loadMyTickets({ silent })
   }, [open, user, loadMyTickets])
 
-  // Poll quietly while a conversation is open so admin replies show up.
-  useEffect(() => {
-    if (!open || view !== 'chat' || !activeTicketId) return undefined
-    const id = setInterval(() => loadMyTickets({ silent: true }), POLL_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [open, view, activeTicketId, loadMyTickets])
+  // Live-merge incoming chat messages instead of polling. RLS limits the stream
+  // to the current user's own tickets.
+  const mergeRealtimeMessage = useCallback((message) => {
+    setTickets((current) => {
+      let found = false
+      const next = current.map((ticket) => {
+        if (ticket.id !== message.ticket_id) return ticket
+        found = true
+        const existing = ticket.support_request_messages ?? []
+        if (existing.some((item) => item.id === message.id)) return ticket
+        return { ...ticket, support_request_messages: [...existing, message] }
+      })
+      return found ? next : current
+    })
+  }, [])
+
+  useSupportRealtime({
+    enabled: open && Boolean(user),
+    userId: user?.id ?? null,
+    onMessage: mergeRealtimeMessage,
+  })
 
   const activeTicket = useMemo(
     () => tickets.find((ticket) => ticket.id === activeTicketId) ?? null,
@@ -176,6 +196,7 @@ export function SupportWidget() {
     setActiveTicketId(ticketId)
     setTicketsError('')
     setView('chat')
+    void markTicketAsRead(ticketId)
   }
 
   const inputClass =
@@ -359,11 +380,16 @@ export function SupportWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         aria-label={open ? 'Închide chatul de suport' : 'Deschide chatul de suport'}
         aria-expanded={open}
       >
         {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
+        {!open && replyUnread > 0 && (
+          <span className="absolute -right-1 -top-1 flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black leading-5 text-white ring-2 ring-white dark:ring-slate-950">
+            {replyUnread > 9 ? '9+' : replyUnread}
+          </span>
+        )}
       </button>
     </div>
   )
