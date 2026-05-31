@@ -29,7 +29,7 @@ const MAX_FLAKES = 28
 const MAX_FLAKES_LITE = 6
 const IDLE_MS = 2400
 const IDLE_MS_LITE = 5000
-const LITE_PATH_PREFIXES = ['/support']
+const LITE_PATH_PREFIXES = []
 const DASHBOARD_PATH = '/dashboard'
 
 /** Routes that render MathRainCurtain — skip global framer flakes to avoid double animation + scroll jank. */

@@ -4,11 +4,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildCorsHeaders } from './_shared/http.ts'
 import { createCheckoutSessionApp } from './create-checkout-session/index.ts'
 import { createCancelPremiumSubscriptionApp } from './cancel-premium-subscription/index.ts'
-import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
-import { createSendSupportMessageApp } from './send-support-message/index.ts'
 import { createStripeWebhookApp } from './stripe-webhook/index.ts'
 import { createSyncPremiumCheckoutApp } from './sync-premium-checkout/index.ts'
 import { createExportUserDataApp } from './export-user-data/index.ts'
+import { createRequestAccountDeletionApp, generateSixDigitCode } from './request-account-deletion/index.ts'
+import { createConfirmAccountDeletionApp, tokensEqual } from './confirm-account-deletion/index.ts'
 
 type StripeConstructor = typeof Stripe
 
@@ -42,10 +42,8 @@ const testEnv = {
   SERVICE_ROLE_KEY: 'service_test_123',
   EMAILJS_SERVICE_ID: 'service',
   EMAILJS_TEMPLATE_ID: 'template',
-  EMAILJS_AUTOREPLY_TEMPLATE_ID: 'autoreply_template',
   EMAILJS_PUBLIC_KEY: 'public',
   EMAILJS_PRIVATE_KEY: 'private',
-  SUPPORT_NOTIFY_EMAIL: 'support@example.com',
   STRIPE_WEBHOOK_SECRET: 'whsec_test_123',
 }
 
@@ -186,6 +184,17 @@ function makeExportDb(options: { recentExports?: number } = {}) {
   const emptySingle = () => Promise.resolve({ data: null, error: null })
 
   const client = asSupabaseClient({
+    rpc: (fn: string) => {
+      if (fn === 'reserve_gdpr_export_slot') {
+        if (state.recentExports >= 3) {
+          return Promise.resolve({ data: false, error: null })
+        }
+        state.recentExports += 1
+        state.logged = true
+        return Promise.resolve({ data: true, error: null })
+      }
+      return Promise.resolve({ data: null, error: { message: `unknown rpc: ${fn}` } })
+    },
     from: (table: string) => {
       if (table === 'gdpr_export_logs') {
         return {
@@ -211,7 +220,7 @@ function makeExportDb(options: { recentExports?: number } = {}) {
         }
       }
 
-      if (table === 'user_study_roadmaps' || table === 'support_requests') {
+      if (table === 'user_study_roadmaps') {
         return {
           select: () => ({
             eq: () => ({
@@ -231,152 +240,6 @@ function makeExportDb(options: { recentExports?: number } = {}) {
 
   return { client, state }
 }
-
-function makeSupportDb() {
-  const state: { inserted?: unknown } = {}
-  return {
-    client: asSupabaseClient({
-      auth: {
-        getUser: () => Promise.resolve({
-          data: {
-            user: {
-              id: 'user_123',
-              email: 'student@example.com',
-              user_metadata: { full_name: 'Test User' },
-            },
-          },
-          error: null,
-        }),
-      },
-      from: (table: string) => {
-        if (table === 'support_request_messages') {
-          return {
-            insert: () => Promise.resolve({ error: null }),
-          }
-        }
-        if (table !== 'support_requests') throw new Error(`Unexpected table ${table}`)
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: () => Promise.resolve({ count: 0, error: null }),
-            }),
-          }),
-          insert: (row: unknown) => ({
-            select: () => ({
-              single: () => {
-                state.inserted = row
-                return Promise.resolve({
-                  data: { id: 'req_123', created_at: '2026-05-28T00:00:00.000Z' },
-                  error: null,
-                })
-              },
-            }),
-          }),
-        }
-      },
-    }),
-    state,
-  }
-}
-
-type ChatTicket = {
-  id: string
-  user_id: string
-  assigned_admin_id: string | null
-  status: string
-}
-
-function makeSendMessageApp(options: {
-  user: TestAuthUser
-  isAdmin?: boolean
-  ticket: ChatTicket
-  userMessageCount?: number
-}) {
-  const state: { inserted?: Record<string, unknown>; statusUpdate?: Record<string, unknown> } = {}
-
-  const authClient = asSupabaseClient({
-    auth: {
-      getUser: () => Promise.resolve({ data: { user: options.user }, error: null }),
-    },
-    rpc: (fn: string) =>
-      Promise.resolve({
-        data: fn === 'is_curriculum_admin' ? Boolean(options.isAdmin) : null,
-        error: null,
-      }),
-  })
-
-  const serviceClient = asSupabaseClient({
-    from: (table: string) => {
-      if (table === 'support_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: () => Promise.resolve({ data: options.ticket, error: null }),
-            }),
-          }),
-          update: (patch: Record<string, unknown>) => ({
-            eq: () => {
-              state.statusUpdate = patch
-              return Promise.resolve({ error: null })
-            },
-          }),
-        }
-      }
-      if (table === 'support_request_messages') {
-        return {
-          select: () => ({
-            eq: () => ({
-              eq: () => ({
-                gte: () => Promise.resolve({ count: options.userMessageCount ?? 0, error: null }),
-              }),
-            }),
-          }),
-          insert: (row: Record<string, unknown>) => ({
-            select: () => ({
-              single: () => {
-                state.inserted = row
-                return Promise.resolve({
-                  data: {
-                    id: 'msg_123',
-                    ticket_id: row.ticket_id,
-                    author_user_id: row.author_user_id,
-                    author_role: row.author_role,
-                    body: row.body,
-                    created_at: '2026-05-29T00:00:00.000Z',
-                  },
-                  error: null,
-                })
-              },
-            }),
-          }),
-        }
-      }
-      throw new Error(`Unexpected table ${table}`)
-    },
-  })
-
-  const app = createSendSupportMessageApp({
-    env: testEnv,
-    createClient: (_url: string, key: string) => (key === 'anon_test_123' ? authClient : serviceClient),
-  })
-
-  return { app, state }
-}
-
-function sendMessageRequest(body: Record<string, unknown>, withAuth = true) {
-  const headers: Record<string, string> = {
-    Origin: 'http://localhost:5173',
-    'Content-Type': 'application/json',
-  }
-  if (withAuth) headers.Authorization = 'Bearer token'
-  return new Request('http://localhost', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
-}
-
-const CHAT_TICKET_ID = '11111111-1111-1111-1111-111111111111'
 
 function makeWebhookStripe() {
   const state: { rawBody?: string; signature?: string; eventType?: string } = {}
@@ -499,44 +362,6 @@ Deno.test('cancel-premium-subscription returns 404 when no entitlement exists', 
   assert.equal(payload.error, 'Nu există un abonament Premium activ de anulat.')
 })
 
-Deno.test('submit-support-request returns the saved request id', async () => {
-  const { client } = makeSupportDb()
-  const emailCalls: Array<{ template_id: string; template_params: Record<string, string> }> = []
-  const app = createSubmitSupportRequestApp({
-    createClient: () => client,
-    fetchImpl: (_url, init) => {
-      const requestInit = init as { body?: unknown } | undefined
-      const body = JSON.parse(String(requestInit?.body ?? '{}'))
-      emailCalls.push({ template_id: body.template_id, template_params: body.template_params })
-      return Promise.resolve(new Response('', { status: 200 }))
-    },
-    env: testEnv,
-  })
-
-  const response = await app.fetch(new Request('http://localhost', {
-    method: 'POST',
-    headers: {
-      Origin: 'http://localhost:5173',
-      Authorization: 'Bearer token',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ category: 'billing', subject: 'Hello', message: 'Support request body' }),
-  }))
-
-  assert.equal(response.status, 200)
-  const payload = await response.json()
-  assert.deepEqual(payload, {
-    id: 'req_123',
-    autoreply_delivered: true,
-  })
-  assert.equal(emailCalls.length, 1)
-  assert.equal(emailCalls[0].template_id, 'autoreply_template')
-  assert.equal(emailCalls[0].template_params.to_email, 'student@example.com')
-  assert.equal(emailCalls[0].template_params.email, 'student@example.com')
-  assert.equal(emailCalls[0].template_params.subject, 'Hello')
-  assert.equal(emailCalls[0].template_params.category_label, 'Facturare')
-})
-
 Deno.test('export-user-data returns 401 without authorization', async () => {
   const app = createExportUserDataApp({ env: testEnv })
 
@@ -648,71 +473,117 @@ Deno.test('stripe-webhook accepts raw bodies and returns ok', async () => {
   assert.equal(state.signature, 'sig_123')
 })
 
-Deno.test('send-support-message returns 401 without authorization', async () => {
-  const { app } = makeSendMessageApp({
-    user: { id: 'user_123' },
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: null, status: 'open' },
-  })
-
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Salut' }, false))
-  assert.equal(response.status, 401)
+Deno.test('generateSixDigitCode returns a six-digit string from secure RNG', () => {
+  const code = generateSixDigitCode()
+  assert.match(code, /^\d{6}$/)
+  const parsed = Number.parseInt(code, 10)
+  assert.ok(parsed >= 100_000 && parsed <= 999_999)
 })
 
-Deno.test('send-support-message rejects an empty body', async () => {
-  const { app } = makeSendMessageApp({
-    user: { id: 'user_123' },
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: null, status: 'open' },
-  })
-
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: '   ' }))
-  assert.equal(response.status, 400)
+Deno.test('tokensEqual uses constant-time comparison', () => {
+  assert.equal(tokensEqual('123456', '123456'), true)
+  assert.equal(tokensEqual('123456', '123457'), false)
+  assert.equal(tokensEqual('123456', '12345'), false)
 })
 
-Deno.test('send-support-message lets the ticket owner post as user', async () => {
-  const { app, state } = makeSendMessageApp({
-    user: { id: 'user_123', email: 'student@example.com' },
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'in_progress' },
+Deno.test('confirm-account-deletion locks out after repeated wrong codes', async () => {
+  const tokenState = {
+    token: '654321',
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    failed_attempts: 4,
+    locked_until: null as string | null,
+  }
+  const updates: Record<string, unknown>[] = []
+
+  const adminClient = asSupabaseClient({
+    from: (table: string) => {
+      assert.equal(table, 'account_deletion_tokens')
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => Promise.resolve({ data: { ...tokenState }, error: null }),
+          }),
+        }),
+        update: (payload: Record<string, unknown>) => ({
+          eq: () => {
+            updates.push(payload)
+            if (typeof payload.failed_attempts === 'number') {
+              tokenState.failed_attempts = payload.failed_attempts
+            }
+            if (payload.locked_until) {
+              tokenState.locked_until = String(payload.locked_until)
+            }
+            return Promise.resolve({ error: null })
+          },
+        }),
+      }
+    },
   })
 
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Mai am o întrebare' }))
-  assert.equal(response.status, 200)
+  const app = createConfirmAccountDeletionApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({ id: 'user_del', email: 'del@test.com' })
+      }
+      return adminClient
+    },
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ code: '000000' }),
+  }))
+
+  assert.equal(response.status, 429)
   const payload = await response.json()
-  assert.equal(payload.message.author_role, 'user')
-  assert.equal(state.inserted?.author_role, 'user')
+  assert.match(payload.error, /Prea multe încercări/)
+  assert.equal(tokenState.failed_attempts, 5)
+  assert.ok(tokenState.locked_until)
+  assert.equal(updates.length, 1)
 })
 
-Deno.test('send-support-message blocks an admin who has not claimed the ticket', async () => {
-  const { app } = makeSendMessageApp({
-    user: { id: 'admin_2' },
-    isAdmin: true,
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'in_progress' },
+Deno.test('confirm-account-deletion rejects when account is locked', async () => {
+  const app = createConfirmAccountDeletionApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({ id: 'user_locked', email: 'locked@test.com' })
+      }
+      return asSupabaseClient({
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: {
+                  token: '654321',
+                  expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+                  failed_attempts: 5,
+                  locked_until: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+                },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      })
+    },
   })
 
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Preiau eu' }))
-  assert.equal(response.status, 403)
-})
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ code: '654321' }),
+  }))
 
-Deno.test('send-support-message lets the assigned admin reply', async () => {
-  const { app, state } = makeSendMessageApp({
-    user: { id: 'admin_1' },
-    isAdmin: true,
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'open' },
-  })
-
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Te ajut imediat' }))
-  assert.equal(response.status, 200)
-  const payload = await response.json()
-  assert.equal(payload.message.author_role, 'admin')
-  // An admin reply on an untouched ticket moves it into progress.
-  assert.equal(state.statusUpdate?.status, 'in_progress')
-})
-
-Deno.test('send-support-message refuses a closed ticket', async () => {
-  const { app } = makeSendMessageApp({
-    user: { id: 'user_123' },
-    ticket: { id: CHAT_TICKET_ID, user_id: 'user_123', assigned_admin_id: 'admin_1', status: 'closed' },
-  })
-
-  const response = await app.fetch(sendMessageRequest({ ticket_id: CHAT_TICKET_ID, body: 'Încă o dată' }))
-  assert.equal(response.status, 409)
+  assert.equal(response.status, 429)
 })

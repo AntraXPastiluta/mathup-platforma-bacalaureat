@@ -68,6 +68,5 @@ export function assembleExportPayload(user, sections) {
       entitlement: sections.entitlement ?? null,
       orders: sections.orders ?? [],
     },
-    support_requests: sections.support_requests ?? [],
   }
 }

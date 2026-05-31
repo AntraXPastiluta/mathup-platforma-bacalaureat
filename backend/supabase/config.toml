@@ -15,14 +15,6 @@ import_map = "./functions/deno.json"
 verify_jwt = true
 import_map = "./functions/deno.json"
 
-[functions.submit-support-request]
-verify_jwt = true
-import_map = "./functions/deno.json"
-
-[functions.send-support-message]
-verify_jwt = true
-import_map = "./functions/deno.json"
-
 [functions.export-user-data]
 verify_jwt = true
 import_map = "./functions/deno.json"

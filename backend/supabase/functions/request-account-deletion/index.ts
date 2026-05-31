@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
-import { sendEmailJsNotification } from '../_shared/support.ts'
+import { sendEmailJsNotification } from '../_shared/emailjs.ts'
 
 const RATE_LIMIT_COUNT = 3
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
@@ -15,8 +15,11 @@ type Deps = {
   env?: EnvSource
 }
 
-function generateSixDigitCode(): string {
-  const code = Math.floor(100000 + Math.random() * 900000)
+/** Six-digit OTP from CSPRNG (not Math.random). */
+export function generateSixDigitCode(): string {
+  const bytes = new Uint32Array(1)
+  crypto.getRandomValues(bytes)
+  const code = 100_000 + (bytes[0] % 900_000)
   return String(code)
 }
 
@@ -90,7 +93,14 @@ export function createRequestAccountDeletionApp(deps: Deps = {}) {
 
       const { error: upsertError } = await adminClient
         .from('account_deletion_tokens')
-        .upsert({ user_id: user.id, token, expires_at: expiresAt, created_at: new Date().toISOString() })
+        .upsert({
+          user_id: user.id,
+          token,
+          expires_at: expiresAt,
+          created_at: new Date().toISOString(),
+          failed_attempts: 0,
+          locked_until: null,
+        })
 
       if (upsertError) {
         console.error('[request-account-deletion] upsert failed:', upsertError)

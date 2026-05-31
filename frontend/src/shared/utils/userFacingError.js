@@ -14,7 +14,6 @@ export const USER_MESSAGES = {
   authSession: 'Sesiunea a expirat. Autentifică-te din nou.',
   checkout: 'Plata Premium nu este disponibilă momentan. Încearcă mai târziu.',
   cancelPremium: 'Nu am putut anula abonamentul Premium. Încearcă din nou.',
-  supportSubmit: 'Nu am putut trimite mesajul. Încearcă din nou.',
   config: 'Aplicația nu este configurată corect. Contactează suportul.',
 }
 
@@ -153,6 +152,3 @@ export function toCancelPremiumError(error) {
   return toUserFacingError(error, USER_MESSAGES.cancelPremium)
 }
 
-export function toSupportSubmitError(error) {
-  return toUserFacingError(error, USER_MESSAGES.supportSubmit)
-}

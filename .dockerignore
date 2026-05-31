@@ -1,0 +1,15 @@
+.git
+.gitignore
+**/.cursor
+**/node_modules
+**/dist
+**/.env
+**/.env.local
+**/.env.*.local
+backend/.temp
+backend/.branches
+backend/supabase/.temp
+backend/supabase/.branches
+**/*.log
+**/Thumbs.db
+**/.DS_Store

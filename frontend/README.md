@@ -105,7 +105,6 @@ frontend/
 │   │   ├── profile/        # profil și avatar
 │   │   ├── roadmap/        # vizualizare elev + canvas
 │   │   ├── variants/       # variante rezolvate (elev)
-│   │   ├── support/        # contact suport
 │   │   └── maintenance/
 │   ├── services/           # Supabase, plăți, progres, quiz
 │   └── shared/ui/          # componente UI reutilizabile
@@ -127,7 +126,6 @@ frontend/
 | `/lessons/:lessonId` | Lecție + quiz 
 | `/roadmap` | Roadmap studiu | (conținut MathUP Premium) |
 | `/variante-rezolvate` | Variante rezolvate | Autentificat (MathUP Premium) |
-| `/support` | Contact suport |
 
 ### Cerințe
 
@@ -212,7 +210,7 @@ Alternativ: setează **Root Directory** la `frontend` și folosește build-ul im
 
 - **Auth:** sesiuni persistate în browser; reset parolă către originea site-ului; Google OAuth prin Supabase (`signInWithOAuth`).
 - **Storage:** materiale lecții, poze profil
-- **Edge Functions:** `create-checkout-session`, `stripe-webhook`, `submit-support-request`, `cancel-premium-subscription`, `export-user-data` (export GDPR din Profil)
+- **Edge Functions:** `create-checkout-session`, `stripe-webhook`, `cancel-premium-subscription`, `export-user-data` (export GDPR din Profil)
 - **Migrări:** din `backend/`, `npx supabase db push` (inclusiv `20260528140000_gdpr_export_log.sql` pentru export GDPR și `20260628120000_bac_exam_date.sql` pentru data examen BAC).
 - **Deploy Edge Functions:** din `backend/`, `npx supabase login` apoi `npx supabase functions deploy <nume>` (codul e în `supabase/functions/`). Export GDPR: `npx supabase functions deploy export-user-data`. Fără deploy, exportul din Profil folosește fallback direct din baza de date (fără limită 3/24h în `gdpr_export_logs`).
 - **Export GDPR:** utilizatorii autentificați descarcă JSON din **Profil → Datele mele (GDPR)** (max. 3 exporturi / 24h)

@@ -46,7 +46,6 @@ function isProtectedPath(pathname) {
   return (
     pathname === '/dashboard'
     || pathname === '/profile'
-    || pathname === '/support'
     || pathname === '/roadmap'
     || pathname === '/variante-rezolvate'
     || pathname === '/admin'

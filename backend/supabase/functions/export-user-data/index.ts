@@ -4,10 +4,11 @@ import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import {
   buildUserDataExport,
-  countRecentExportRequests,
   EXPORT_RATE_LIMIT_COUNT,
   EXPORT_RATE_LIMIT_WINDOW_MS,
+  countRecentExportRequests,
   logExportRequest,
+  reserveGdprExportSlot,
 } from '../_shared/gdprExport.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 
@@ -49,8 +50,27 @@ export function createExportUserDataApp(deps: ExportDeps = {}) {
       const adminClient = createSupabaseClient(supabaseUrl, serviceRoleKey, {})
       const windowStart = new Date(Date.now() - EXPORT_RATE_LIMIT_WINDOW_MS).toISOString()
 
-      const recentCount = await countRecentExportRequests(adminClient, user.id, windowStart)
-      if (recentCount >= EXPORT_RATE_LIMIT_COUNT) {
+      let reserved = false
+      try {
+        reserved = await reserveGdprExportSlot(adminClient, user.id)
+      } catch (reserveError) {
+        console.warn('[export-user-data] reserve_gdpr_export_slot unavailable, using count fallback', reserveError)
+        const recentCount = await countRecentExportRequests(adminClient, user.id, windowStart)
+        if (recentCount >= EXPORT_RATE_LIMIT_COUNT) {
+          return jsonResponse(
+            {
+              error:
+                'Ai atins limita de 3 exporturi în ultimele 24 de ore. Încearcă din nou mâine sau contactează DPO.',
+            },
+            429,
+            corsHeaders,
+          )
+        }
+        await logExportRequest(adminClient, user.id)
+        reserved = true
+      }
+
+      if (!reserved) {
         return jsonResponse(
           {
             error:
@@ -62,7 +82,6 @@ export function createExportUserDataApp(deps: ExportDeps = {}) {
       }
 
       const exportPayload = await buildUserDataExport(adminClient, user)
-      await logExportRequest(adminClient, user.id)
 
       return jsonResponse(exportPayload as Record<string, unknown>, 200, corsHeaders)
     } catch (error) {

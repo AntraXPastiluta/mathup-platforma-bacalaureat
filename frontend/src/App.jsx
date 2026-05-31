@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 import { AuthProvider } from './app/providers/AuthProvider'
 import { useAuth } from './app/providers/AuthProvider'
-import { NotificationProvider } from './app/providers/NotificationProvider'
 import { MaintenanceModeProvider, useMaintenanceMode } from './app/providers/MaintenanceModeProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
@@ -22,7 +21,6 @@ import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
 import { RoadmapWorkspacePage } from './features/roadmap/pages/RoadmapWorkspacePage'
 import { SolvedVariantsPage } from './features/variants/pages/SolvedVariantsPage'
 import { MaintenancePage } from './features/maintenance/pages/MaintenancePage'
-import { SupportPage } from './features/support/pages/SupportPage'
 import { TermsPage } from './features/legal/pages/TermsPage'
 import { PrivacyPage } from './features/legal/pages/PrivacyPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
@@ -150,14 +148,6 @@ function NormalRoutes() {
               )}
             />
             <Route
-              path="/support"
-              element={(
-                <ProtectedRoute>
-                  <SupportPage />
-                </ProtectedRoute>
-              )}
-            />
-            <Route
               path="/lessons/:lessonId"
               element={(
                 <ProtectedRoute>
@@ -214,11 +204,9 @@ export default function App() {
   return (
     <MaintenanceModeProvider>
       <AuthProvider>
-        <NotificationProvider>
-          <MathPaperBackground />
-          <PremiumUpgradeModal />
-          <AppRoutes />
-        </NotificationProvider>
+        <MathPaperBackground />
+        <PremiumUpgradeModal />
+        <AppRoutes />
       </AuthProvider>
     </MaintenanceModeProvider>
   )

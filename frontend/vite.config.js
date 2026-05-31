@@ -19,4 +19,10 @@ function mathupFaviconPlugin() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), mathupFaviconPlugin()],
+  server: {
+    host: true,
+    port: 5173,
+    // Bind mounts on Windows need polling for reliable HMR inside Docker.
+    watch: process.env.DOCKER === '1' ? { usePolling: true } : undefined,
+  },
 })

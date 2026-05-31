@@ -98,5 +98,21 @@ export async function updateUserProfile(profileKey) {
     data: { profile: safeProfile, profiles: [safeProfile] },
   })
   if (error) throw error
+
+  const { error: syncError } = await supabase.rpc('sync_user_enrolled_profiles', {
+    p_profile_keys: [safeProfile],
+  })
+  if (syncError) throw syncError
+
   return data?.user ?? null
+}
+
+/** Sincronizează programele BAC în tabela server-side (sursa de adevăr pentru RLS). */
+export async function syncEnrolledProfiles(profileKeys) {
+  const list = normalizeProfilesList(profileKeys)
+  const { data, error } = await supabase.rpc('sync_user_enrolled_profiles', {
+    p_profile_keys: list,
+  })
+  if (error) throw error
+  return Array.isArray(data) ? data : list
 }

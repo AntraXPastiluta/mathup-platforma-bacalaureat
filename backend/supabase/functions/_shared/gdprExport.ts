@@ -68,6 +68,17 @@ export async function countRecentExportRequests(
   return count ?? 0
 }
 
+/** Atomic rate-limit reservation (insert + count in one DB transaction). */
+export async function reserveGdprExportSlot(admin: AdminClient, userId: string): Promise<boolean> {
+  const { data, error } = await (
+    admin as AdminClient & {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: Error | null }>
+    }
+  ).rpc('reserve_gdpr_export_slot', { p_user_id: userId })
+  if (error) throw error
+  return Boolean(data)
+}
+
 export async function logExportRequest(admin: AdminClient, userId: string) {
   const { error } = await admin.from('gdpr_export_logs').insert({ user_id: userId })
   if (error) throw error
@@ -84,7 +95,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
     roadmapsResult,
     entitlementResult,
     ordersResult,
-    supportResult,
   ] = await Promise.all([
     admin
       .from('user_progress')
@@ -112,13 +122,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
         'stripe_checkout_session_id,stripe_payment_intent_id,status,amount_paid,currency',
       )
       .eq('user_id', userId),
-    admin
-      .from('support_requests')
-      .select(
-        'id,category,subject,message,status,created_at,assigned_at,support_request_messages(author_role,body,created_at)',
-      )
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false }),
   ])
 
   const errors = [
@@ -127,7 +130,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
     roadmapsResult.error,
     entitlementResult.error,
     ordersResult.error,
-    supportResult.error,
   ].filter(Boolean)
 
   if (errors.length > 0) {
@@ -160,6 +162,5 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
       entitlement: entitlementResult.data ?? null,
       orders: ordersResult.data ?? [],
     },
-    support_requests: supportResult.data ?? [],
   }
 }

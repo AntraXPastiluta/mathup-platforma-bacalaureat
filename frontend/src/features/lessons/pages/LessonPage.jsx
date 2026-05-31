@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
 import { markLessonCompleted } from '../../../services/progressService'
-import { recordQuizAttempt, submitQuizAnswer } from '../../../services/quizAttemptService'
+import { submitQuizAnswer } from '../../../services/quizAttemptService'
 import {
   canAccessLessonPart,
   canAccessQuiz,
@@ -207,17 +207,6 @@ export function LessonPage() {
         selectedIndex: selectedAnswer,
       })
       setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
-      // Înregistrarea încercării (pentru statistici) e „fire-and-forget” și doar pentru
-      // utilizatorii Premium; o eroare aici nu trebuie să blocheze fluxul de quiz.
-      if (isPremium && user?.id && lesson?.id) {
-        void recordQuizAttempt({
-          lessonId: lesson.id,
-          questionId: question.id,
-          isCorrect,
-        }).catch((attemptError) => {
-          console.warn('Quiz attempt tracking failed:', attemptError)
-        })
-      }
       setQuizFeedback({
         type: isCorrect ? 'correct' : 'wrong',
         message: isCorrect ? 'Verificat: Corect' : 'Verificat: Incorect',

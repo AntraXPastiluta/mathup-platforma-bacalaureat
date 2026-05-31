@@ -9,10 +9,8 @@ import { normalizeProfile, normalizeProfilesList } from './profileService'
 import { checkCurrentUserIsAdmin } from './curriculumAdminService'
 import { maskLessonForAccess } from './premiumAccessService'
 
-// Coloanele expuse elevilor la quiz exclud intenționat răspunsul corect
-// (`correct_answer`), pentru a nu-l putea citi din rețea.
+// Elevii citesc quiz-ul prin view-ul `quiz_questions_student` (fără correct_option_index).
 const LESSON_COLUMNS = 'id,title,content,video_url,difficulty,order_index,profile,subject_part,is_premium,preview_part_count'
-const STUDENT_QUIZ_COLUMNS = 'id,lesson_id,question_text,options,image_url,created_at'
 
 /** Returnează lecțiile unui singur program (profil), ordonate pe subiect și index. */
 export async function getLessons(profile = DEFAULT_PROFILE) {
@@ -89,7 +87,7 @@ export async function getLessonById(lessonId, accessContext = null) {
   const isAdmin = await checkCurrentUserIsAdmin().catch(() => false)
   const quizSelect = isAdmin
     ? 'quiz_questions(*)'
-    : `quiz_questions(${STUDENT_QUIZ_COLUMNS})`
+    : 'quiz_questions:quiz_questions_student(*)'
 
   const { data, error } = await supabase
     .from('lessons')

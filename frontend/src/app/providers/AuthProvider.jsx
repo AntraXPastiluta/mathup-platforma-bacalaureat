@@ -14,7 +14,7 @@ import {
   checkCurrentUserIsPrimaryAdmin,
   fetchPrimaryAdminEmail,
 } from '../../services/curriculumAdminService'
-import { normalizeProfile, normalizeProfilesList } from '../../services/profileService'
+import { normalizeProfile, normalizeProfilesList, syncEnrolledProfiles } from '../../services/profileService'
 import {
   streakDecayPatch,
   hasStreakUpdates,
@@ -442,6 +442,7 @@ export function AuthProvider({ children }) {
         setSession(data.session)
         setUser(data.session.user)
         setAuthLoading(false)
+        await syncEnrolledProfiles(list)
       }
       return data
     } catch (error) {
@@ -511,6 +512,7 @@ export function AuthProvider({ children }) {
       if (data.user) {
         setUser(data.user)
       }
+      await syncEnrolledProfiles(list)
       return data
     } catch (error) {
       setErrorMessage(toUserFacingError(error, USER_MESSAGES.save))
@@ -631,6 +633,12 @@ export function AuthProvider({ children }) {
       })
       if (error) throw error
       setUser(data.user)
+
+      const profileKeys = updates?.profiles ?? (updates?.profile ? [updates.profile] : null)
+      if (profileKeys) {
+        await syncEnrolledProfiles(profileKeys)
+      }
+
       if (!silent) {
         setSuccessMessage('Datele au fost actualizate!')
       }

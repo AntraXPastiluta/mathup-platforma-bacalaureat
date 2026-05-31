@@ -107,6 +107,8 @@ e-learning-licenta/
         └── functions/   # Edge Functions (deploy din backend/)
 ```
 
+**Docker (test local):** vezi [DOCKER.md](./DOCKER.md).
+
 ---
 
 ## Tehnologii utilizate
@@ -148,30 +150,7 @@ e-learning-licenta/
 
 ---
 
-## Deploy pe Vercel (monorepo)
 
-Repo-ul are structură `frontend/` + `backend/`. Configurația din rădăcină (`vercel.json`, `package.json`) face build-ul automat.
-
-| Setare Vercel | Valoare |
-|---------------|---------|
-| **Root Directory** | `.` (rădăcina repo-ului) — sau `frontend` dacă preferi |
-| **Framework Preset** | Vite |
-| **Build Command** | `npm run build` (NU `vite build` direct) |
-| **Output Directory** | `frontend/dist` (setat în `vercel.json` la root) |
-| **Install Command** | `npm install --prefix frontend` (setat în `vercel.json`) |
-
-**Variabile de mediu** (Project → Settings → Environment Variables):
-
-| Variabilă | Obligatoriu |
-|-----------|-------------|
-| `VITE_SUPABASE_URL` | Da |
-| `VITE_SUPABASE_ANON_KEY` | Da |
-| `VITE_MAINTENANCE_MODE` | Opțional |
-| `VITE_PREMIUM_PRICE_LABEL` | Opțional |
-
-Dacă build-ul eșuează cu `vite: command not found`, înlocuiește Build Command-ul custom `vite build` cu **`npm run build`** sau lasă override-ul gol ca să folosească `vercel.json`.
-
----
 
 ## Status proiect
 

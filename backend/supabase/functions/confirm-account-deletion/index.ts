@@ -1,12 +1,23 @@
 import '@supabase/functions-js/edge-runtime'
+import { timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 
+const MAX_FAILED_ATTEMPTS = 5
+const LOCKOUT_MINUTES = 15
+
 type Deps = {
   createClient?: typeof createClient
   env?: EnvSource
+}
+
+type TokenRow = {
+  token: string
+  expires_at: string
+  failed_attempts: number
+  locked_until: string | null
 }
 
 function parseCode(body: unknown): string | null {
@@ -14,6 +25,15 @@ function parseCode(body: unknown): string | null {
   const raw = (body as Record<string, unknown>).code
   if (typeof raw !== 'string') return null
   return raw.trim()
+}
+
+/** Constant-time compare for OTP strings of equal length. */
+export function tokensEqual(expected: string, provided: string): boolean {
+  const enc = new TextEncoder()
+  const a = enc.encode(expected)
+  const b = enc.encode(provided)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
 }
 
 export function createConfirmAccountDeletionApp(deps: Deps = {}) {
@@ -56,7 +76,7 @@ export function createConfirmAccountDeletionApp(deps: Deps = {}) {
 
       const { data: tokenRow, error: fetchError } = await adminClient
         .from('account_deletion_tokens')
-        .select('token, expires_at')
+        .select('token, expires_at, failed_attempts, locked_until')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -73,7 +93,17 @@ export function createConfirmAccountDeletionApp(deps: Deps = {}) {
         )
       }
 
-      if (new Date(tokenRow.expires_at) < new Date()) {
+      const row = tokenRow as TokenRow
+
+      if (row.locked_until && new Date(row.locked_until) > new Date()) {
+        return jsonResponse(
+          { error: 'Prea multe încercări greșite. Solicită un cod nou peste câteva minute.' },
+          429,
+          corsHeaders,
+        )
+      }
+
+      if (new Date(row.expires_at) < new Date()) {
         return jsonResponse(
           { error: 'Codul a expirat. Solicită un cod nou.' },
           400,
@@ -81,17 +111,37 @@ export function createConfirmAccountDeletionApp(deps: Deps = {}) {
         )
       }
 
-      if (tokenRow.token !== code) {
+      if (!tokensEqual(row.token, code)) {
+        const nextAttempts = (row.failed_attempts ?? 0) + 1
+        const lockoutUpdate: Record<string, unknown> = { failed_attempts: nextAttempts }
+
+        if (nextAttempts >= MAX_FAILED_ATTEMPTS) {
+          lockoutUpdate.locked_until = new Date(
+            Date.now() + LOCKOUT_MINUTES * 60 * 1000,
+          ).toISOString()
+        }
+
+        await adminClient
+          .from('account_deletion_tokens')
+          .update(lockoutUpdate)
+          .eq('user_id', user.id)
+
+        if (nextAttempts >= MAX_FAILED_ATTEMPTS) {
+          return jsonResponse(
+            { error: 'Prea multe încercări greșite. Solicită un cod nou peste câteva minute.' },
+            429,
+            corsHeaders,
+          )
+        }
+
         return jsonResponse({ error: 'Codul introdus este incorect.' }, 400, corsHeaders)
       }
 
-      // Delete the token row first (best-effort; account deletion cascades anyway)
       await adminClient
         .from('account_deletion_tokens')
         .delete()
         .eq('user_id', user.id)
 
-      // Permanently delete the auth user (cascades to all user data via FK on delete cascade)
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id)
 
       if (deleteError) {

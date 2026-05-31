@@ -12,10 +12,6 @@ import_map = "./supabase/functions/deno.json"
 verify_jwt = true
 import_map = "./supabase/functions/deno.json"
 
-[functions.submit-support-request]
-verify_jwt = true
-import_map = "./supabase/functions/deno.json"
-
 [functions.export-user-data]
 verify_jwt = true
 import_map = "./supabase/functions/deno.json"

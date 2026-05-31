@@ -1,0 +1,79 @@
+# MathUP local Docker stack
+#
+# Frontend only (cloud Supabase — recommended until local DB has a baseline schema):
+#   docker compose up --build
+#
+# Full local stack (Supabase CLI + frontend):
+#   docker compose --profile local up --build
+#
+# Production-like frontend smoke test:
+#   docker compose --profile preview up --build frontend-preview
+
+name: mathup
+
+x-supabase-cli: &supabase-cli
+  image: supabase/cli:2.102.0
+  working_dir: /workspace
+  volumes:
+    - ./backend:/workspace
+    - /var/run/docker.sock:/var/run/docker.sock
+  extra_hosts:
+    - host.docker.internal:host-gateway
+
+services:
+  # Runs once: starts Supabase local containers via Docker socket (same as `npx supabase start`).
+  supabase-start:
+    <<: *supabase-cli
+    profiles: [local]
+    command: ["start"]
+    restart: "no"
+
+  supabase-stop:
+    <<: *supabase-cli
+    profiles: [local-down]
+    command: ["stop"]
+    restart: "no"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    env_file:
+      - path: frontend/.env.local
+        required: false
+      - path: .env.docker
+        required: false
+    environment:
+      DOCKER: "1"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      supabase-start:
+        condition: service_completed_successfully
+        required: false
+
+  frontend-preview:
+    profiles: [preview]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+    ports:
+      - "${PREVIEW_PORT:-8080}:80"
+    env_file:
+      - path: frontend/.env.local
+        required: false
+      - path: .env.docker
+        required: false
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+volumes:
+  frontend_node_modules:

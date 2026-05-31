@@ -149,10 +149,6 @@ p {
   will-change: auto;
 }
 
-.support-page-card {
-  contain: layout style paint;
-}
-
 .dark .math-paper-bg {
   background-color: #020617;
   background-image:
