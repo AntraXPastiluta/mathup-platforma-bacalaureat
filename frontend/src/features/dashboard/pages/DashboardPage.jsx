@@ -402,7 +402,7 @@ export function DashboardPage() {
     return today
   })
   const [bacExamDate, setBacExamDate] = useState(() => getDefaultBacExamDate())
-  const { user, isPremium, openPremiumModal, errorMessage } = useAuth()
+  const { user, authLoading, isPremium, openPremiumModal, errorMessage } = useAuth()
   const navigate = useNavigate()
 
   const activeProfiles = useMemo(
@@ -421,7 +421,7 @@ export function DashboardPage() {
     let mounted = true
 
     async function loadDashboardData() {
-      if (!user?.id) {
+      if (authLoading || !user?.id) {
         setLoadingData(false)
         return
       }
@@ -458,7 +458,7 @@ export function DashboardPage() {
     return () => {
       mounted = false
     }
-  }, [user?.id, activeProfiles, isPremium])
+  }, [authLoading, user?.id, activeProfiles, isPremium])
 
   const completedSet = useMemo(
     () => new Set(progressRows.filter((item) => item.completed).map((item) => item.lesson_id)),

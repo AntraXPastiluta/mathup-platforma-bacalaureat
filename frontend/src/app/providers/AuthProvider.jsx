@@ -7,7 +7,13 @@ import {
   useCallback,
 } from 'react'
 import { supabase } from '../../supabaseClient'
-import { requestPasswordReset as sendPasswordResetEmail, updatePassword as applyPasswordUpdate, signInWithGoogle } from '../../services/authService'
+import {
+  requestPasswordReset as sendPasswordResetEmail,
+  updatePassword as applyPasswordUpdate,
+  signInWithGoogle,
+  isInvalidRefreshTokenError,
+  clearStaleAuthSession,
+} from '../../services/authService'
 import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as createCheckout, cancelPremiumSubscription as cancelSubscription } from '../../services/billingService'
 import {
   checkCurrentUserIsAdmin,
@@ -228,8 +234,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
-    // Pornire în doi pași: întâi citim sesiunea locală (rapid, dar neverificată) pentru a
-    // afișa instant UI-ul, apoi confirmăm utilizatorul cu serverul prin getUser() mai jos.
+    // Confirmăm sesiunea cu serverul înainte de a expune user/token către restul aplicației,
+    // ca să evităm cereri Supabase cu JWT expirat (403) când refresh token-ul local e invalid.
     const syncSessionState = async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession()
       if (!mounted) return
@@ -243,40 +249,42 @@ export function AuthProvider({ children }) {
         return
       }
 
-      setSession(currentSession)
-      setUser(sessionUser)
-      applyCachedAuthState(sessionUser.id)
-      setAuthLoading(false)
-
-      if (!hasSessionCookie()) {
-        setSessionCookie()
-      }
-
-      scheduleLoginStreakUpdate(sessionUser)
-      void syncEntitlementForUser(sessionUser, { silent: true })
-      void syncAdminForUser(sessionUser, { silent: true })
-
-      // Verificare autoritativă la server: dacă token-ul local e invalid/expirat,
-      // deconectăm utilizatorul ca să nu rămână blocat într-o sesiune „fantomă”.
       const { data: { user: verifiedUser }, error } = await supabase.auth.getUser()
       if (!mounted) return
 
       if (error || !verifiedUser) {
+        if (isInvalidRefreshTokenError(error)) {
+          await clearStaleAuthSession()
+        } else {
+          try {
+            await supabase.auth.signOut({ scope: 'local' })
+          } catch (signOutError) {
+            console.warn('Session validation sign out:', signOutError)
+          }
+        }
         setUser(null)
         setSession(null)
+        setAuthLoading(false)
         clearAuthSessionArtifacts()
-        try {
-          await supabase.auth.signOut()
-        } catch (signOutError) {
-          console.warn('Session validation sign out:', signOutError)
-        }
         return
       }
 
       if (verifiedUser.id !== sessionUser.id) {
         clearAuthCache(sessionUser.id)
       }
+
+      setSession(currentSession)
       setUser(verifiedUser)
+      applyCachedAuthState(verifiedUser.id)
+      setAuthLoading(false)
+
+      if (!hasSessionCookie()) {
+        setSessionCookie()
+      }
+
+      scheduleLoginStreakUpdate(verifiedUser)
+      void syncEntitlementForUser(verifiedUser, { silent: true })
+      void syncAdminForUser(verifiedUser, { silent: true })
     }
 
     void syncSessionState()
@@ -284,6 +292,11 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return
       const nextUser = currentSession?.user ?? null
+
+      // Bootstrap-ul inițial e gestionat de syncSessionState (cu getUser înainte de side-effects).
+      if (event === 'INITIAL_SESSION') {
+        return
+      }
 
       // La reîmprospătarea token-ului doar actualizăm sesiunea; utilizatorul nu s-a
       // schimbat, deci evităm reîncărcarea inutilă a datelor de premium/admin.
@@ -313,7 +326,7 @@ export function AuthProvider({ children }) {
         return
       }
 
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN') {
         applyCachedAuthState(nextUser.id)
         scheduleLoginStreakUpdate(nextUser)
         void syncEntitlementForUser(nextUser, { silent: true })

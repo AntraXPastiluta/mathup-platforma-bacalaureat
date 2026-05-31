@@ -4,6 +4,27 @@
  */
 import { supabase } from '../supabaseClient'
 
+/** True when Supabase rejected a stored refresh token (revoked session, env switch, cleared DB). */
+export function isInvalidRefreshTokenError(error) {
+  if (!error) return false
+  const message = String(error.message || error).toLowerCase()
+  const code = String(error.code || '').toLowerCase()
+  return (
+    code === 'refresh_token_not_found'
+    || message.includes('invalid refresh token')
+    || message.includes('refresh token not found')
+  )
+}
+
+/** Clears local auth storage without requiring a valid refresh token on the server. */
+export async function clearStaleAuthSession() {
+  try {
+    await supabase.auth.signOut({ scope: 'local' })
+  } catch (signOutError) {
+    console.warn('Local auth cleanup:', signOutError)
+  }
+}
+
 /** Returnează sesiunea activă (sau null dacă utilizatorul nu este logat). */
 export async function getCurrentSession() {
   const { data, error } = await supabase.auth.getSession()
