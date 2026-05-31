@@ -4,14 +4,14 @@ import { needsProfileSetup } from '../services/profileService'
 import { savePendingPostAuthRedirect } from '../services/lastLocationService'
 
 export function ProtectedRoute({ children }) {
-  const { user, authLoading } = useAuth()
+  const { user, session, authLoading } = useAuth()
   const location = useLocation()
 
   if (authLoading) {
     return <div className="page-message">Se incarca sesiunea...</div>
   }
 
-  if (!user) {
+  if (!user || !session?.access_token) {
     // Reținem ruta cerută ca, după autentificare, să-l ducem pe utilizator direct acolo
     // în loc de pagina implicită.
     savePendingPostAuthRedirect(location)

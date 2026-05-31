@@ -14,6 +14,8 @@
     "deploy:premium-functions": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/deploy-premium-functions.ps1"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@supabase/supabase-js": "^2.105.3",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../../app/providers/AuthProvider'
 import {
   getAllLessonsAdmin,
   addLesson,
@@ -35,6 +36,7 @@ function toggleProfileInList(currentProfiles, key) {
 }
 
 export function useAdminCurriculum() {
+  const { authLoading, session } = useAuth()
   const [lessons, setLessons] = useState([])
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -108,8 +110,9 @@ export function useAdminCurriculum() {
   )
 
   useEffect(() => {
+    if (authLoading || !session?.access_token) return
     loadLessons()
-  }, [])
+  }, [authLoading, session?.access_token])
 
   async function loadLessons() {
     setLoading(true)

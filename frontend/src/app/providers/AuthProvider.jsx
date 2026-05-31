@@ -6,13 +6,17 @@ import {
   useMemo,
   useCallback,
 } from 'react'
-import { supabase } from '../../supabaseClient'
+import {
+  supabase,
+  ensureAuthBootstrap,
+  resetAuthBootstrap,
+  startSessionAutoRefresh,
+  stopSessionAutoRefresh,
+} from '../../supabaseClient'
 import {
   requestPasswordReset as sendPasswordResetEmail,
   updatePassword as applyPasswordUpdate,
   signInWithGoogle,
-  isInvalidRefreshTokenError,
-  clearStaleAuthSession,
 } from '../../services/authService'
 import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as createCheckout, cancelPremiumSubscription as cancelSubscription } from '../../services/billingService'
 import {
@@ -234,43 +238,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
-    // Confirmăm sesiunea cu serverul înainte de a expune user/token către restul aplicației,
-    // ca să evităm cereri Supabase cu JWT expirat (403) când refresh token-ul local e invalid.
+    // Bootstrap-ul validează JWT-ul înainte de auto-refresh și înainte de fetch-uri protejate RLS.
     const syncSessionState = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      const { user: verifiedUser, session: currentSession } = await ensureAuthBootstrap()
       if (!mounted) return
 
-      const sessionUser = currentSession?.user ?? null
-      if (!sessionUser) {
+      if (!verifiedUser || !currentSession) {
+        stopSessionAutoRefresh()
         setUser(null)
         setSession(null)
         setAuthLoading(false)
         clearAuthSessionArtifacts()
         return
-      }
-
-      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser()
-      if (!mounted) return
-
-      if (error || !verifiedUser) {
-        if (isInvalidRefreshTokenError(error)) {
-          await clearStaleAuthSession()
-        } else {
-          try {
-            await supabase.auth.signOut({ scope: 'local' })
-          } catch (signOutError) {
-            console.warn('Session validation sign out:', signOutError)
-          }
-        }
-        setUser(null)
-        setSession(null)
-        setAuthLoading(false)
-        clearAuthSessionArtifacts()
-        return
-      }
-
-      if (verifiedUser.id !== sessionUser.id) {
-        clearAuthCache(sessionUser.id)
       }
 
       setSession(currentSession)
@@ -307,6 +286,8 @@ export function AuthProvider({ children }) {
       }
 
       if (event === 'SIGNED_OUT' || !nextUser) {
+        stopSessionAutoRefresh()
+        resetAuthBootstrap()
         setSession(null)
         setUser(null)
         setAuthLoading(false)
@@ -314,6 +295,7 @@ export function AuthProvider({ children }) {
         return
       }
 
+      startSessionAutoRefresh()
       setSession(currentSession)
       setUser(nextUser)
       setAuthLoading(false)
@@ -452,6 +434,8 @@ export function AuthProvider({ children }) {
       })
       if (error) throw error
       if (data.session) {
+        startSessionAutoRefresh()
+        resetAuthBootstrap()
         setSession(data.session)
         setUser(data.session.user)
         setAuthLoading(false)
@@ -476,6 +460,8 @@ export function AuthProvider({ children }) {
       })
       if (error) throw error
       if (data.session) {
+        startSessionAutoRefresh()
+        resetAuthBootstrap()
         setSession(data.session)
         setUser(data.session.user)
         setAuthLoading(false)
@@ -571,6 +557,8 @@ export function AuthProvider({ children }) {
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+      stopSessionAutoRefresh()
+      resetAuthBootstrap()
     } catch (error) {
       setErrorMessage(toUserFacingError(error, USER_MESSAGES.generic))
     } finally {

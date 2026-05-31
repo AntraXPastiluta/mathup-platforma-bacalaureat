@@ -3,14 +3,14 @@ import { useAuth } from './providers/AuthProvider'
 import { savePendingPostAuthRedirect } from '../services/lastLocationService'
 
 export function AdminRoute({ children }) {
-  const { user, isAdmin, authLoading, adminLoading } = useAuth()
+  const { user, session, isAdmin, authLoading, adminLoading } = useAuth()
   const location = useLocation()
 
   if (authLoading || adminLoading) {
     return <div className="page-message">Se incarca sesiunea...</div>
   }
 
-  if (!user) {
+  if (!user || !session?.access_token) {
     savePendingPostAuthRedirect(location, { allowAdmin: true })
     return <Navigate to="/login" replace />
   }
