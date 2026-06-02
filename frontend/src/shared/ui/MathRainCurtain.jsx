@@ -17,14 +17,20 @@ const EQUATIONS = [
   'V = (4/3)πr³',
   'Sₙ = n(a₁ + aₙ)/2',
   '√(a·b) = √a · √b',
+  'tan α = sin α / cos α',
+  'log(ab) = log a + log b',
+  'n! = n · (n−1)!',
+  'φ = (1 + √5) / 2',
+  '∂z/∂x',
+  'eˣ = ∑ xⁿ/n!',
 ]
 
 function getRainColumnCount() {
   if (typeof window === 'undefined') return 16
   const w = window.innerWidth
   if (w < 640) return 10
-  if (w < 1024) return 14
-  return 18
+  if (w < 1024) return 15
+  return 20
 }
 
 function subscribeRainColumns(onStoreChange) {
@@ -60,13 +66,52 @@ export function MathRainCurtain() {
   const drops = useMemo(() => {
     const rand = seededRand(42 + columnCount)
     return Array.from({ length: columnCount }, (_, i) => {
+      // O picătură rară devine „cometă”: mai luminoasă, mai rapidă, cu o coadă strălucitoare.
+      const isMeteor = rand() > 0.86
+
+      // depth ∈ [0,1]: 0 = fundal (mic, estompat, lent), 1 = prim-plan (mare, clar, rapid).
+      // Cometele stau mereu în prim-plan ca să nu apară blurate.
+      const depth = isMeteor ? 0.9 + rand() * 0.1 : rand()
+
       const left = 1 + (i / columnCount) * 98 + rand() * (98 / columnCount - 0.5)
-      const duration = 14 + rand() * 10
-      const delay = -(rand() * 24)
-      const drift = -12 + rand() * 24
-      const size = 0.65 + rand() * 0.35
+      const duration = (isMeteor ? 9 : 24) - depth * 9 + rand() * 4
+      const delay = -(rand() * duration)
+      const drift = -16 + rand() * 32
+      const size = 0.55 + depth * 0.72 + rand() * 0.14
+      const opacity = (isMeteor ? 0.6 : 0.16) + depth * 0.32
+      const blur = (1 - depth) * 1.5
+      const hue = -18 + rand() * 46
+
+      // Legănare orizontală + balans de rotație, aplicate pe un element interior
+      // ca să nu intre în conflict cu transform-ul de cădere verticală al părintelui.
+      const sway = 8 + rand() * 24
+      const swayDur = 6 + rand() * 6
+      const swayDelay = -(rand() * swayDur)
+      const spin = (-6 + rand() * 12).toFixed(1)
+      const twinkleDur = 4 + rand() * 5
+      const twinkleDelay = -(rand() * twinkleDur)
+
       const eq = EQUATIONS[Math.floor(rand() * EQUATIONS.length)]
-      return { id: i, left, duration, delay, drift, driftEnd: -drift, size, eq }
+      return {
+        id: i,
+        isMeteor,
+        left,
+        duration,
+        delay,
+        drift,
+        driftEnd: -drift,
+        size,
+        opacity,
+        blur,
+        hue,
+        sway,
+        swayDur,
+        swayDelay,
+        spin,
+        twinkleDur,
+        twinkleDelay,
+        eq,
+      }
     })
   }, [columnCount])
 
@@ -97,6 +142,7 @@ export function MathRainCurtain() {
       className="math-rain-curtain pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
       <div className="math-notebook-bg absolute inset-0" />
+      <div className="math-aurora absolute inset-0" />
 
       {drops.map((d) => (
         <span
@@ -111,7 +157,22 @@ export function MathRainCurtain() {
             '--rain-drift-end': `${d.driftEnd}px`,
           }}
         >
-          {d.eq}
+          <span
+            className={`math-rain-glyph${d.isMeteor ? ' is-meteor' : ''}`}
+            style={{
+              '--glyph-hue': d.hue,
+              '--drop-opacity': d.opacity,
+              '--drop-blur': `${d.blur}px`,
+              '--sway': `${d.sway}px`,
+              '--sway-dur': `${d.swayDur}s`,
+              '--sway-delay': `${d.swayDelay}s`,
+              '--spin': `${d.spin}deg`,
+              '--twinkle-dur': `${d.twinkleDur}s`,
+              '--twinkle-delay': `${d.twinkleDelay}s`,
+            }}
+          >
+            {d.eq}
+          </span>
         </span>
       ))}
     </div>

@@ -330,15 +330,11 @@ export function SupportWidget() {
 
                 {view === 'list' && (
 
-                  <span
+                  <span className="support-chat-medallion shrink-0" aria-hidden>
 
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+                    <Headphones className="size-4" />
 
-                    aria-hidden
-
-                  >
-
-                    <Headphones className="size-3.5" />
+                    <span className="support-chat-medallion-dot" />
 
                   </span>
 
@@ -364,7 +360,13 @@ export function SupportWidget() {
 
                   {view === 'list' && user && (
 
-                    <p className="support-chat-header-sub">Răspundem în cel mai scurt timp</p>
+                    <p className="support-chat-header-sub">
+
+                      <span className="support-chat-online-dot" aria-hidden />
+
+                      Echipa MathUP · răspundem rapid
+
+                    </p>
 
                   )}
 
@@ -394,13 +396,25 @@ export function SupportWidget() {
 
             {!user ? (
 
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 p-5 text-center">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
 
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary shadow-sm ring-1 ring-primary/10">
 
-                  Autentifică-te pentru a trimite o solicitare către echipa noastră.
+                  <Headphones className="size-7" strokeWidth={1.75} />
 
-                </p>
+                </span>
+
+                <div className="space-y-1">
+
+                  <p className="text-sm font-semibold text-foreground">Hai să discutăm</p>
+
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+
+                    Autentifică-te pentru a trimite o solicitare către echipa MathUP.
+
+                  </p>
+
+                </div>
 
                 <Link
 
@@ -408,7 +422,7 @@ export function SupportWidget() {
 
                   onClick={() => setOpen(false)}
 
-                  className="rounded-full bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="support-chat-launcher rounded-full px-6 py-2.5 text-xs font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
 
                 >
 
@@ -426,9 +440,9 @@ export function SupportWidget() {
 
                   <>
 
-                    <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
+                    <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
 
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 
                         Solicitările tale
 
@@ -440,7 +454,7 @@ export function SupportWidget() {
 
                         onClick={() => setView('new')}
 
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
 
                       >
 

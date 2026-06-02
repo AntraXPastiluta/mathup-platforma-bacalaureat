@@ -22,7 +22,7 @@ export function SupportWidgetLauncher({ open, unreadCount, onToggle }) {
 
       onClick={onToggle}
 
-      className="fixed bottom-5 right-5 z-[110] flex size-[3.25rem] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:bottom-6 sm:right-6"
+      className="support-chat-launcher fixed bottom-5 right-5 z-[110] flex size-[3.25rem] items-center justify-center rounded-full text-primary-foreground transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:bottom-6 sm:right-6"
 
       whileTap={reduceMotion ? undefined : { scale: 0.92 }}
 
