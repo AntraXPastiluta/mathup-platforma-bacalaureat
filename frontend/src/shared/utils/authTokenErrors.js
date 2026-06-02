@@ -9,3 +9,19 @@ export function isInvalidRefreshTokenError(error) {
     || message.includes('refresh token not found')
   )
 }
+
+/** True when persisted auth should be cleared locally (invalid refresh token, missing user, bad JWT). */
+export function isStaleStoredAuthError(error) {
+  if (!error) return false
+  if (isInvalidRefreshTokenError(error)) return true
+
+  const message = String(error.message || error).toLowerCase()
+  const status = Number(error.status ?? error.statusCode)
+
+  return (
+    message.includes('user from sub claim')
+    || (message.includes('jwt') && message.includes('does not exist'))
+    || status === 401
+    || status === 403
+  )
+}

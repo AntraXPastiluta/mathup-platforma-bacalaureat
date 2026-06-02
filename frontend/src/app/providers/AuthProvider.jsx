@@ -280,6 +280,15 @@ export function AuthProvider({ children }) {
       // La reîmprospătarea token-ului doar actualizăm sesiunea; utilizatorul nu s-a
       // schimbat, deci evităm reîncărcarea inutilă a datelor de premium/admin.
       if (event === 'TOKEN_REFRESHED') {
+        if (!currentSession?.access_token) {
+          stopSessionAutoRefresh()
+          resetAuthBootstrap()
+          setSession(null)
+          setUser(null)
+          setAuthLoading(false)
+          clearAuthSessionArtifacts()
+          return
+        }
         setSession(currentSession)
         setAuthLoading(false)
         return

@@ -8,7 +8,7 @@ Platformă web educațională de tip SaaS, dedicată pregătirii elevilor de lic
 
 ## Despre proiect
 
-MathUP este un proiect de startup / licență aflat în fază de dezvoltare (MVP). Scopul platformei este să ofere elevilor un instrument digital coerent pentru repetarea materiei, exersarea prin quiz-uri și planificarea pregătirii până la examen.
+MathUP este un proiect de startup aflat în fază de dezvoltare (MVP). Scopul platformei este să ofere elevilor un instrument digital coerent pentru repetarea materiei, exersarea prin quiz-uri și planificarea pregătirii până la examen.
 
 Platforma combină:
 - conținut didactic structurat de profesori;
@@ -42,7 +42,7 @@ Platforma combină:
 
 | Funcție | Descriere |
 |---------|-----------|
-| Roadmap de studiu | Plan vizual al parcursului recomandat, cu priorități pe subiecte |
+| Roadmaps | Plan vizual al parcursului recomandat, cu priorități pe subiecte |
 | Variante rezolvate | Acces la documente publicate de profesori, per program |
 | Programe extinse | Lecții din programe diferite față de cel ales la înregistrare |
 | Raport de pregătire | Analiză greșeli quiz, medie, estimare față de nota țintă |
@@ -107,7 +107,6 @@ e-learning-licenta/
         └── functions/   # Edge Functions (deploy din backend/)
 ```
 
-**Docker (test local):** vezi [DOCKER.md](./DOCKER.md).
 
 ---
 

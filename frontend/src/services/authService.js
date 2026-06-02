@@ -4,7 +4,10 @@
  */
 import { supabase } from '../supabaseClient'
 
-export { isInvalidRefreshTokenError } from '../shared/utils/authTokenErrors'
+export {
+  isInvalidRefreshTokenError,
+  isStaleStoredAuthError,
+} from '../shared/utils/authTokenErrors'
 
 /** Clears local auth storage without requiring a valid refresh token on the server. */
 export async function clearStaleAuthSession() {

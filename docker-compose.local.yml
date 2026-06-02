@@ -1,0 +1,7 @@
+# Override for `npm run docker:up:local` — points the frontend at local Supabase.
+# `.env.docker` is loaded after `frontend/.env.local` so local URL/key win over cloud settings.
+services:
+  frontend:
+    env_file:
+      - path: .env.docker
+        required: true

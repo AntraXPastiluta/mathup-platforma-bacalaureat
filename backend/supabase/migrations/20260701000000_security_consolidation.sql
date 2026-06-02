@@ -932,6 +932,7 @@ grant execute on function public.revoke_premium_entitlement(uuid) to authenticat
 grant execute on function public.auth_user_email_exists(text) to authenticated;
 
 -- RLS policy helpers (required for authenticated queries after PUBLIC revoke)
+grant execute on function public.user_profile_keys() to authenticated;
 grant execute on function public.user_has_active_premium() to authenticated;
 grant execute on function public.user_has_lesson_full_access(uuid) to authenticated;
 grant execute on function public.user_may_read_lesson_quiz(uuid) to authenticated;

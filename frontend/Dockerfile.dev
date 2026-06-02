@@ -7,7 +7,11 @@ RUN npm ci
 
 COPY . .
 
+RUN sed -i 's/\r$//' docker-entrypoint.dev.sh && chmod +x docker-entrypoint.dev.sh
+
 ENV DOCKER=1
 EXPOSE 5173
 
+# Strip CRLF on start: bind-mount from Windows can overwrite the image copy with \r\n.
+ENTRYPOINT ["/bin/sh", "-c", "sed -i 's/\\r$//' /app/docker-entrypoint.dev.sh && exec /bin/sh /app/docker-entrypoint.dev.sh \"$@\"", "--"]
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

@@ -1,48 +1,73 @@
 import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
-import { Moon, Sun, BookOpen, GraduationCap, Trophy } from 'lucide-react'
+import { Moon, Sun, BookOpen, GraduationCap, Trophy, ArrowRight, ArrowUpRight, Check } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 
-const benefits = [
-  { 
-    title: 'Planuri de studiu ghidate', 
-    description: 'Calendar academic structurat cu obiective clare pentru fiecare săptămână de pregătire.',
-    icon: <BookOpen className="size-6" />
+// Serif de manuscris pentru accentele editoriale — fără fonturi externe (CSP-safe),
+// doar stiva de sistem, ca să păstrăm contrastul „demonstrație tipărită” cu sans-ul greu.
+const SERIF = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
+
+// Fișa demonstrativă din hero — o variantă rezolvată reală, în limbajul matematic al aplicației.
+const WORKED_STATEMENT = 'x² − 5x + 6 = 0'
+const WORKED_LINES = [
+  'Δ = b² − 4ac = 25 − 24 = 1',
+  'x₁ = (5 + √Δ) / 2 = 3',
+  'x₂ = (5 − √Δ) / 2 = 2',
+  'S = {2, 3}',
+]
+
+const chapters = [
+  {
+    n: '01',
+    title: 'Plan de studiu ghidat',
+    description:
+      'Un calendar academic structurat, cu obiective clare pentru fiecare săptămână de pregătire. Știi mereu ce urmează.',
+    icon: BookOpen,
   },
-  { 
-    title: 'Variante deja rezolvate', 
-    description: 'Acces la variante de examen BAC cu rezolvări complete, publicate de profesori pentru programul tău liceal.',
-    icon: <Trophy className="size-6" />
+  {
+    n: '02',
+    title: 'Variante rezolvate complet',
+    description:
+      'Variante de Bacalaureat cu rezolvări pas cu pas, publicate de profesori pentru programul tău liceal — nu doar răspunsul final, ci raționamentul.',
+    icon: Trophy,
   },
-  { 
-    title: 'Lecții concise', 
-    description: 'Conținut optimizat și structurat pe competențe cheie, facilitând o învățare rapidă și logică.',
-    icon: <GraduationCap className="size-6" />
+  {
+    n: '03',
+    title: 'Lecții concise, pe competențe',
+    description:
+      'Conținut optimizat și organizat pe competențele-cheie din programă, pentru o învățare rapidă, logică și fără balast.',
+    icon: GraduationCap,
   },
 ]
+
+const programs = [
+  { code: 'M1', name: 'Matematică-Informatică', description: 'Profilul real, varianta extinsă — algebră, analiză și combinatorică în profunzime.' },
+  { code: 'M2', name: 'Științele Naturii', description: 'Profilul real, adaptat științelor naturii — esențialul programei, riguros explicat.' },
+  { code: 'M3', name: 'Tehnologic', description: 'Programa profilului tehnologic, distilată în pași clari și aplicați.' },
+]
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.05 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const revealOnScroll = {
+  hidden: { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+}
 
 export function WelcomePage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useAuth()
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-foreground transition-colors duration-500">
@@ -55,177 +80,412 @@ export function WelcomePage() {
       </div>
 
       <div className="page-ambient-content">
-      {/* Scholar Navbar */}
-      <nav className="sticky top-0 z-50 border-b-2 border-border bg-background/95">
-        <div className="container flex h-20 items-center justify-between">
-          <motion.div 
-            className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigate('/')}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <div className="flex size-11 items-center justify-center rounded-lg bg-primary text-white shadow-xl shadow-primary/20 transform group-hover:rotate-3 transition-transform duration-500">
-              <BrandLogo className="size-6" />
-            </div>
-            <div>
-              <strong className="block text-lg leading-tight font-black tracking-tighter uppercase">MathUP</strong>
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">Excelență Academică</span>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="flex items-center gap-4 sm:gap-8"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-             <Button
-               variant="ghost"
-               size="icon"
-               onClick={toggleTheme}
-               className="rounded-lg text-slate-800 dark:text-slate-100"
-             >
-               {theme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
-             </Button>
-             <div className="hidden sm:block h-8 w-px bg-border" />
-             <Button 
-               variant="ghost" 
-               size="sm" 
-               onClick={() => navigate('/login')}
-               className="text-slate-800 dark:text-slate-100"
-             >
-               Autentificare
-             </Button>
-             <Button 
-               size="sm" 
-               onClick={() => navigate('/register')}
-               className="shadow-lg shadow-primary/20"
-             >
-               Înregistrare
-             </Button>
-          </motion.div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-24 pb-20 lg:pt-40 lg:pb-36">
-        <div className="container relative z-10">
-          <motion.div 
-            className="flex flex-col items-center text-center"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div
-              variants={itemVariants}
-              className="inline-flex items-center gap-3 rounded-full bg-primary/5 px-6 py-2 border-2 border-primary/20 mb-10"
+        {/* ── Navbar ───────────────────────────────────────────── */}
+        <nav className="sticky top-0 z-50 border-b border-border bg-background/90">
+          <div className="container flex h-20 items-center justify-between">
+            <motion.button
+              type="button"
+              className="group flex items-center gap-3"
+              onClick={() => navigate('/')}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
             >
-              <div className="size-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-[0.25em] text-primary">
-                Portal Academic pentru Matematică
-              </span>
-            </motion.div>
-            
-            <motion.h1
-              variants={itemVariants}
-              className="max-w-5xl text-6xl font-black tracking-tighter sm:text-9xl leading-[0.9]"
-            >
-              Excelența <br />
-              <span className="text-primary">Construită</span> Pas cu Pas.
-            </motion.h1>
-
-            <motion.p
-              variants={itemVariants}
-              className="mt-10 max-w-2xl text-lg text-slate-500 dark:text-slate-400 sm:text-xl font-medium leading-relaxed uppercase tracking-wide"
-            >
-              O experiență de învățare disciplinată, structurată pe competențe academice 
-              pentru succes garantat la examenul de Bacalaureat.
-            </motion.p>
+              <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform duration-500 group-hover:-rotate-6">
+                <BrandLogo className="size-6" />
+              </div>
+              <div className="text-left">
+                <strong className="block text-lg font-black uppercase leading-tight tracking-tighter">MathUP</strong>
+                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/80">Excelență Academică</span>
+              </div>
+            </motion.button>
 
             <motion.div
-              variants={itemVariants}
-              className="mt-14 flex flex-col gap-6 sm:flex-row"
+              className="flex items-center gap-3 sm:gap-6"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
             >
-              <Button size="lg" className="rounded-xl px-12 h-14 text-sm shadow-2xl shadow-primary/30" onClick={() => navigate('/register')}>
-                Începe Pregătirea
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-xl px-12 h-14 text-sm" onClick={() => navigate('/login')}>
-                Portal Elev
-              </Button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="bg-slate-50 dark:bg-slate-900/50 py-32 border-y-2 border-border">
-        <div className="container">
-          <motion.div 
-            className="grid gap-12 md:grid-cols-3"
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-          >
-            {benefits.map((benefit) => (
-              <motion.div
-                key={benefit.title}
-                className="group relative flex flex-col rounded-2xl border-2 border-border bg-white dark:bg-slate-900 p-10 hover:border-primary transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5"
-                variants={itemVariants}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                aria-label="Comută tema"
+                className="rounded-xl text-slate-800 dark:text-slate-100"
               >
-                <div className="mb-8 inline-flex size-16 items-center justify-center rounded-xl bg-primary text-white shadow-xl shadow-primary/20 transform group-hover:scale-110 transition-transform duration-500">
-                  {benefit.icon}
-                </div>
-                <h3 className="mb-4 text-2xl font-black tracking-tighter uppercase leading-tight">{benefit.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{benefit.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+                {theme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              </Button>
+              <div className="hidden h-8 w-px bg-border sm:block" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/login')}
+                className="text-slate-800 dark:text-slate-100"
+              >
+                Autentificare
+              </Button>
+              <Button size="sm" onClick={() => navigate('/register')} className="shadow-lg shadow-primary/20">
+                Înregistrare
+              </Button>
+            </motion.div>
+          </div>
+        </nav>
 
-      {/* Footer */}
-      <footer className="py-24">
-        <div className="container">
-          <motion.div 
-            className="flex flex-col items-center justify-between gap-12 md:flex-row border-t-2 border-border pt-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-xl">
-                 <BrandLogo className="size-6" />
-              </div>
+        {/* ── Hero (editorial, asimetric) ──────────────────────── */}
+        <section className="relative overflow-hidden pt-16 pb-24 lg:pt-28 lg:pb-32">
+          <div className="container relative z-10">
+            <div className="grid items-center gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+              {/* Coloana de text */}
+              <motion.div variants={containerVariants} initial="hidden" animate="visible">
+                <motion.div variants={itemVariants} className="mb-9 flex items-center gap-4">
+                  <span className="h-px w-12 bg-primary" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">
+                    Portal academic · Matematică BAC
+                  </span>
+                </motion.div>
+
+                <motion.h1
+                  variants={itemVariants}
+                  className="text-5xl font-black leading-[0.95] tracking-tighter sm:text-7xl xl:text-[5.5rem]"
+                >
+                  Excelența nu se
+                  <br />
+                  improvizează.
+                  <br />
+                  <span className="text-slate-400 dark:text-slate-600">Se </span>
+                  <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-primary">
+                    demonstrează
+                  </span>
+                  <span className="text-primary">.</span>
+                </motion.h1>
+
+                <motion.p
+                  variants={itemVariants}
+                  className="mt-9 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300 sm:text-xl"
+                >
+                  MathUP transformă programa de Bacalaureat la matematică într-un parcurs disciplinat:
+                  lecții concise, variante rezolvate integral și un plan de studiu care te ține pe drumul cel bun.
+                </motion.p>
+
+                <motion.div variants={itemVariants} className="mt-11 flex flex-col gap-4 sm:flex-row">
+                  <Button
+                    size="lg"
+                    className="group h-14 rounded-xl px-10 text-sm shadow-2xl shadow-primary/30"
+                    onClick={() => navigate('/register')}
+                  >
+                    Începe pregătirea
+                    <ArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-14 rounded-xl px-10 text-sm"
+                    onClick={() => navigate('/login')}
+                  >
+                    Am deja cont
+                  </Button>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="mt-12 flex flex-wrap items-center gap-x-5 gap-y-3">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                    Toate profilurile
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {programs.map((p) => (
+                      <span
+                        key={p.code}
+                        style={{ fontFamily: SERIF }}
+                        className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 dark:text-slate-200"
+                      >
+                        {p.code}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              {/* Showpiece: fișă de variantă rezolvată */}
+              <motion.div
+                className="relative mx-auto w-full max-w-md lg:mx-0"
+                initial={{ opacity: 0, y: 40, rotate: -3 }}
+                animate={{ opacity: 1, y: 0, rotate: 0 }}
+                transition={{ duration: 0.9, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {/* strat-umbră în spate, pentru adâncime tipărită */}
+                <div className="absolute inset-0 translate-x-3.5 translate-y-3.5 rounded-[1.4rem] border border-primary/20 bg-primary/[0.05]" aria-hidden />
+
+                <div className="dashboard-glass-card relative rotate-1 overflow-hidden rounded-[1.4rem] p-7 transition-transform duration-500 hover:rotate-0">
+                  {/* textură de hârtie milimetrică */}
+                  <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.4]" aria-hidden />
+
+                  <div className="relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+                        Fișă · Variantă rezolvată
+                      </span>
+                      <span
+                        style={{ fontFamily: SERIF }}
+                        className="rounded-md bg-primary px-2.5 py-0.5 text-xs font-semibold italic text-white shadow-sm shadow-primary/30"
+                      >
+                        M1
+                      </span>
+                    </div>
+
+                    <div className="mt-5 mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+                      Rezolvați în ℝ
+                    </div>
+                    <p
+                      style={{ fontFamily: SERIF }}
+                      className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white"
+                    >
+                      {WORKED_STATEMENT}
+                    </p>
+
+                    <div className="my-6 h-px w-full bg-border" />
+
+                    <div style={{ fontFamily: SERIF }} className="space-y-2.5 text-lg text-slate-700 dark:text-slate-200">
+                      {WORKED_LINES.map((line, i) => (
+                        <div
+                          key={line}
+                          className="flex items-baseline gap-3"
+                        >
+                          <span className="select-none text-xs font-sans font-black text-primary/40">
+                            {String(i + 1).padStart(2, '0')}
+                          </span>
+                          <span className={i === WORKED_LINES.length - 1 ? 'font-bold text-primary' : ''}>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-7 flex items-center gap-2.5 border-t border-border pt-5">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        <Check className="size-3.5" strokeWidth={3} />
+                      </span>
+                      <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                        Rezolvare completă, pas cu pas
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ștampilă plutitoare */}
+                <div
+                  className="absolute -left-5 -top-5 hidden size-20 rotate-[-12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/80 text-center sm:flex"
+                  aria-hidden
+                >
+                  <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
+                    BAC
+                    <br />
+                    2026
+                  </span>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Metoda (cuprins numerotat) ───────────────────────── */}
+        <section className="border-y border-border bg-slate-50/70 py-24 dark:bg-slate-900/40 lg:py-32">
+          <div className="container">
+            <motion.div
+              className="mb-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
+              variants={revealOnScroll}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+            >
               <div>
-                 <span className="block text-2xl font-black tracking-tighter uppercase">MathUP</span>
-                 <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Fundament Academic</span>
+                <div className="mb-4 flex items-center gap-4">
+                  <span className="h-px w-12 bg-primary" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">Metoda MathUP</span>
+                </div>
+                <h2 className="max-w-2xl text-4xl font-black tracking-tighter sm:text-5xl">
+                  Trei piloni ai unei pregătiri{' '}
+                  <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-primary">
+                    riguroase
+                  </span>
+                  .
+                </h2>
+              </div>
+              <p className="max-w-xs text-base leading-relaxed text-slate-500 dark:text-slate-400">
+                Fără promisiuni goale — doar structură, conținut verificat și un ritm pe care îl poți susține.
+              </p>
+            </motion.div>
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+            >
+              {chapters.map((chapter) => {
+                const Icon = chapter.icon
+                return (
+                  <motion.div
+                    key={chapter.n}
+                    variants={itemVariants}
+                    className="group grid grid-cols-[auto_1fr] items-start gap-6 border-t border-border py-9 transition-colors duration-300 last:border-b sm:grid-cols-[5rem_1fr_auto] sm:gap-8"
+                  >
+                    <span
+                      style={{ fontFamily: SERIF }}
+                      className="text-5xl italic leading-none text-slate-300 transition-colors duration-300 group-hover:text-primary dark:text-slate-700 sm:text-6xl"
+                    >
+                      {chapter.n}
+                    </span>
+
+                    <div>
+                      <h3 className="text-2xl font-black uppercase tracking-tight">{chapter.title}</h3>
+                      <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-500 dark:text-slate-400">
+                        {chapter.description}
+                      </p>
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1 sm:self-center">
+                      <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-background text-slate-400 transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:text-white">
+                        <Icon className="size-6" />
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── Programe / profiluri ─────────────────────────────── */}
+        <section className="py-24 lg:py-32">
+          <div className="container">
+            <motion.div
+              className="mb-14 text-center"
+              variants={revealOnScroll}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+            >
+              <span className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">Conținut dedicat</span>
+              <h2 className="mx-auto mt-4 max-w-3xl text-4xl font-black tracking-tighter sm:text-5xl">
+                Programa potrivită profilului tău
+              </h2>
+            </motion.div>
+
+            <motion.div
+              className="grid gap-6 md:grid-cols-3"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+            >
+              {programs.map((program) => (
+                <motion.div
+                  key={program.code}
+                  variants={itemVariants}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-background/80 p-8 transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:shadow-2xl hover:shadow-primary/10"
+                >
+                  <div className="pointer-events-none absolute -right-6 -top-8 select-none opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.12]" aria-hidden>
+                    <span style={{ fontFamily: SERIF }} className="text-[9rem] font-bold italic leading-none text-primary">
+                      {program.code}
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <span
+                      style={{ fontFamily: SERIF }}
+                      className="text-2xl font-semibold italic text-primary"
+                    >
+                      {program.code}
+                    </span>
+                    <h3 className="mt-3 text-xl font-black uppercase tracking-tight">{program.name}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                      {program.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── CTA de final ─────────────────────────────────────── */}
+        <section className="pb-24 lg:pb-32">
+          <div className="container">
+            <motion.div
+              className="relative overflow-hidden rounded-[2rem] bg-primary px-8 py-16 text-white sm:px-14 lg:px-20 lg:py-24"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.08]" aria-hidden />
+              <div
+                className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-white/10 blur-3xl"
+                aria-hidden
+              />
+
+              <div className="relative flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-[0.28em] text-white/70">
+                    Începe astăzi
+                  </span>
+                  <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[1.05] tracking-tighter sm:text-5xl">
+                    Construiește-ți Bacalaureatul,{' '}
+                    <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-white">
+                      teoremă cu teoremă
+                    </span>
+                    .
+                  </h2>
+                </div>
+
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="group h-14 shrink-0 rounded-xl px-10 text-sm"
+                  onClick={() => navigate('/register')}
+                >
+                  Creează cont gratuit
+                  <ArrowUpRight className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── Footer ───────────────────────────────────────────── */}
+        <footer className="pb-24">
+          <div className="container">
+            <div className="flex flex-col items-center justify-between gap-12 border-t border-border pt-16 md:flex-row">
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-xl dark:bg-white dark:text-slate-950">
+                  <BrandLogo className="size-6" />
+                </div>
+                <div>
+                  <span className="block text-2xl font-black uppercase tracking-tighter">MathUP</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Fundament Academic</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-center md:text-right">
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-end">
+                  <Link
+                    to="/termeni-si-conditii"
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
+                  >
+                    Termeni și Condiții
+                  </Link>
+                  <Link
+                    to="/politica-de-confidentialitate"
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
+                  >
+                    Politica de Confidențialitate
+                  </Link>
+                </div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  &copy; {new Date().getFullYear()} MathUP. Toate drepturile rezervate.
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">
+                  Rigoare științifică și excelență pedagogică.
+                </p>
               </div>
             </div>
-            <div className="text-center md:text-right space-y-2">
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-end">
-                <Link
-                  to="/termeni-si-conditii"
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
-                >
-                  Termeni și Condiții
-                </Link>
-                <Link
-                  to="/politica-de-confidentialitate"
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
-                >
-                  Politica de Confidențialitate
-                </Link>
-              </div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-                &copy; {new Date().getFullYear()} MathUP. Toate drepturile rezervate.
-              </p>
-              <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-primary">
-                Rigoare științifică și excelență pedagogică.
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </footer>
+          </div>
+        </footer>
       </div>
     </div>
   )

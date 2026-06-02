@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { isInvalidRefreshTokenError } from './shared/utils/authTokenErrors'
+import { isStaleStoredAuthError } from './shared/utils/authTokenErrors'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -23,7 +23,7 @@ let authBootstrapPromise = null
 async function bootstrapAuthSession() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error) {
-    if (isInvalidRefreshTokenError(error)) {
+    if (isStaleStoredAuthError(error)) {
       try {
         await supabase.auth.signOut({ scope: 'local' })
       } catch (signOutError) {

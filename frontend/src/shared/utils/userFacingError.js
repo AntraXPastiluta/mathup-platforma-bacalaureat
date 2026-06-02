@@ -15,6 +15,7 @@ export const USER_MESSAGES = {
   checkout: 'Plata Premium nu este disponibilă momentan. Încearcă mai târziu.',
   cancelPremium: 'Nu am putut anula abonamentul Premium. Încearcă din nou.',
   config: 'Aplicația nu este configurată corect. Contactează suportul.',
+  support: 'Nu am putut trimite solicitarea. Încearcă din nou.',
 }
 
 // Strategie de tip „allowlist”: afișăm utilizatorului doar mesaje cunoscute ca sigure
@@ -70,6 +71,13 @@ const SAFE_MESSAGE_PREFIXES = [
   'Ai trimis prea multe mesaje',
   'Trebuie să fii autentificat pentru a contacta suportul',
   'Mesajul a fost trimis',
+  'Nu am putut trimite solicitarea',
+  'Ai atins limita de solicitări',
+  'Categoria selectată',
+  'Subiectul este obligatoriu',
+  'Mesajul trebuie',
+  'Doar administratorii',
+  'Ticketul este deja',
 ]
 
 function looksTechnical(message) {

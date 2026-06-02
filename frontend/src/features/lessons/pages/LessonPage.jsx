@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
-import { 
-  CheckCircle2, 
+import {
+  CheckCircle2,
   XCircle,
-  BookOpen, 
+  BookOpen,
   FileText,
   ArrowRight,
+  ChevronLeft,
   ExternalLink,
-  HelpCircle
+  NotebookPen,
+  GraduationCap,
+  Crown,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonById } from '../../../services/lessonService'
@@ -26,22 +29,79 @@ import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
+import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
-function AcademicContextBox({ className = '' }) {
+// Serif de manuscris pentru numerale și accente — fără fonturi externe (CSP-safe),
+// aceeași stivă „demonstrație tipărită” folosită pe Dashboard / Welcome / Profil.
+const SERIF = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
+
+// Fiecare subiect primește o identitate cromatică proprie (ca pe tabloul de bord):
+// I → indigo, II → violet/fuchsia, III → emerald/teal.
+const SUBJECT_ACCENTS = {
+  1: {
+    label: 'text-indigo-600 dark:text-indigo-400',
+    line: 'bg-indigo-500',
+    soft: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300',
+    spine: 'from-indigo-500 via-indigo-400 to-indigo-300',
+    optSelected: 'border-indigo-500 bg-indigo-500/5 text-indigo-700 dark:text-indigo-300',
+    letterSelected: 'bg-indigo-500 text-white',
+  },
+  2: {
+    label: 'text-violet-600 dark:text-violet-400',
+    line: 'bg-violet-500',
+    soft: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300',
+    spine: 'from-violet-500 via-fuchsia-400 to-fuchsia-300',
+    optSelected: 'border-violet-500 bg-violet-500/5 text-violet-700 dark:text-violet-300',
+    letterSelected: 'bg-violet-500 text-white',
+  },
+  3: {
+    label: 'text-emerald-600 dark:text-emerald-400',
+    line: 'bg-emerald-500',
+    soft: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300',
+    spine: 'from-emerald-500 via-teal-400 to-teal-300',
+    optSelected: 'border-emerald-500 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
+    letterSelected: 'bg-emerald-500 text-white',
+  },
+}
+const DEFAULT_ACCENT = SUBJECT_ACCENTS[1]
+
+// Etichetă editorială: linie-accent scurtă + micro-text majuscul, exact ca pe Dashboard.
+function SectionLabel({ children, lineClass = 'bg-primary', textClass = 'text-primary', className = '' }) {
   return (
-    <div className={`rounded-[2rem] border-2 border-dashed border-border bg-slate-50/50 p-8 dark:bg-white/2 space-y-6 ${className}`}>
-      <div className="flex items-center gap-3">
-        <div className="size-2 rounded-full bg-primary" />
-        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Context Academic</h4>
+    <span className={`flex items-center gap-2.5 ${className}`}>
+      <span className={`h-px w-7 shrink-0 ${lineClass}`} aria-hidden />
+      <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${textClass}`}>{children}</span>
+    </span>
+  )
+}
+
+// Apariție unică la mount (folosește keyframe-ul CSS comun, prietenos cu pagina ambientală).
+function Reveal({ delay = 0, as: Tag = 'div', className = '', children, ...rest }) {
+  return (
+    <Tag className={`dashboard-reveal ${className}`} style={delay ? { animationDelay: `${delay}ms` } : undefined} {...rest}>
+      {children}
+    </Tag>
+  )
+}
+
+// Fișa de studiu din coloana laterală — înlocuiește vechea „bibliografie” cu un sfat util.
+function StudyNote({ subjectIsFree }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-dashed border-border bg-background/60 p-5">
+      <div className="flex items-center gap-2.5">
+        <GraduationCap className="size-4 text-primary" aria-hidden />
+        <h4 className="font-heading text-xs font-black uppercase tracking-[0.16em] text-foreground">Sfat de studiu</h4>
       </div>
-      <p className="text-xs font-medium leading-relaxed text-slate-500 italic">
-        &quot;Studiul matematicii necesită rigoare și perseverență. Fiecare teoremă înțeleasă este o bază solidă pentru succesul tău viitor.&quot;
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        Parcurge fiecare pas în ordine și rezolvă mini-testul pe măsură ce avansezi — recapitularea activă
+        fixează noțiunile mult mai bine decât simpla recitire.
       </p>
-      <div className="border-t border-border pt-4">
-        <p className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Bibliografie Recomandată</p>
-        <p className="mt-1 text-[10px] font-bold text-slate-600">Ministerul Educației - Programa 2024</p>
-      </div>
+      {subjectIsFree && (
+        <p className="mt-3 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+          Subiectul III este disponibil gratuit pentru toți elevii.
+        </p>
+      )}
     </div>
   )
 }
@@ -109,6 +169,7 @@ export function LessonPage() {
     ? SUBJECT_PARTS.find((subject) => subject.value === lesson.subject_part)
     : null
   const profileMeta = lesson ? getProfileMeta(lesson.profile) : null
+  const accent = SUBJECT_ACCENTS[lesson?.subject_part] || DEFAULT_ACCENT
 
   const parts = lesson?.lesson_parts || []
   const supplementaryFiles = (lesson?.lesson_files || []).filter((file) => !file.is_solved_content)
@@ -209,39 +270,45 @@ export function LessonPage() {
       setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
       setQuizFeedback({
         type: isCorrect ? 'correct' : 'wrong',
-        message: isCorrect ? 'Verificat: Corect' : 'Verificat: Incorect',
+        message: isCorrect ? 'Răspuns corect!' : 'Răspuns greșit',
       })
     } catch (submitError) {
       setError(toUserFacingError(submitError, 'Eroare la procesarea răspunsului.'))
     }
   }
 
-  const renderQuizSection = (title = 'Evaluare Cunoștințe') => {
+  const renderQuizSection = (title = 'Verifică-ți cunoștințele') => {
     if (!lesson) return null
     if (visibleQuizQuestions.length === 0) return null
 
     return (
-      <div className="mt-24 space-y-10 border-t-4 border-double border-border pt-16 relative z-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-2">
-          <div className="flex items-center gap-4">
-            <div className="size-10 rounded-lg bg-slate-900 text-white flex items-center justify-center dark:bg-white dark:text-slate-900">
-              <HelpCircle className="size-5" />
-            </div>
+      <section className="mt-16 border-t border-border pt-12">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className={`flex size-11 shrink-0 items-center justify-center rounded-2xl border ${accent.soft}`}>
+              <NotebookPen className="size-5" />
+            </span>
             <div>
-              <h3 className="text-lg font-black uppercase tracking-tighter leading-none mb-1">{title}</h3>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Sesiune de testare academică / {visibleQuizAnsweredCount} din {visibleQuizQuestions.length} finalizate
+              <SectionLabel lineClass={accent.line} textClass={accent.label}>Mini-test</SectionLabel>
+              <h3 className="mt-1.5 font-heading text-xl font-black tracking-tight">{title}</h3>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">
+                {visibleQuizAnsweredCount} din {visibleQuizQuestions.length}{' '}
+                {visibleQuizQuestions.length === 1 ? 'întrebare rezolvată' : 'întrebări rezolvate'}
               </p>
             </div>
           </div>
           {hasCompletedQuiz && (
-            <div className="rounded-xl bg-emerald-500 text-white px-6 py-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
-              Scor Final: {quizScore}/{quizQuestions.length}
-            </div>
+            <span
+              style={{ fontFamily: SERIF }}
+              className="inline-flex items-center gap-2 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-bold italic text-emerald-600 dark:text-emerald-400"
+            >
+              <CheckCircle2 className="size-4" />
+              Scor {quizScore} / {quizQuestions.length}
+            </span>
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="mt-8 space-y-5">
           {visibleQuizQuestions.map((question, questionIndex) => {
             const selectedAnswer = quizSelections[question.id]
             const answered = quizResults[question.id] !== undefined
@@ -249,25 +316,43 @@ export function LessonPage() {
             const options = getQuestionOptions(question)
 
             return (
-              <div key={question.id} className="rounded-2xl border-2 border-border bg-white dark:bg-slate-900 p-8 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                   <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-1 rounded">Item {questionIndex + 1}</span>
+              <div
+                key={question.id}
+                className={`rounded-2xl border bg-white p-6 transition-colors duration-300 dark:bg-slate-900/80 sm:p-7 ${
+                  answered ? (isCorrect ? 'border-emerald-500/40' : 'border-red-400/40') : 'border-border'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span style={{ fontFamily: SERIF }} className={`text-2xl font-bold italic leading-none ${accent.label}`}>
+                    {String(questionIndex + 1).padStart(2, '0')}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                    Întrebarea {questionIndex + 1}
+                  </span>
                 </div>
-                <p className="mb-8 text-xl font-black text-slate-900 dark:text-white leading-tight">{question.question_text}</p>
+                <p className="mt-4 font-heading text-lg font-bold leading-snug text-foreground sm:text-xl">
+                  {question.question_text}
+                </p>
                 {question.image_url ? (
-                  <div className="mb-8 overflow-hidden rounded-xl border-2 border-border shadow-inner">
+                  <div className="mt-5 overflow-hidden rounded-xl border border-border bg-slate-50 dark:bg-slate-950">
                     <img
                       src={question.image_url}
                       alt={question.question_text}
-                      className="w-full max-h-96 object-contain bg-slate-50"
+                      className="mx-auto max-h-96 w-full object-contain"
                     />
                   </div>
                 ) : null}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {options.map((option, optionIndex) => {
                     const selected = selectedAnswer === optionIndex
                     const showCorrect = answered && isCorrect && selected
                     const showWrong = answered && !isCorrect && selected
+                    const letter = String.fromCharCode(65 + optionIndex)
+                    const letterClass = showCorrect || showWrong
+                      ? 'bg-white/25 text-white'
+                      : selected
+                        ? accent.letterSelected
+                        : 'border border-border bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400'
 
                     return (
                       <button
@@ -283,293 +368,392 @@ export function LessonPage() {
                             return next
                           })
                         }}
-                        className={`rounded-xl border-2 px-6 py-4 text-left text-sm font-bold transition-all duration-300 ${
+                        className={`group flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-all duration-200 ${
                           showCorrect
-                            ? 'border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                            ? 'border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                             : showWrong
-                              ? 'border-red-500 bg-red-500 text-white shadow-lg shadow-red-500/20'
+                              ? 'border-red-500 bg-red-500 text-white shadow-md shadow-red-500/20'
                               : selected
-                                ? 'border-primary bg-primary/5 text-primary'
-                                : 'border-border bg-slate-50/50 text-slate-600 hover:border-slate-400 dark:bg-white/2 dark:text-slate-300'
+                                ? accent.optSelected
+                                : 'border-border bg-slate-50/60 text-slate-600 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white dark:bg-white/5 dark:text-slate-300 dark:hover:border-slate-500'
                         }`}
                       >
-                        {option}
+                        <span
+                          style={{ fontFamily: SERIF }}
+                          className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-sm font-bold italic ${letterClass}`}
+                        >
+                          {letter}
+                        </span>
+                        <span className="min-w-0 flex-1">{option}</span>
                       </button>
                     )
                   })}
                 </div>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t-2 border-border pt-6">
+                <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
                   <Button
                     type="button"
                     onClick={() => answerQuestion(question)}
                     disabled={selectedAnswer === undefined || answered}
-                    className="rounded-xl px-8"
+                    size="sm"
+                    className="rounded-xl px-6"
                   >
-                    Verifică Itemul
+                    Verifică răspunsul
                   </Button>
                   {answered && (
-                    <div className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest ${isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span
+                      className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest ${
+                        isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
                       {isCorrect ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
-                      {isCorrect ? 'Răspuns Validat' : 'Răspuns Invalid'}
-                    </div>
+                      {isCorrect ? 'Răspuns corect' : 'Mai încearcă'}
+                    </span>
                   )}
                 </div>
               </div>
             )
           })}
         </div>
-      </div>
+      </section>
     )
   }
 
+  const videoSrc = currentPart?.video_url ? resolveLessonVideoEmbedSrc(currentPart.video_url) : null
+
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-50 transition-colors duration-500 bg-slate-50 dark:bg-slate-950 pb-16">
+    <div className="relative min-h-screen text-foreground">
+      <MathRainCurtain />
       <Navbar />
+
       <AnimatePresence>
         {quizFeedback && (
           <motion.div
-            key={quizFeedback.type}
-            initial={{ opacity: 0, y: -24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -24 }}
-            className="fixed left-1/2 top-10 z-[100] -translate-x-1/2"
+            key={`${quizFeedback.type}-${quizFeedback.message}`}
+            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            className="fixed left-1/2 top-24 z-[100] w-[calc(100%-2rem)] max-w-md -translate-x-1/2"
           >
-            <div className={`flex items-center gap-4 rounded-xl border-2 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] shadow-2xl backdrop-blur-xl ${
-              quizFeedback.type === 'correct'
-                ? 'border-emerald-500/30 bg-emerald-600 text-white'
-                : 'border-red-500/30 bg-red-600 text-white'
-            }`}>
+            <div
+              className={`flex items-center justify-center gap-3 rounded-2xl border px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-xl backdrop-blur-md ${
+                quizFeedback.type === 'correct'
+                  ? 'border-emerald-400/40 bg-emerald-600/95'
+                  : 'border-red-400/40 bg-red-600/95'
+              }`}
+            >
+              {quizFeedback.type === 'correct' ? <CheckCircle2 className="size-4 shrink-0" /> : <XCircle className="size-4 shrink-0" />}
               {quizFeedback.message}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <main className="container pt-16">
-        <div className={hasSidebar ? 'mx-auto max-w-6xl' : 'mx-auto max-w-4xl'}>
+      <main className="page-ambient-content container relative py-10 pb-24 sm:py-14">
+        <div className={`mx-auto w-full ${hasSidebar ? 'max-w-6xl' : 'max-w-4xl'}`}>
           {loading ? (
-            <div className="flex h-[60vh] flex-col items-center justify-center gap-8 text-center">
-              <div className="size-16 animate-spin rounded-full border-4 border-primary/10 border-t-primary" />
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Consultare Arhivă...</p>
+            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center">
+              <div className="size-12 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground">Se încarcă lecția...</p>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border-2 border-red-100 rounded-[2rem] p-12 text-center space-y-6">
-               <AlertMessage message={error} variant="error" />
-               <Button onClick={() => navigate('/dashboard')} variant="outline">Reîntoarcere în Siguranță</Button>
-            </div>
+            <Reveal className="mx-auto max-w-lg">
+              <div className="dashboard-glass-card relative overflow-hidden p-8 text-center sm:p-10">
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                <div className="relative space-y-6">
+                  <span className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-border bg-background">
+                    <BookOpen className="size-7 text-primary" />
+                  </span>
+                  <AlertMessage message={error} variant="error" />
+                  <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                    <Button onClick={() => navigate('/dashboard')} variant="outline" className="rounded-xl">
+                      Înapoi la tabloul de bord
+                    </Button>
+                    {!isPremium && (
+                      <Button onClick={openPremiumModal} className="gap-2 rounded-xl">
+                        <Crown className="size-4" />
+                        Vezi Premium
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           ) : lesson ? (
-            <div className={hasSidebar ? 'grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_280px]' : 'space-y-10'}>
-              {/* Main Content Column */}
-              <div className="space-y-10">
-                <div className="space-y-6">
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-wrap gap-2"
-                  >
-                    <span className="inline-flex items-center rounded-lg bg-primary/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20">
+            <div className={hasSidebar ? 'grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]' : ''}>
+              {/* ── Coloana principală ─────────────────────────── */}
+              <div className="min-w-0 space-y-8">
+                {/* Antet editorial */}
+                <Reveal as="header" className="space-y-5">
+                  <SectionLabel lineClass={accent.line} textClass={accent.label}>
+                    {profileMeta?.label} · {subjectMeta?.label}
+                  </SectionLabel>
+
+                  <h1 className="font-heading text-4xl font-black leading-[1.03] tracking-tight sm:text-5xl lg:text-[3.35rem]">
+                    {lesson.title}
+                  </h1>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center rounded-lg border border-border bg-background/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                       {profileMeta?.label}
                     </span>
-                    <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 border border-border">
-                      {subjectMeta?.label}
+                    <span className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${accent.soft}`}>
+                      Subiectul {subjectMeta?.roman}
                     </span>
-                  </motion.div>
-                  
-                  <motion.h1 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-5xl font-black tracking-tighter sm:text-7xl leading-[0.95]"
-                  >
-                    {lesson.title}
-                  </motion.h1>
-                </div>
+                    {lesson.subject_part === 3 && (
+                      <span className="inline-flex items-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                        Gratuit
+                      </span>
+                    )}
+                    {hasParts && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        <span style={{ fontFamily: SERIF }} className="text-sm font-bold italic text-foreground">
+                          {parts.length}
+                        </span>
+                        {parts.length === 1 ? 'pas' : 'pași'}
+                      </span>
+                    )}
+                  </div>
+                </Reveal>
 
-                <motion.div
+                {/* Foaia de curs — fișă tipărită ce plutește peste „caietul” ambiental */}
+                <motion.article
                   key={`${lessonId}-${currentPartIndex}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                  className="relative"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative overflow-hidden rounded-[2rem] border border-border bg-white shadow-xl shadow-slate-300/30 dark:bg-slate-900 dark:shadow-none"
                 >
-                  <div className="relative bg-white dark:bg-slate-900 border-2 border-border rounded-[2.5rem] p-10 md:p-16 shadow-2xl shadow-slate-200/50 dark:shadow-none">
-                    <div className="prose prose-slate max-w-none dark:prose-invert relative z-10">
-                      {/* Sequential Lesson Part */}
-                      {currentPart ? (
-                        <div className="space-y-12">
-                          <div className="pb-8 border-b-2 border-border mb-8">
-                             <div className="flex items-center gap-4 mb-4">
-                                <span className="text-4xl font-black text-primary opacity-20">0{currentPartIndex + 1}</span>
-                                <h2 className="text-3xl font-black uppercase tracking-tighter m-0">{currentPart.title}</h2>
-                             </div>
+                  <span className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${accent.spine}`} aria-hidden />
+                  <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.05] dark:opacity-[0.07]" aria-hidden />
+
+                  <div className="relative p-7 sm:p-10 md:p-14">
+                    {currentPart ? (
+                      <div>
+                        <header className="grid grid-cols-[auto_1fr] items-start gap-4 sm:gap-6">
+                          <span
+                            style={{ fontFamily: SERIF }}
+                            className={`select-none text-5xl font-bold italic leading-none opacity-25 sm:text-6xl ${accent.label}`}
+                            aria-hidden
+                          >
+                            {String(currentPartIndex + 1).padStart(2, '0')}
+                          </span>
+                          <div className="min-w-0 pt-1">
+                            <SectionLabel lineClass={accent.line} textClass={accent.label} className="mb-2.5">
+                              {hasParts ? `Pasul ${currentPartIndex + 1} din ${parts.length}` : 'Lecție'}
+                            </SectionLabel>
+                            <h2 className="font-heading text-2xl font-black leading-tight tracking-tight sm:text-3xl">
+                              {currentPart.title}
+                            </h2>
                           </div>
-                          
-                          {currentPart.video_url && resolveLessonVideoEmbedSrc(currentPart.video_url) && (
-                            <div className="relative aspect-video overflow-hidden rounded-2xl border-4 border-border bg-black shadow-2xl group/video">
+                        </header>
+
+                        <div className="my-8 h-px w-full bg-border" />
+
+                        {currentPart.video_url && videoSrc && (
+                          <div className="mb-8 space-y-3">
+                            <SectionLabel lineClass={accent.line} textClass={accent.label}>Material video</SectionLabel>
+                            <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-black shadow-lg ring-1 ring-black/5">
                               <iframe
                                 className="size-full"
-                                src={resolveLessonVideoEmbedSrc(currentPart.video_url)}
+                                src={videoSrc}
                                 title={currentPart.title}
                                 sandbox="allow-scripts allow-same-origin allow-presentation"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
                               ></iframe>
                             </div>
-                          )}
-
-                          {currentPart.image_url ? (
-                            <img
-                              src={currentPart.image_url}
-                              alt={currentPart.title}
-                              className="w-full rounded-2xl border-2 border-border object-cover shadow-lg"
-                            />
-                          ) : null}
-
-                          <div className="text-xl leading-[1.8] text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-medium font-serif italic">
-                            {currentPart.content}
                           </div>
+                        )}
+
+                        {currentPart.image_url ? (
+                          <img
+                            src={currentPart.image_url}
+                            alt={currentPart.title}
+                            className="mb-8 w-full rounded-2xl border border-border object-cover shadow-sm"
+                          />
+                        ) : null}
+
+                        <div
+                          style={{ fontFamily: SERIF }}
+                          className="whitespace-pre-wrap text-[1.075rem] leading-[1.9] text-slate-700 dark:text-slate-300 sm:text-lg"
+                        >
+                          {currentPart.content}
                         </div>
-                      ) : (
-                         <div className="py-24 text-center space-y-8">
-                            <BookOpen className="mx-auto size-20 text-slate-200" />
-                            <div className="space-y-3">
-                               <p className="text-2xl font-black uppercase tracking-tighter">Material în curs de redactare</p>
-                               <p className="text-sm font-medium text-slate-400 max-w-xs mx-auto">Profesorii noștri finalizează transcrierea academică pentru acest capitol.</p>
-                            </div>
-                            <Button onClick={() => navigate('/dashboard')} variant="outline" className="rounded-xl">Revin la Index</Button>
-                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-7 py-16 text-center">
+                        <span className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-dashed border-border bg-background">
+                          <BookOpen className="size-8 text-muted-foreground" />
+                        </span>
+                        <div className="space-y-2">
+                          <p className="font-heading text-xl font-black tracking-tight">Lecția este în pregătire</p>
+                          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+                            Conținutul acestui capitol se află în curs de redactare. Revino în curând.
+                          </p>
+                        </div>
+                        <Button onClick={() => navigate('/dashboard')} variant="outline" className="rounded-xl">
+                          Înapoi la lecții
+                        </Button>
+                      </div>
+                    )}
 
                     {renderQuizSection()}
 
                     {canCompleteLesson && (
-                    <div className="mt-20 flex flex-col items-center justify-between border-t-2 border-border pt-12 sm:flex-row gap-10">
-                      <div className="flex flex-col items-center sm:items-start space-y-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                          Status Lectură
-                        </p>
-                        {hasParts && (
-                          <div className="flex items-center gap-3">
-                             <div className="flex gap-1.5">
-                                {parts.map((_, i) => (
-                                  <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i <= currentPartIndex ? 'w-8 bg-primary' : 'w-2 bg-border'}`} />
-                                ))}
-                             </div>
-                             <span className="text-[10px] font-black uppercase text-primary tracking-widest">Pasul {currentPartIndex + 1} / {parts.length}</span>
+                      <div className="mt-14 border-t border-border pt-8">
+                        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                          {hasParts && (
+                            <div className="space-y-2.5">
+                              <SectionLabel lineClass={accent.line} textClass={accent.label}>Parcurs</SectionLabel>
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5">
+                                  {parts.map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                                        i < currentPartIndex
+                                          ? `w-6 ${accent.line}`
+                                          : i === currentPartIndex
+                                            ? `w-9 ${accent.line}`
+                                            : 'w-2 bg-border'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <span style={{ fontFamily: SERIF }} className="text-sm font-bold italic tabular-nums text-foreground">
+                                  {currentPartIndex + 1} / {parts.length}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex w-full gap-3 sm:w-auto">
+                            {!isFirstPart && (
+                              <Button
+                                variant="outline"
+                                onClick={handlePrevPart}
+                                className="h-14 flex-1 gap-2 rounded-xl px-6 sm:flex-none"
+                              >
+                                <ChevronLeft className="size-4" />
+                                Înapoi
+                              </Button>
+                            )}
+
+                            {!isLastPart ? (
+                              <Button
+                                onClick={handleNextPart}
+                                disabled={!hasCompletedVisibleQuiz}
+                                className="h-14 flex-1 gap-2 rounded-xl px-8 shadow-lg shadow-primary/20 sm:flex-none"
+                              >
+                                Continuă
+                                <ArrowRight className="size-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={handleComplete}
+                                disabled={saving || !hasCompletedVisibleQuiz}
+                                className="h-14 flex-1 gap-2 rounded-xl px-8 shadow-xl sm:flex-none !border-slate-900 !bg-slate-900 !text-white hover:!bg-slate-800 dark:!border-white dark:!bg-white dark:!text-slate-900 dark:hover:!bg-slate-100"
+                              >
+                                {saving ? (
+                                  'Se salvează...'
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="size-4" />
+                                    Finalizează lecția
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
-                      
-                      <div className="flex gap-4 w-full sm:w-auto">
-                        {!isFirstPart && (
-                          <Button 
-                            variant="outline" 
-                            onClick={handlePrevPart} 
-                            className="flex-1 sm:flex-none h-16 px-10 rounded-xl font-black uppercase tracking-widest text-[10px]"
-                          >
-                            Pagina Anterioară
-                          </Button>
-                        )}
-                        
-                        {!isLastPart ? (
-                          <Button 
-                            onClick={handleNextPart}
-                            disabled={!hasCompletedVisibleQuiz}
-                            className="flex-1 sm:flex-none h-16 px-12 rounded-xl bg-primary text-white shadow-xl shadow-primary/20 gap-4"
-                          >
-                            Următoarea Secțiune
-                            <ArrowRight className="size-4" />
-                          </Button>
-                        ) : (
-                          <Button 
-                            onClick={handleComplete} 
-                            disabled={saving || !hasCompletedVisibleQuiz}
-                            className="flex-1 sm:flex-none h-16 px-14 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xl font-black uppercase tracking-widest text-[10px] gap-3"
-                          >
-                            {saving ? 'Validare...' : 'Finalizează Studiul'}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
                     )}
                   </div>
-                </motion.div>
+                </motion.article>
               </div>
 
-              {hasSidebar ? (
-              <aside className="space-y-10">
-                <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center gap-3 border-b-2 border-border pb-4">
-                     <FileText className="size-5 text-primary" />
-                     <h3 className="text-sm font-black uppercase tracking-[0.2em]">Materiale Suport</h3>
-                  </div>
+              {/* ── Coloana laterală (materiale suport) ────────── */}
+              {hasSidebar && (
+                <Reveal as="aside" delay={120} className="space-y-6 lg:sticky lg:top-28">
+                  <div className="dashboard-glass-card relative overflow-hidden p-5">
+                    <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                    <div className="relative space-y-4">
+                      <div className="flex items-center gap-2.5 border-b border-border pb-3">
+                        <FileText className={`size-4 ${accent.label}`} />
+                        <h3 className="font-heading text-sm font-black uppercase tracking-[0.16em]">Materiale</h3>
+                      </div>
 
-                  <div className="grid gap-4">
-                     {supplementaryFiles.map(file => {
-                        const fileHref = getTrustedStorageUrl(file.file_url)
-                        if (!fileHref) return null
-                        const isImage = file.file_type?.startsWith('image/')
-                        
-                        return (
-                          <a 
-                            key={file.id}
-                            href={fileHref}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="group block p-4 rounded-xl border-2 border-border bg-white dark:bg-slate-900 hover:border-primary transition-all duration-300"
-                          >
-                             {isImage ? (
-                               <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-slate-50 border border-border">
-                                  <img src={fileHref} alt={file.file_name} className="size-full object-cover group-hover:scale-105 transition-transform" />
-                               </div>
-                             ) : (
-                               <div className="size-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary mb-3 border border-primary/10">
+                      <div className="grid gap-3">
+                        {supplementaryFiles.map((file) => {
+                          const fileHref = getTrustedStorageUrl(file.file_url)
+                          if (!fileHref) return null
+                          const isImage = file.file_type?.startsWith('image/')
+
+                          return (
+                            <a
+                              key={file.id}
+                              href={fileHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group block rounded-xl border border-border bg-white/70 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md hover:shadow-primary/5 dark:bg-white/5"
+                            >
+                              {isImage ? (
+                                <div className="mb-3 aspect-video overflow-hidden rounded-lg border border-border bg-slate-50 dark:bg-slate-950">
+                                  <img
+                                    src={fileHref}
+                                    alt={file.file_name}
+                                    className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  />
+                                </div>
+                              ) : (
+                                <div className={`mb-3 flex size-10 items-center justify-center rounded-lg border ${accent.soft}`}>
                                   <FileText className="size-5" />
-                               </div>
-                             )}
-                             <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mb-1">{file.file_name}</p>
-                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isImage ? 'Vizualizează' : 'Descarcă PDF'}</span>
-                                <ExternalLink className="size-3 text-slate-300 group-hover:text-primary transition-colors" />
-                             </div>
-                          </a>
-                        )
-                     })}
+                                </div>
+                              )}
+                              <p className="truncate text-sm font-bold text-foreground">{file.file_name}</p>
+                              <div className="mt-1.5 flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                  {isImage ? 'Vizualizează' : 'Descarcă PDF'}
+                                </span>
+                                <ExternalLink className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
+                              </div>
+                            </a>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </motion.div>
 
-                <AcademicContextBox />
-              </aside>
-              ) : (
-                <AcademicContextBox className="max-w-2xl mx-auto" />
+                  <StudyNote subjectIsFree={lesson.subject_part === 3} />
+                </Reveal>
               )}
             </div>
           ) : (
-            <div className="text-center py-32 space-y-8 bg-white border-2 border-border rounded-[2.5rem]">
-               <BookOpen className="size-16 text-slate-200 mx-auto" />
-               <p className="text-2xl font-black uppercase tracking-tighter">Resursa nu a putut fi localizată</p>
-               <Button onClick={() => navigate('/dashboard')} className="rounded-xl">Reîntoarcere la Arhivă</Button>
-            </div>
+            <Reveal className="mx-auto max-w-lg">
+              <div className="dashboard-glass-card relative overflow-hidden p-10 text-center">
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                <div className="relative space-y-6">
+                  <span className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-border bg-background">
+                    <BookOpen className="size-7 text-muted-foreground" />
+                  </span>
+                  <div className="space-y-2">
+                    <p className="font-heading text-2xl font-black tracking-tight">Nu am găsit această lecție</p>
+                    <p className="text-sm text-muted-foreground">Resursa a fost mutată sau nu mai este disponibilă.</p>
+                  </div>
+                  <Button onClick={() => navigate('/dashboard')} className="rounded-xl">
+                    Înapoi la lecții
+                  </Button>
+                </div>
+              </div>
+            </Reveal>
           )}
         </div>
       </main>
 
-      <footer className="container py-12 text-center opacity-40">
-        <div className="flex flex-col items-center gap-4 grayscale hover:grayscale-0 transition-all duration-700">
-          <BrandLogo className="size-10" />
-          <div className="space-y-1">
-            <span className="block text-xs font-black uppercase tracking-[0.6em] text-slate-900 dark:text-white">
-              MathUP Scholarly Syllabus
-            </span>
-            <span className="block text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
-              Platinum Access Verified
-            </span>
-          </div>
+      <footer className="relative z-10 border-t border-border/60 py-8">
+        <div className="container flex items-center justify-center gap-2.5 text-muted-foreground opacity-70 transition-opacity hover:opacity-100">
+          <BrandLogo className="size-5 text-primary" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em]">MathUP · Matematică pentru Bacalaureat</span>
         </div>
       </footer>
     </div>

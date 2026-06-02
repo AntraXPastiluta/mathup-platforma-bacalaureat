@@ -1,6 +1,13 @@
 node_modules/
 .cursor/
 
+# Documentație locală (licență / agent) — vezi și scholar-bac/.gitignore
+ARHITECTURA-APLICATIE.md
+CLAUDE.md
+CONTEXT-STARTUP-MATHUP.md
+TEHNOLOGII-SI-LOGICI.md
+Lucrare-licenta/
+
 # Legacy/temporary folders outside project roots
 mathup/
 

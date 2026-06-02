@@ -7,8 +7,9 @@
     "dev": "npm run dev --prefix frontend",
     "lint": "npm run lint --prefix frontend",
     "docker:up": "docker compose up --build frontend",
-    "docker:up:local": "docker compose --profile local up --build frontend",
+    "docker:up:local": "docker compose -f docker-compose.yml -f docker-compose.local.yml --profile local up --build --force-recreate supabase-start frontend",
     "docker:preview": "docker compose --profile preview up --build frontend-preview",
-    "docker:down": "docker compose down --remove-orphans"
+    "docker:down": "docker compose -f docker-compose.yml -f docker-compose.local.yml --profile local --profile local-down --profile preview down --remove-orphans",
+    "docker:reset": "docker compose --profile local --profile local-down --profile preview down -v --remove-orphans && docker compose up --build frontend"
   }
 }

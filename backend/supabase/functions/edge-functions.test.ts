@@ -9,6 +9,7 @@ import { createSyncPremiumCheckoutApp } from './sync-premium-checkout/index.ts'
 import { createExportUserDataApp } from './export-user-data/index.ts'
 import { createRequestAccountDeletionApp, generateSixDigitCode } from './request-account-deletion/index.ts'
 import { createConfirmAccountDeletionApp, tokensEqual } from './confirm-account-deletion/index.ts'
+import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
 
 type StripeConstructor = typeof Stripe
 
@@ -586,4 +587,112 @@ Deno.test('confirm-account-deletion rejects when account is locked', async () =>
   }))
 
   assert.equal(response.status, 429)
+})
+
+Deno.test('submit-support-request creates ticket and seed message', async () => {
+  const inserts: { table: string; payload: Record<string, unknown> }[] = []
+
+  const adminClient = asSupabaseClient({
+    from: (table: string) => {
+      if (table === 'support_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => Promise.resolve({ count: 0, error: null }),
+            }),
+          }),
+          insert: (payload: Record<string, unknown>) => ({
+            select: () => ({
+              single: () => {
+                inserts.push({ table, payload })
+                return Promise.resolve({
+                  data: {
+                    id: 'ticket_123',
+                    subject: payload.subject,
+                    status: 'open',
+                    category: payload.category,
+                    created_at: new Date().toISOString(),
+                  },
+                  error: null,
+                })
+              },
+            }),
+          }),
+        }
+      }
+      if (table === 'support_request_messages') {
+        return {
+          insert: (payload: Record<string, unknown>) => {
+            inserts.push({ table, payload })
+            return Promise.resolve({ error: null })
+          },
+        }
+      }
+      throw new Error(`unexpected table ${table}`)
+    },
+  })
+
+  const app = createSubmitSupportRequestApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({
+          id: 'user_support',
+          email: 'student@test.com',
+          user_metadata: { full_name: 'Elev Test' },
+        })
+      }
+      return adminClient
+    },
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      category: 'tehnic',
+      subject: 'Nu pot accesa lecția',
+      message: 'Am o eroare când deschid lecția de algebră.',
+    }),
+  }))
+
+  assert.equal(response.status, 201)
+  const payload = await response.json()
+  assert.equal(payload.ticket?.id, 'ticket_123')
+  assert.equal(inserts.length, 2)
+  assert.equal(inserts[0].table, 'support_requests')
+  assert.equal(inserts[1].table, 'support_request_messages')
+  assert.equal(inserts[1].payload.author_role, 'user')
+})
+
+Deno.test('submit-support-request rejects invalid category', async () => {
+  const app = createSubmitSupportRequestApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({ id: 'user_support', email: 'student@test.com' })
+      }
+      return asSupabaseClient({ from: () => ({}) })
+    },
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      category: 'invalid',
+      subject: 'Test',
+      message: 'Mesaj suficient de lung pentru validare.',
+    }),
+  }))
+
+  assert.equal(response.status, 400)
 })

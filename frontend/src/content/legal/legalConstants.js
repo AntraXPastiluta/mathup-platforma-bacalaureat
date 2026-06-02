@@ -5,7 +5,7 @@ export const OPERATOR = {
   regCom: 'J39/999/2026',
   address: 'Str. Republicii, Nr. 15, Focșani, Județul Vrancea, România',
   email: 'mathupbacalaureat@gmail.com',
-  dpoEmail: 'contact.mathup@gmail.com',
+  dpoEmail: 'mathupbacalaureat@gmail.com',
 }
 
 export const PLATFORM = {

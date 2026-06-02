@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 import { AuthProvider } from './app/providers/AuthProvider'
 import { useAuth } from './app/providers/AuthProvider'
+import { NotificationProvider } from './app/providers/NotificationProvider'
 import { MaintenanceModeProvider, useMaintenanceMode } from './app/providers/MaintenanceModeProvider'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
@@ -25,6 +26,7 @@ import { TermsPage } from './features/legal/pages/TermsPage'
 import { PrivacyPage } from './features/legal/pages/PrivacyPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
+import { SupportWidget } from './features/support/components/SupportWidget'
 import { persistLastLocation, sanitizeLocation } from './services/lastLocationService'
 
 function ScrollToTop() {
@@ -204,9 +206,12 @@ export default function App() {
   return (
     <MaintenanceModeProvider>
       <AuthProvider>
-        <MathPaperBackground />
-        <PremiumUpgradeModal />
-        <AppRoutes />
+        <NotificationProvider>
+          <MathPaperBackground />
+          <PremiumUpgradeModal />
+          <SupportWidget />
+          <AppRoutes />
+        </NotificationProvider>
       </AuthProvider>
     </MaintenanceModeProvider>
   )

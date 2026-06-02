@@ -37,6 +37,7 @@ function usesPageMathRain(pathname) {
   return pathname === '/'
     || pathname.startsWith('/dashboard')
     || pathname.startsWith('/profile')
+    || pathname.startsWith('/lessons')
 }
 
 function pickEquation() {

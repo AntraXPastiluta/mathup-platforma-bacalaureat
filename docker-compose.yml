@@ -2,21 +2,35 @@
 #
 # Frontend only (cloud Supabase — recommended until local DB has a baseline schema):
 #   docker compose up --build
+# If @fontsource or other deps fail to resolve, reset the node_modules volume:
+#   docker compose down -v && docker compose up --build
 #
 # Full local stack (Supabase CLI + frontend):
-#   docker compose --profile local up --build
+#   npm run docker:up:local
+#   (starts local Supabase via npx in a Node container + Docker socket)
+#
+# Always stop profiled services too, or supabase-start keeps a stale network ref:
+#   npm run docker:down
+#   (not plain `docker compose down`, which skips profile [local] containers)
+#
+# Simpler alternative — Supabase on host, frontend in Docker:
+#   cd backend && npx supabase start
+#   npm run docker:up
 #
 # Production-like frontend smoke test:
 #   docker compose --profile preview up --build frontend-preview
 
 name: mathup
 
+# Supabase CLI is not published as docker.io/supabase/cli — use Node + npx instead.
 x-supabase-cli: &supabase-cli
-  image: supabase/cli:2.102.0
+  image: node:22-alpine
   working_dir: /workspace
   volumes:
     - ./backend:/workspace
     - /var/run/docker.sock:/var/run/docker.sock
+  environment:
+    DOCKER_HOST: unix:///var/run/docker.sock
   extra_hosts:
     - host.docker.internal:host-gateway
 
@@ -25,13 +39,21 @@ services:
   supabase-start:
     <<: *supabase-cli
     profiles: [local]
-    command: ["start"]
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache docker-cli >/dev/null 2>&1 || true
+        npx --yes supabase@2.102.0 start
     restart: "no"
 
   supabase-stop:
     <<: *supabase-cli
     profiles: [local-down]
-    command: ["stop"]
+    command:
+      - sh
+      - -c
+      - npx --yes supabase@2.102.0 stop
     restart: "no"
 
   frontend:
@@ -45,8 +67,6 @@ services:
       - frontend_node_modules:/app/node_modules
     env_file:
       - path: frontend/.env.local
-        required: false
-      - path: .env.docker
         required: false
     environment:
       DOCKER: "1"
@@ -69,8 +89,6 @@ services:
       - "${PREVIEW_PORT:-8080}:80"
     env_file:
       - path: frontend/.env.local
-        required: false
-      - path: .env.docker
         required: false
     extra_hosts:
       - host.docker.internal:host-gateway

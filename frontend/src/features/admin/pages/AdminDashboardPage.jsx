@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { CalendarDays, Layers, Lock, ShieldCheck } from 'lucide-react'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { SectionNav } from '../components/SectionNav'
@@ -21,25 +22,67 @@ const AccesSection = lazy(() =>
 const PlatformSection = lazy(() =>
   import('../components/PlatformSection').then((m) => ({ default: m.PlatformSection })),
 )
+const SupportSection = lazy(() =>
+  import('../components/SupportSection').then((m) => ({ default: m.SupportSection })),
+)
 
 const SECTION_LOADERS = {
   curriculum: CurriculumSection,
   roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
+  support: SupportSection,
   admins: AccesSection,
   platform: PlatformSection,
 }
 
+// Serif de manuscris pentru accentele editoriale — aceeași voce „document tipărit”
+// ca pe Dashboard / Welcome, fără fonturi externe (CSP-safe).
+const SERIF =
+  '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
+
+const MONTHS_RO = [
+  'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
+  'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
+]
+
+// Etichetă editorială: linie-accent + micro-text majuscul (ca pe Dashboard).
+function SectionLabel({ children, className = '' }) {
+  return (
+    <span className={`flex items-center gap-2.5 ${className}`}>
+      <span className="h-px w-7 shrink-0 bg-primary" aria-hidden />
+      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">
+        {children}
+      </span>
+    </span>
+  )
+}
+
+// Revelare unică la intrare — folosește animația comună din index.css.
+function Reveal({ delay = 0, as: Tag = 'div', className = '', children, ...rest }) {
+  return (
+    <Tag
+      className={`dashboard-reveal ${className}`}
+      style={delay ? { animationDelay: `${delay}ms` } : undefined}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  )
+}
+
 function SectionFallback() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center">
-      <div className="size-12 border-4 border-primary/10 border-t-primary animate-spin rounded-full shadow-2xl shadow-primary/20" />
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4">
+      <div className="size-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+        Se încarcă secțiunea...
+      </p>
     </div>
   )
 }
 
 export function AdminDashboardPage() {
-  const { isPrimaryAdmin } = useAuth()
+  const { isPrimaryAdmin, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const visibleSectionIds = useMemo(
@@ -72,43 +115,181 @@ export function AdminDashboardPage() {
 
   const ActiveSection = SECTION_LOADERS[adminSection] ?? CurriculumSection
 
+  const roleLabel = isPrimaryAdmin ? 'Administrator principal' : 'Administrator'
+  const sectionCount = visibleSectionIds.size
+  const adminName = useMemo(() => {
+    const full = user?.user_metadata?.full_name?.trim()
+    if (full) return full.split(/\s+/)[0]
+    return user?.email?.split('@')[0] || 'administrator'
+  }, [user?.user_metadata?.full_name, user?.email])
+  const registryDate = useMemo(() => {
+    const now = new Date()
+    return `${now.getDate()} ${MONTHS_RO[now.getMonth()]} ${now.getFullYear()}`
+  }, [])
+
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100 selection:bg-primary/30 transition-colors duration-500 bg-slate-50 dark:bg-slate-950">
+    <div className="relative min-h-screen text-foreground selection:bg-primary/30 transition-colors duration-500">
+      {/* Fundal ambiental fix — aceeași „atmosferă” indigo ca pe tabloul de bord. */}
+      <div
+        className="ambient-backdrop-fixed pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        aria-hidden
+      >
+        <div className="dashboard-aurora absolute inset-0" />
+        <div className="dashboard-mesh absolute inset-0 opacity-70 dark:opacity-50" />
+        <span className="dashboard-particle dashboard-particle--a" />
+        <span className="dashboard-particle dashboard-particle--b" />
+        <span className="dashboard-particle dashboard-particle--c" />
+        <span className="dashboard-particle dashboard-particle--d" />
+        <span className="dashboard-particle dashboard-particle--e" />
+        <div className="absolute inset-0 scholar-grid opacity-[0.04] dark:opacity-[0.06]" />
+      </div>
+
       <Navbar />
 
-      <main className="container py-16 relative z-10">
-        <div className="absolute inset-0 scholar-grid opacity-[0.02] dark:opacity-[0.04] pointer-events-none" />
-        
-        <header className="mb-10 space-y-2 border-b-2 border-border pb-8">
-           <div className="inline-flex items-center gap-2 rounded bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white dark:bg-white dark:text-slate-950">
-              Control Panel / Secure Environment
-           </div>
-           <h1 className="text-3xl font-black uppercase leading-tight tracking-tight text-slate-900 dark:text-white sm:text-4xl lg:text-5xl">
-             Academic Console
-           </h1>
-           <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-             Curriculum &amp; Systems Management
-           </p>
-        </header>
+      <main className="container relative z-10 max-w-6xl py-10 pb-20 sm:py-12">
+        {/* ── Antet editorial — fișa de administrare ──────────────── */}
+        <Reveal
+          as="header"
+          className="dashboard-hero-card relative overflow-hidden p-6 sm:p-8"
+        >
+          <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+          <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/12 blur-3xl" aria-hidden />
+          <div className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-indigo-400/8 blur-3xl" aria-hidden />
 
-        <SectionNav activeSection={adminSection} onSelectSection={setAdminSection} />
+          <div className="relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
+            {/* Coloana editorială */}
+            <div className="flex min-w-0 flex-col">
+              <SectionLabel>MathUP · Administrare</SectionLabel>
 
+              <p className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden />
+                Bun venit,
+                <span
+                  style={{ fontFamily: SERIF }}
+                  className="text-base font-semibold not-italic text-primary"
+                >
+                  {adminName}
+                </span>
+              </p>
+
+              <h1 className="mt-2 font-heading text-4xl font-black uppercase leading-[0.95] tracking-tight text-foreground sm:text-5xl">
+                Consola de administrare
+              </h1>
+
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+                Curriculum, trasee de studiu, variante, suport și setările platformei —
+                într-un singur loc.
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <span className="dashboard-hero-chip">
+                  <Layers className="size-3.5 text-primary" aria-hidden />
+                  {sectionCount} secțiuni
+                </span>
+                <span className="dashboard-hero-chip">
+                  <CalendarDays className="size-3.5 text-primary" aria-hidden />
+                  {registryDate}
+                </span>
+              </div>
+            </div>
+
+            {/* Showpiece: sigiliul de acces (fișă oficială ștampilată) */}
+            <div className="relative mx-auto w-full max-w-[16rem] lg:mx-0 lg:max-w-none">
+              <div
+                className="pointer-events-none absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-[1.2rem] border border-primary/20 bg-primary/[0.04]"
+                aria-hidden
+              />
+
+              <div className="dashboard-countdown relative rotate-1 p-6 transition-transform duration-500 hover:rotate-0">
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.35]" aria-hidden />
+
+                <div className="relative flex flex-col items-center text-center">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-primary">
+                    <ShieldCheck className="size-3.5" aria-hidden />
+                    Sigiliu de acces
+                  </span>
+
+                  <div className="relative mt-4 flex size-24 items-center justify-center">
+                    <span
+                      className="profile-orbit-ring absolute inset-0 rounded-full border-2 border-dashed border-primary/35"
+                      aria-hidden
+                    />
+                    <span className="navbar-brand-tile flex size-16 items-center justify-center rounded-2xl text-white">
+                      <BrandLogo className="size-8 drop-shadow" />
+                    </span>
+                  </div>
+
+                  <p
+                    style={{ fontFamily: SERIF }}
+                    className="mt-4 text-xl font-bold italic leading-tight text-primary sm:text-2xl"
+                  >
+                    {roleLabel}
+                  </p>
+
+                  <div className="mt-3 w-full border-t border-border/60 pt-3">
+                    <p className="flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                      <Lock className="size-3 text-emerald-500" aria-hidden />
+                      Sesiune securizată
+                    </p>
+                    {user?.email ? (
+                      <p
+                        className="mt-1 truncate text-[11px] font-semibold text-muted-foreground"
+                        title={user.email}
+                      >
+                        {user.email}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              {/* Ștampilă plutitoare de colț */}
+              <div
+                className="absolute -left-3 -top-3 hidden size-[3.75rem] rotate-[-12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
+                aria-hidden
+              >
+                <span className="text-[8px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
+                  MathUP
+                  <br />
+                  Admin
+                </span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* ── Selector de secțiuni ────────────────────────────────── */}
+        <Reveal delay={80} className="mt-10">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <SectionLabel>Secțiuni</SectionLabel>
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              {sectionCount} module
+            </span>
+          </div>
+          <SectionNav activeSection={adminSection} onSelectSection={setAdminSection} />
+        </Reveal>
+
+        {/* ── Secțiunea activă ────────────────────────────────────── */}
         <Suspense fallback={<SectionFallback />}>
-          <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <ActiveSection />
+          {/* key=adminSection => revelarea se reia la fiecare schimbare de secțiune */}
+          <div key={adminSection} className="dashboard-reveal relative">
+            <ActiveSection />
           </div>
         </Suspense>
       </main>
 
-      <footer className="container py-24 mt-20 border-t-2 border-border text-center opacity-40">
-        <div className="flex flex-col items-center gap-6 grayscale hover:grayscale-0 transition-all duration-700 group">
-          <BrandLogo className="size-12 group-hover:rotate-12 transition-transform" />
+      {/* ── Colofon ─────────────────────────────────────────────── */}
+      <footer className="container relative z-10 mt-12 border-t border-border/60 py-12">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="navbar-brand-tile flex size-11 items-center justify-center rounded-xl text-white">
+            <BrandLogo className="size-6" />
+          </span>
           <div className="space-y-1">
-            <span className="block text-xs font-black uppercase tracking-[0.6em] text-slate-900 dark:text-white">
-              MathUP Scholarly Infrastructure
+            <span className="block text-[11px] font-black uppercase tracking-[0.35em] text-foreground">
+              MathUP · Administrare
             </span>
-            <span className="block text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
-              Encrypted Management Session
+            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              Sesiune securizată · Acces administrativ
             </span>
           </div>
         </div>
