@@ -1135,6 +1135,93 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   }
 }
 
+/* —— Variante rezolvate / Registrul soluțiilor academice ——
+   Fiecare variantă rezolvată este tratată ca un dosar oficial dintr-un registru:
+   cotor indigo pe muchie, număr de inventar tabular, sigiliu „Platinum”. */
+.solved-dossier {
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.solved-dossier:hover {
+  transform: translate3d(0, -3px, 0);
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+  box-shadow: 0 20px 42px -24px rgb(67 56 202 / 0.55);
+}
+
+/* Cotorul colorat al dosarului — se îngroașă la hover ca o filă scoasă din raft. */
+.solved-dossier__spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.375rem;
+  background: linear-gradient(180deg, var(--primary), #818cf8);
+  transition: width 0.25s ease;
+}
+
+.solved-dossier:hover .solved-dossier__spine {
+  width: 0.625rem;
+}
+
+/* Eticheta de inventar — perforație tipografică pe muchia de sus a filei. */
+.solved-index {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Sigiliul aurit „Platinum” — semnalează resursa premium fără a domina indigo-ul. */
+.solved-seal {
+  background: linear-gradient(140deg, #fde68a, #f59e0b 52%, #b45309);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 12px 28px -12px rgb(180 83 9 / 0.6);
+}
+
+.dark .solved-seal {
+  background: linear-gradient(140deg, #fcd34d, #d97706 52%, #92400e);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 14px 32px -14px rgb(0 0 0 / 0.7);
+}
+
+/* Sheen de „folie aurie” care mătură sigiliul Platinum — atinge doar
+   background-position, deci rămâne pe compositorul GPU. */
+.solved-foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 34%, rgba(255, 255, 255, 0.55) 50%, transparent 66%);
+  background-size: 220% 100%;
+  background-position: 170% 0;
+  animation: solved-foil-sweep 5.5s ease-in-out 0.8s infinite;
+}
+
+@keyframes solved-foil-sweep {
+  0% { background-position: 170% 0; }
+  55%, 100% { background-position: -70% 0; }
+}
+
+/* Linia-divizor a registrului — degrade indigo care imită o pagină liniată. */
+.solved-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 55%, transparent),
+    color-mix(in srgb, var(--primary) 18%, transparent) 40%,
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solved-dossier:hover {
+    transform: none;
+  }
+
+  .solved-foil {
+    animation: none;
+  }
+}
+
 /* —— Navbar ——
    A glassy command bar. The backdrop-blur is intentionally stripped on ambient
    pages (see the html[data-ambient-page] rule above), so the translucent fill
