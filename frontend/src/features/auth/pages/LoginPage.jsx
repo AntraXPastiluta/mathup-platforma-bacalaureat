@@ -205,7 +205,15 @@ export function LoginPage() {
 
       {/* ── Coloana formularului ── */}
       <div className="relative flex flex-1 flex-col bg-slate-50 dark:bg-slate-950">
-        <div className="scholar-grid pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.04]" aria-hidden />
+        {/* În dark, replicăm ambientul + gradientul panoului de brand ca cele două
+            jumătăți să aibă exact același fundal (în light rămâne split-ul deschis). */}
+        {theme === 'dark' && (
+          <>
+            <DashboardAmbient />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tl from-slate-950 via-slate-950/30 to-transparent" aria-hidden />
+          </>
+        )}
+        <div className="scholar-grid pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.07]" aria-hidden />
 
         {/* Bară superioară */}
         <header className="relative z-10 flex items-center justify-between p-6 sm:px-10 sm:py-8">

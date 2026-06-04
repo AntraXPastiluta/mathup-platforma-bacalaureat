@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Milestone } from 'lucide-react'
 import { SUBJECT_PARTS } from '../../lessons/profiles'
 import { useRoadmapViewport } from '../hooks/useRoadmapViewport'
 import {
@@ -19,6 +19,7 @@ import {
   WORLD_MIN_WIDTH,
 } from '../utils/canvasLayout'
 import { RoadmapFloatingToolbar } from './RoadmapFloatingToolbar'
+import { RoadmapLegend } from './RoadmapLegend'
 import { RoadmapNodeInspector } from './RoadmapNodeInspector'
 import { RoadmapViewportControls } from './RoadmapViewportControls'
 
@@ -355,9 +356,11 @@ export function RoadmapCanvas({
                     d={getEdgePath(fromNode, toNode)}
                     fill="none"
                     stroke={edge.color}
-                    strokeWidth={selectedEdgeId === edge.id ? 4 : 3}
+                    strokeWidth={selectedEdgeId === edge.id ? 4 : 3.5}
+                    strokeLinecap="round"
+                    opacity={readOnly ? 0.9 : 1}
                     markerEnd={`url(#${colorToMarkerId(edge.color)})`}
-                    className={readOnly ? '' : 'pointer-events-auto cursor-pointer'}
+                    className={readOnly ? 'roadmap-edge-flow' : 'pointer-events-auto cursor-pointer'}
                     onClick={(event) => {
                       if (readOnly) return
                       event.stopPropagation()
@@ -382,7 +385,10 @@ export function RoadmapCanvas({
 
           {nodes.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
-              <div className="max-w-md space-y-2">
+              <div className="dashboard-reveal max-w-md space-y-3">
+                <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/5 text-primary">
+                  <Milestone className="size-8" />
+                </div>
                 <p className="text-lg font-black text-slate-700 dark:text-slate-200">Canvas gol</p>
                 <p className="text-sm text-muted-foreground">
                   {readOnly
@@ -392,70 +398,99 @@ export function RoadmapCanvas({
               </div>
             </div>
           ) : (
-            nodes.map((node) => {
+            nodes.map((node, index) => {
               const subjectMeta = node.type === 'subject' ? getSubjectMeta(node.subject_part) : null
               const importanceMeta = getImportanceMeta(node.importance_grade)
               const isSelected = selectedNodeId === node.id
               const isConnectSource = connectFromId === node.id
 
               return (
-                <article
+                <div
                   key={node.id}
-                  data-roadmap-node
-                  className={`absolute rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur dark:bg-slate-900/95 ${isSelected || isConnectSource ? 'ring-2 ring-primary' : 'border-slate-200 dark:border-slate-700'}`}
+                  className={`absolute ${readOnly ? 'dashboard-reveal' : ''}`}
                   style={{
                     left: node.x,
                     top: node.y,
                     width: NODE_WIDTH,
-                    minHeight: NODE_HEIGHT,
-                    borderColor: isSelected ? node.color : undefined,
-                  }}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    handleNodeClick(node.id)
+                    ...(readOnly ? { animationDelay: `${Math.min(index, 12) * 40}ms` } : null),
                   }}
                 >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                      {node.type === 'subject' ? (
-                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: node.color }}>
-                          Subiect {subjectMeta?.roman}
-                        </p>
-                      ) : (
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notă</p>
-                      )}
-                      <h3 className="text-base font-black text-slate-800 dark:text-white">{node.label}</h3>
-                    </div>
-                    {!readOnly ? (
-                      <button
-                        type="button"
-                        onPointerDown={(event) => handlePointerDownNode(event, node.id)}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
-                        className="rounded-xl border border-slate-200 p-2 text-slate-400 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700"
-                        aria-label={`Mută ${node.label}`}
-                      >
-                        <GripVertical className="size-4" />
-                      </button>
-                    ) : null}
-                  </div>
+                  <article
+                    data-roadmap-node
+                    className={`relative flex w-full flex-col overflow-hidden rounded-3xl border bg-white/95 p-4 pl-5 shadow-md backdrop-blur dark:bg-slate-900/95 ${readOnly ? 'transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10' : ''} ${isSelected || isConnectSource ? 'ring-2 ring-primary' : 'border-slate-200 dark:border-slate-700'}`}
+                    style={{
+                      minHeight: NODE_HEIGHT,
+                      borderColor: isSelected ? node.color : undefined,
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleNodeClick(node.id)
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 w-1.5"
+                      style={{ backgroundColor: node.color }}
+                    />
 
-                  {node.type === 'subject' ? (
-                    <span
-                      className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
-                      style={{ backgroundColor: node.color }}
-                    >
-                      {importanceMeta.label}
-                    </span>
-                  ) : (
-                    <span
-                      className="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
-                      style={{ backgroundColor: node.color }}
-                    >
-                      Notă personalizată
-                    </span>
-                  )}
-                </article>
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        {node.type === 'subject' ? (
+                          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest" style={{ color: node.color }}>
+                            <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: node.color }} aria-hidden />
+                            Subiect {subjectMeta?.roman}
+                          </p>
+                        ) : (
+                          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <span className="size-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden />
+                            Notă
+                          </p>
+                        )}
+                        <h3 className="mt-1 text-base font-black text-slate-800 dark:text-white">{node.label}</h3>
+                      </div>
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          onPointerDown={(event) => handlePointerDownNode(event, node.id)}
+                          onPointerUp={handlePointerUp}
+                          onPointerCancel={handlePointerUp}
+                          className="shrink-0 rounded-xl border border-slate-200 p-2 text-slate-400 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700"
+                          aria-label={`Mută ${node.label}`}
+                        >
+                          <GripVertical className="size-4" />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {node.type === 'subject' ? (
+                      <div
+                        className="mt-auto flex items-center gap-2 pt-3"
+                        role="img"
+                        aria-label={`Importanță: ${importanceMeta.label}`}
+                      >
+                        <span className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((pip) => (
+                            <span
+                              key={pip}
+                              className={`size-2 rounded-full ${pip <= node.importance_grade ? '' : 'bg-slate-200 dark:bg-slate-700'}`}
+                              style={pip <= node.importance_grade ? { backgroundColor: node.color } : undefined}
+                            />
+                          ))}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                          {importanceMeta.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <span
+                        className="mt-auto inline-flex w-fit rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white"
+                        style={{ backgroundColor: node.color }}
+                      >
+                        Notă personalizată
+                      </span>
+                    )}
+                  </article>
+                </div>
               )
             })
           )}
@@ -489,6 +524,10 @@ export function RoadmapCanvas({
               setSelectedEdgeId(null)
             }}
           />
+        ) : null}
+
+        {readOnly && nodes.length > 0 ? (
+          <RoadmapLegend nodes={nodes} />
         ) : null}
 
         {showViewportControls ? (

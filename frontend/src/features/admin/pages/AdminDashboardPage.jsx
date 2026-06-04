@@ -25,12 +25,16 @@ const PlatformSection = lazy(() =>
 const SupportSection = lazy(() =>
   import('../components/SupportSection').then((m) => ({ default: m.SupportSection })),
 )
+const ReportsSection = lazy(() =>
+  import('../components/ReportsSection').then((m) => ({ default: m.ReportsSection })),
+)
 
 const SECTION_LOADERS = {
   curriculum: CurriculumSection,
   roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
   support: SupportSection,
+  rapoarte: ReportsSection,
   admins: AccesSection,
   platform: PlatformSection,
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Moon, Sun, ChevronLeft, Check, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
@@ -8,7 +8,7 @@ import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { LegalDocumentModal } from '../../../shared/ui/LegalDocumentModal'
 import { LEGAL_DOCS_VERSION, LEGAL_ROUTES } from '../../../content/legal/legalConstants'
-import { PROFILES, PROFILE_KEYS } from '../../lessons/profiles'
+import { PROFILES, PROFILE_KEYS, getProfileKeyByProgramCode } from '../../lessons/profiles'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 
@@ -42,12 +42,15 @@ const railItem = {
 }
 
 export function RegisterPage() {
-  const [formData, setFormData] = useState({
+  const [searchParams] = useSearchParams()
+  // Profil pre-selectat în funcție de programa vizualizată (ex. /register?profil=m1),
+  // dacă utilizatorul vine de pe o pagină de profil. Altfel, profilul implicit.
+  const [formData, setFormData] = useState(() => ({
     nume: '',
     email: '',
     parola: '',
-    profiles: [PROFILES[0].key],
-  })
+    profiles: [getProfileKeyByProgramCode(searchParams.get('profil')) ?? PROFILES[0].key],
+  }))
   const [acceptedLegal, setAcceptedLegal] = useState(false)
   const [legalModal, setLegalModal] = useState(null)
   const [legalError, setLegalError] = useState('')

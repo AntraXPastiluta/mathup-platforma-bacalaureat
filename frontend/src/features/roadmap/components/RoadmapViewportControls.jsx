@@ -75,7 +75,7 @@ export function RoadmapViewportControls({
       </div>
       <p className="flex items-center gap-1 rounded-lg bg-slate-900/70 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-white/80 backdrop-blur dark:bg-slate-950/80">
         <Focus className="size-3" />
-        Scroll zoom · Space drag pan
+        Scroll = zoom · Space + drag = pan
       </p>
     </div>
   )

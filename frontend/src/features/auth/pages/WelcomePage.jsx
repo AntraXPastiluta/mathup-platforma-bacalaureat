@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Moon, Sun, BookOpen, GraduationCap, Trophy, ArrowRight, ArrowUpRight, Check } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../app/providers/AuthProvider'
+import { PROGRAMS } from '../../../content/programs/programsData'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
@@ -44,12 +45,12 @@ const chapters = [
   },
 ]
 
-const programs = [
-  { code: 'M1', name: 'Matematică-Informatică', description: 'Profilul real, varianta extinsă — algebră, analiză și combinatorică în profunzime.' },
-  { code: 'M2', name: 'Științele Naturii și Tehnologic', description: 'Profil real, adaptat științelor naturii — esențialul programei, riguros explicat.' },
-  { code: 'M3', name: 'Tehnologic', description: 'Programa profilului tehnologic, distilată în pași clari și aplicați.' },
-  { code: 'M4', name: 'Pedagogic', description: 'Programa profilului pedagogic, explicat în cel mai ușor mod posibil fiind un profil vocațional.' },
-]
+// Profilurile de Bacalaureat (M1–M4) — sursă unică în content/programs/programsData,
+// reutilizată și de paginile de detaliu /programa/:cod.
+const programs = PROGRAMS
+
+// Link animat cu framer-motion, pentru cardurile de profil apăsabile.
+const MotionLink = motion(Link)
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -192,13 +193,15 @@ export function WelcomePage() {
                   </span>
                   <div className="flex items-center gap-2">
                     {programs.map((p) => (
-                      <span
+                      <Link
                         key={p.code}
+                        to={`/programa/${p.slug}`}
+                        aria-label={`Vezi programa profilului ${p.code}`}
                         style={{ fontFamily: SERIF }}
-                        className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 dark:text-slate-200"
+                        className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-slate-200"
                       >
                         {p.code}
-                      </span>
+                      </Link>
                     ))}
                   </div>
                 </motion.div>
@@ -266,18 +269,6 @@ export function WelcomePage() {
                       </span>
                     </div>
                   </div>
-                </div>
-
-                {/* ștampilă plutitoare */}
-                <div
-                  className="absolute -left-5 -top-5 hidden size-20 rotate-[-12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/80 text-center sm:flex"
-                  aria-hidden
-                >
-                  <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
-                    BAC
-                    <br />
-                    2026
-                  </span>
                 </div>
               </motion.div>
             </div>
@@ -376,10 +367,12 @@ export function WelcomePage() {
               viewport={{ once: true, margin: '-80px' }}
             >
               {programs.map((program) => (
-                <motion.div
+                <MotionLink
                   key={program.code}
+                  to={`/programa/${program.slug}`}
+                  aria-label={`Vezi programa profilului ${program.code} — ${program.name}`}
                   variants={itemVariants}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-background/80 p-8 transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:shadow-2xl hover:shadow-primary/10"
+                  className="group relative block overflow-hidden rounded-2xl border border-border bg-background/80 p-8 transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:shadow-2xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <div className="pointer-events-none absolute -right-6 -top-8 select-none opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.12]" aria-hidden>
                     <span style={{ fontFamily: SERIF }} className="text-[9rem] font-bold italic leading-none text-primary">
@@ -398,8 +391,12 @@ export function WelcomePage() {
                     <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                       {program.description}
                     </p>
+                    <span className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-primary">
+                      Vezi programa
+                      <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
                   </div>
-                </motion.div>
+                </MotionLink>
               ))}
             </motion.div>
           </div>

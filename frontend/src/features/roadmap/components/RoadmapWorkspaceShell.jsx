@@ -126,8 +126,9 @@ export function RoadmapWorkspaceShell({
         ) : null}
 
         {loading ? (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full flex-col items-center justify-center gap-4">
             <div className="size-16 animate-spin rounded-full border-4 border-primary/10 border-t-primary" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Se încarcă traseul…</p>
           </div>
         ) : emptyMessage ? (
           <div className="flex h-full items-center justify-center p-8 text-center">

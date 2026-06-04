@@ -58,6 +58,7 @@ const SAFE_MESSAGE_PREFIXES = [
   'Administratorul principal nu poate',
   'Trebuie să rămână cel puțin',
   'Lista Premium nu este disponibilă',
+  'Rapoartele nu sunt disponibile',
   'Verificarea emailului nu este disponibilă',
   'Nu am putut adăuga administratorul',
   'Aplicația nu este configurată',

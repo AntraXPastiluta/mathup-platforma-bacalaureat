@@ -744,7 +744,7 @@ export function DashboardPage() {
 
                   {/* ștampilă plutitoare BAC */}
                   <div
-                    className="absolute -left-4 -top-4 hidden size-[4.5rem] rotate-[-12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
+                    className="absolute -right-4 -top-4 hidden size-[4.5rem] rotate-[12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
                     aria-hidden
                   >
                     <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">

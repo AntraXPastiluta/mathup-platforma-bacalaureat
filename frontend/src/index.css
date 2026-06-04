@@ -722,6 +722,26 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   }
 }
 
+/* Flux animat pe muchiile roadmap-ului (doar vizualizarea read-only a elevului),
+   ca să sugereze direcția/parcursul. */
+@keyframes roadmap-flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+.roadmap-edge-flow {
+  stroke-dasharray: 6 6;
+  animation: roadmap-flow 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-edge-flow {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
 /* Dashboard bento — asymmetric layout (progress + sidebar + calendar) */
 .dashboard-bento {
   display: grid;
@@ -1688,5 +1708,71 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   .premium-modal-foil,
   .premium-modal-cta::after {
     animation: none;
+  }
+}
+
+/* —— Tipărire rapoarte (admin → Rapoarte) ——
+   „Generează un raport" = Print / Salvează ca PDF. Ascundem tot ce nu ține de
+   raport și lăsăm doar `.report-print-root`. Recharts ResponsiveContainer poate
+   raporta lățime 0 la print, așa că îi fixăm dimensiunea. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Ascunde tot, apoi dezvăluie doar raportul. */
+  body * {
+    visibility: hidden;
+  }
+
+  .report-print-root,
+  .report-print-root * {
+    visibility: visible;
+  }
+
+  .report-print-root {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 8px;
+    width: 100%;
+  }
+
+  /* Elemente strict-de-ecran vs strict-de-tipar. */
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Recharts: dimensiune fixă la tipar (altfel containerul poate fi gol). */
+  .report-print-root .recharts-responsive-container {
+    width: 100% !important;
+    min-width: 420px !important;
+    height: 240px !important;
+  }
+
+  /* Hârtie curată: fundal alb, fără umbre, text închis. */
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  .report-print-root,
+  .report-print-root * {
+    color: #0f172a !important;
+    box-shadow: none !important;
+  }
+
+  /* Evită ruperea cardurilor/graficelor între pagini. */
+  .report-print-root .rounded-3xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
   }
 }

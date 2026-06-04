@@ -10,6 +10,7 @@ import { ProtectedRoute } from './app/ProtectedRoute'
 import { AdminRoute } from './app/AdminRoute'
 import { PublicOnlyRoute } from './app/PublicOnlyRoute'
 import { WelcomePage } from './features/auth/pages/WelcomePage'
+import { ProgramDetailPage } from './features/auth/pages/ProgramDetailPage'
 import { RegisterPage } from './features/auth/pages/RegisterPage'
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
@@ -106,6 +107,7 @@ function NormalRoutes() {
                 </PublicOnlyRoute>
               )}
             />
+            <Route path="/programa/:cod" element={<ProgramDetailPage />} />
             <Route path="/termeni-si-conditii" element={<TermsPage />} />
             <Route path="/politica-de-confidentialitate" element={<PrivacyPage />} />
             <Route
@@ -209,6 +211,18 @@ function AppRoutes() {
   return <NormalRoutes />
 }
 
+function MaintenanceAwareSupportWidget() {
+  const { ready, enabled } = useMaintenanceMode()
+
+  // În mentenanță chatul de suport e dezactivat. Fail-open ca la rutare:
+  // îl ascundem doar când știm sigur că mentenanța e activă.
+  if (ready && enabled) {
+    return null
+  }
+
+  return <SupportWidget />
+}
+
 export default function App() {
   return (
     <MaintenanceModeProvider>
@@ -216,7 +230,7 @@ export default function App() {
         <NotificationProvider>
           <MathPaperBackground />
           <PremiumUpgradeModal />
-          <SupportWidget />
+          <MaintenanceAwareSupportWidget />
           <AppRoutes />
         </NotificationProvider>
       </AuthProvider>

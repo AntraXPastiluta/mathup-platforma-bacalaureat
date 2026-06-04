@@ -15,8 +15,8 @@ export const PROFILES = [
   {
     key: PROFILE_KEYS.TEHNOLOGIC,
     label: 'Tehnologic',
-    shortLabel: 'M2',
-    description: 'Filiera tehnologica - programa M2',
+    shortLabel: 'M3',
+    description: 'Filiera tehnologica - programa M3',
   },
   {
     key: PROFILE_KEYS.STIINTELE_NATURII,
@@ -27,8 +27,8 @@ export const PROFILES = [
   {
     key: PROFILE_KEYS.PEDAGOGIC,
     label: 'Pedagogic',
-    shortLabel: 'M3',
-    description: 'Filiera vocationala, profil pedagogic - programa M3',
+    shortLabel: 'M4',
+    description: 'Filiera vocationala, profil pedagogic - programa M4',
   },
 ]
 
@@ -36,6 +36,15 @@ export const DEFAULT_PROFILE = PROFILE_KEYS.MATE_INFO
 
 export function getProfileMeta(profileKey) {
   return PROFILES.find((profile) => profile.key === profileKey) || PROFILES[0]
+}
+
+// Mapează un cod de programă (M1–M4, ex. din URL-ul /programa/:cod) la cheia de profil
+// folosită la înregistrare. Acceptă atât „m1" cât și „M1". Întoarce null dacă nu există.
+export function getProfileKeyByProgramCode(code) {
+  if (!code) return null
+  const normalized = String(code).trim().toUpperCase()
+  const match = PROFILES.find((profile) => profile.shortLabel.toUpperCase() === normalized)
+  return match ? match.key : null
 }
 
 export const SUBJECT_PARTS = [
