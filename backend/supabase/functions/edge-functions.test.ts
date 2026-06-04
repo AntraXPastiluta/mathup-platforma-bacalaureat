@@ -277,6 +277,23 @@ Deno.test('cors helper keeps allowed origins', () => {
   assert.equal(headers['Access-Control-Allow-Origin'], 'http://localhost:5173')
 })
 
+Deno.test('cors helper allows the production Vercel origin', () => {
+  const headers = buildCorsHeaders(new Request('https://example.test', {
+    headers: { Origin: 'https://mathup-platforma-bacalaureat.vercel.app' },
+  }))
+  assert.equal(
+    headers['Access-Control-Allow-Origin'],
+    'https://mathup-platforma-bacalaureat.vercel.app',
+  )
+})
+
+Deno.test('cors helper rejects unknown origins', () => {
+  const headers = buildCorsHeaders(new Request('https://example.test', {
+    headers: { Origin: 'https://evil.example.com' },
+  }))
+  assert.equal(headers['Access-Control-Allow-Origin'], undefined)
+})
+
 Deno.test('create-checkout-session returns a checkout URL', async () => {
   const { FakeStripe, state } = makeCheckoutStripe()
   const app = createCheckoutSessionApp({

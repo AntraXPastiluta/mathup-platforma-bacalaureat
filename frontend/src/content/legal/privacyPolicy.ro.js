@@ -5,7 +5,7 @@ export function getPrivacyPolicySections() {
     {
       title: 'Introducere',
       paragraphs: [
-        'Echipa MathUP se angajează să protejeze și să respecte confidențialitatea datelor dumneavoastră cu caracter personal. Această Politică de Confidențialitate explică cum colectăm, utilizăm, stocăm și protejăm datele dumneavoastră atunci când accesați și folosiți platforma SaaS mathup-bacalureat.vercel.app (numită în continuare „Aplicația” sau „MathUP”).',
+        'Echipa MathUP se angajează să protejeze și să respecte confidențialitatea datelor dumneavoastră cu caracter personal. Această Politică de Confidențialitate explică cum colectăm, utilizăm, stocăm și protejăm datele dumneavoastră atunci când accesați și folosiți platforma SaaS mathup-bacalaureat.vercel.app (numită în continuare „Aplicația” sau „MathUP”).',
         'Prin crearea unui cont pe Platformă, acceptați practicile descrise în această politică, în conformitate cu Regulamentul (UE) 2016/679 (GDPR).',
         `Ultima actualizare: 29 mai 2026. Versiune document: ${LEGAL_DOCS_VERSION}.`,
       ],

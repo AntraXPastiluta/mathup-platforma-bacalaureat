@@ -11,6 +11,8 @@ export function isAllowedAppOrigin(origin: string, envSource?: EnvSource) {
   const normalized = normalizeOrigin(origin)
   if (normalized === 'http://localhost:5173') return true
   if (normalized === 'http://127.0.0.1:5173') return true
+  if (/^https:\/\/mathup-platforma-bacalaureat\.vercel\.app$/.test(normalized)) return true
+  if (/^https:\/\/mathup-platforma-bacalaureat-[a-z0-9-]+-[\w-]+\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/mathup-bacalureat\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/mathup-bacalureat-[a-z0-9-]+-[\w-]+\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/scholar-bac\.vercel\.app$/.test(normalized)) return true
