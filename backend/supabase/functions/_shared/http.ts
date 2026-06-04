@@ -26,10 +26,15 @@ export function isAllowedAppOrigin(origin: string, envSource?: EnvSource) {
 
 export function buildCorsHeaders(req: Request, envSource?: EnvSource): CorsHeaders {
   const origin = req.headers.get('Origin')
+  // Echo back exactly the headers the browser announces in the preflight,
+  // falling back to the known set. A hardcoded allow-list silently breaks the
+  // moment supabase-js (or an older deployed frontend build) sends an extra
+  // header (e.g. x-supabase-*) — the browser blocks the request before the POST.
+  const requestedHeaders = req.headers.get('Access-Control-Request-Headers')
   const headers: CorsHeaders = {
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': requestedHeaders ?? 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    Vary: 'Origin',
+    Vary: 'Origin, Access-Control-Request-Headers',
   }
 
   if (origin && isAllowedAppOrigin(origin, envSource)) {

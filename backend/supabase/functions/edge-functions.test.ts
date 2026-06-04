@@ -294,6 +294,19 @@ Deno.test('cors helper rejects unknown origins', () => {
   assert.equal(headers['Access-Control-Allow-Origin'], undefined)
 })
 
+Deno.test('cors helper echoes the requested headers from preflight', () => {
+  const headers = buildCorsHeaders(new Request('https://example.test', {
+    headers: {
+      Origin: 'https://mathup-platforma-bacalaureat.vercel.app',
+      'Access-Control-Request-Headers': 'authorization, apikey, content-type, x-client-info, x-supabase-api-version',
+    },
+  }))
+  assert.equal(
+    headers['Access-Control-Allow-Headers'],
+    'authorization, apikey, content-type, x-client-info, x-supabase-api-version',
+  )
+})
+
 Deno.test('create-checkout-session returns a checkout URL', async () => {
   const { FakeStripe, state } = makeCheckoutStripe()
   const app = createCheckoutSessionApp({

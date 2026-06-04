@@ -23,10 +23,11 @@ export function isAllowedAppOrigin(origin: string) {
 
 export function buildCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin')
+  const requestedHeaders = req.headers.get('Access-Control-Request-Headers')
   const headers: Record<string, string> = {
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': requestedHeaders ?? 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin',
+    'Vary': 'Origin, Access-Control-Request-Headers',
   }
 
   if (origin && isAllowedAppOrigin(origin)) {
