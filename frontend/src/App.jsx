@@ -25,6 +25,7 @@ import { SolvedVariantsPage } from './features/variants/pages/SolvedVariantsPage
 import { MaintenancePage } from './features/maintenance/pages/MaintenancePage'
 import { TermsPage } from './features/legal/pages/TermsPage'
 import { PrivacyPage } from './features/legal/pages/PrivacyPage'
+import { NotFoundPage } from './features/notfound/pages/NotFoundPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
 import { SupportWidget } from './features/support/components/SupportWidget'
@@ -191,7 +192,7 @@ function NormalRoutes() {
               )}
             />
             <Route path="/maintenance" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </motion.div>
       </AnimatePresence>
