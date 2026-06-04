@@ -9,6 +9,7 @@ export function isAllowedReturnOrigin(origin: string, envSource?: EnvSource) {
   if (normalized === 'http://localhost:5173') return true
   if (/^https:\/\/scholar-bac\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/mathup-bacalureat\.vercel\.app$/.test(normalized)) return true
+  if (/^https:\/\/mathup-bacalaureat\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/mathup-platforma-bacalaureat\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/scholar-bac-[a-z0-9-]+-[\w-]+\.vercel\.app$/.test(normalized)) return true
   if (/^https:\/\/mathup-[a-z0-9-]+-[\w-]+\.vercel\.app$/.test(normalized)) return true
