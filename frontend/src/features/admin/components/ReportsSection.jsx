@@ -4,12 +4,13 @@
  * carduri sumar, grafice (Recharts) și tabele de defalcare, cu selector de perioadă
  * și buton de tipărire / salvare ca PDF (window.print() + CSS de print).
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BarChart3,
   Download,
   GraduationCap,
   Printer,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Users,
@@ -41,34 +42,126 @@ const PROFILE_LABELS = {
   pedagogic: 'Pedagogic',
 }
 
+const REFRESH_INTERVAL_MS = 30000
+
+/**
+ * Indicator „Live” + buton de reîmprospătare manuală. Are propriul ticker (1s)
+ * pentru eticheta relativă „acum Xs”, astfel încât graficele să nu se re-randeze
+ * la fiecare secundă.
+ */
+function LiveStatus({ lastUpdatedAt, refreshing, onRefresh, disabled }) {
+  // `now` e actualizat doar din callback-ul de interval (nu apelăm Date.now în
+  // timpul randării — ar încălca regula react-hooks/purity).
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  let label
+  if (!lastUpdatedAt) {
+    label = 'se sincronizează…'
+  } else {
+    const seconds = Math.max(0, Math.round((now - lastUpdatedAt.getTime()) / 1000))
+    if (seconds < 10) label = 'actualizat acum'
+    else if (seconds < 60) label = `actualizat acum ${seconds}s`
+    else label = `actualizat acum ${Math.floor(seconds / 60)} min`
+  }
+
+  return (
+    <div className="inline-flex items-center gap-2.5">
+      <span className="relative flex size-2.5" aria-hidden>
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
+      </span>
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        Live · {label}
+      </span>
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={disabled}
+        title="Reîmprospătează acum"
+        aria-label="Reîmprospătează acum"
+        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+      >
+        <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+      </button>
+    </div>
+  )
+}
+
 export function ReportsSection() {
   const [period, setPeriod] = useState('12m')
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
 
-  useEffect(() => {
-    let mounted = true
+  // Ignoră răspunsurile învechite (ex: s-a schimbat perioada) și evită dublarea
+  // reîmprospătărilor silențioase (focus + interval declanșate în același moment).
+  const requestIdRef = useRef(0)
+  const lastSilentStartRef = useRef(0)
 
-    async function load() {
-      setLoading(true)
-      setError('')
-      try {
-        const range = buildRange(period)
-        const data = await getAdminReports(range)
-        if (mounted) setReport(data)
-      } catch (loadError) {
-        if (mounted) setError(toUserFacingError(loadError, USER_MESSAGES.load))
-      } finally {
-        if (mounted) setLoading(false)
+  const fetchReport = useCallback(
+    async ({ silent = false } = {}) => {
+      if (silent) {
+        if (Date.now() - lastSilentStartRef.current < 3000) return
+        lastSilentStartRef.current = Date.now()
       }
-    }
+      const requestId = ++requestIdRef.current
+      if (silent) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+        setError('')
+      }
+      try {
+        const data = await getAdminReports(buildRange(period))
+        if (requestId === requestIdRef.current) {
+          setReport(data)
+          setLastUpdatedAt(new Date())
+          setError('')
+        }
+      } catch (loadError) {
+        // La reîmprospătări silențioase păstrăm ultimele date valide; doar la
+        // încărcarea explicită afișăm eroarea (un blip de rețea n-ar trebui să
+        // șteargă tot tabloul).
+        if (requestId === requestIdRef.current && !silent) {
+          setError(toUserFacingError(loadError, USER_MESSAGES.load))
+        }
+      } finally {
+        if (silent) setRefreshing(false)
+        else setLoading(false)
+      }
+    },
+    [period],
+  )
 
-    load()
-    return () => {
-      mounted = false
+  // Încărcare inițială + la schimbarea perioadei (cu spinner).
+  useEffect(() => {
+    async function load() {
+      await fetchReport({ silent: false })
     }
-  }, [period])
+    load()
+  }, [fetchReport])
+
+  // Actualizare „aproape în timp real”: reîmprospătare silențioasă la interval cât
+  // timp tab-ul e vizibil, plus refresh instant când utilizatorul revine pe tab.
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') fetchReport({ silent: true })
+    }
+    const interval = setInterval(refreshIfVisible, REFRESH_INTERVAL_MS)
+    document.addEventListener('visibilitychange', refreshIfVisible)
+    window.addEventListener('focus', refreshIfVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', refreshIfVisible)
+      window.removeEventListener('focus', refreshIfVisible)
+    }
+  }, [fetchReport])
 
   const summary = report?.summary ?? {}
   const range = summary.range ?? {}
@@ -98,8 +191,16 @@ export function ReportsSection() {
 
       {/* ── Controale (nu se tipăresc) ─────────────────────────── */}
       <div className="no-print flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="sm:w-72">
-          <Select value={period} onChange={setPeriod} options={REPORT_PERIODS} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="sm:w-72">
+            <Select value={period} onChange={setPeriod} options={REPORT_PERIODS} />
+          </div>
+          <LiveStatus
+            lastUpdatedAt={lastUpdatedAt}
+            refreshing={refreshing}
+            onRefresh={() => fetchReport({ silent: true })}
+            disabled={loading || refreshing}
+          />
         </div>
         <Button
           type="button"
