@@ -60,7 +60,7 @@ Platforma combină:
 
 La crearea contului, utilizatorul acceptă explicit:
 - **Termenii și Condițiile** platformei
-- **Politica de Confidențialitate** (GDPR)
+- **Politica de Confidențialitate** 
 
 Documentele sunt accesibile public, iar consimțământul este înregistrat la momentul înregistrării.
 

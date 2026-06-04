@@ -90,7 +90,14 @@ function NormalRoutes() {
           className="flex-1 flex flex-col"
         >
           <Routes location={location}>
-            <Route path="/" element={<WelcomePage />} />
+            <Route
+              path="/"
+              element={(
+                <PublicOnlyRoute>
+                  <WelcomePage />
+                </PublicOnlyRoute>
+              )}
+            />
             <Route
               path="/register"
               element={(

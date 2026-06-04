@@ -32,7 +32,7 @@ const chapters = [
     n: '02',
     title: 'Variante rezolvate complet',
     description:
-      'Variante de Bacalaureat cu rezolvări pas cu pas, publicate de profesori pentru programul tău liceal — nu doar răspunsul final, ci raționamentul.',
+      'Variante de Bacalaureat cu rezolvări făcute de profesori pentru programul tău liceal.',
     icon: Trophy,
   },
   {
@@ -46,8 +46,9 @@ const chapters = [
 
 const programs = [
   { code: 'M1', name: 'Matematică-Informatică', description: 'Profilul real, varianta extinsă — algebră, analiză și combinatorică în profunzime.' },
-  { code: 'M2', name: 'Științele Naturii', description: 'Profilul real, adaptat științelor naturii — esențialul programei, riguros explicat.' },
+  { code: 'M2', name: 'Științele Naturii și Tehnologic', description: 'Profil real, adaptat științelor naturii — esențialul programei, riguros explicat.' },
   { code: 'M3', name: 'Tehnologic', description: 'Programa profilului tehnologic, distilată în pași clari și aplicați.' },
+  { code: 'M4', name: 'Pedagogic', description: 'Programa profilului pedagogic, explicat în cel mai ușor mod posibil fiind un profil vocațional.' },
 ]
 
 const containerVariants = {
@@ -139,7 +140,7 @@ export function WelcomePage() {
                 <motion.div variants={itemVariants} className="mb-9 flex items-center gap-4">
                   <span className="h-px w-12 bg-primary" />
                   <span className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">
-                    Portal academic · Matematică BAC
+                    Portal academic
                   </span>
                 </motion.div>
 

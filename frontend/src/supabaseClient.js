@@ -8,13 +8,70 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Aplicația nu este configurată corect. Contactează suportul.')
 }
 
+// Preferința „Ține-mă minte”. O ținem mereu în localStorage (e un singur flag, nu
+// sesiunea în sine), ca să știm la următoarea încărcare unde a fost scrisă sesiunea.
+// Absența flag-ului = persistă (comportament implicit, retrocompatibil cu sesiunile
+// deja salvate înainte de această funcționalitate).
+const REMEMBER_FLAG_KEY = 'mathup.auth.remember'
+
+function shouldPersistSession() {
+  try {
+    return window.localStorage.getItem(REMEMBER_FLAG_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/** Setează dacă sesiunea trebuie să supraviețuiască închiderii browserului.
+ *  Se apelează ÎNAINTE de signIn/signUp, ca token-ul să fie scris în store-ul corect. */
+export function setRememberSession(remember) {
+  try {
+    window.localStorage.setItem(REMEMBER_FLAG_KEY, remember ? '1' : '0')
+  } catch {
+    // localStorage indisponibil (mod privat strict) — ignorăm; ne bazăm pe default.
+  }
+}
+
+// Storage care rutează sesiunea către localStorage (persistă) sau sessionStorage
+// (se golește la închiderea tab-ului/browserului), în funcție de preferința de mai sus.
+// Nu lăsăm niciodată token-ul în ambele store-uri simultan.
+const rememberAwareStorage = {
+  getItem: (key) => {
+    try {
+      const store = shouldPersistSession() ? window.localStorage : window.sessionStorage
+      return store.getItem(key)
+    } catch {
+      return null
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      const persist = shouldPersistSession()
+      const store = persist ? window.localStorage : window.sessionStorage
+      const other = persist ? window.sessionStorage : window.localStorage
+      store.setItem(key, value)
+      other.removeItem(key)
+    } catch {
+      // ignore
+    }
+  },
+  removeItem: (key) => {
+    try {
+      window.localStorage.removeItem(key)
+      window.sessionStorage.removeItem(key)
+    } catch {
+      // ignore
+    }
+  },
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     // Validated in ensureAuthBootstrap() — avoids refresh 400 spam before cleanup.
     autoRefreshToken: false,
     detectSessionInUrl: true,
-    storage: window.localStorage,
+    storage: rememberAwareStorage,
   },
 })
 

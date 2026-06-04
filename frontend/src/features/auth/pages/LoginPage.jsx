@@ -10,6 +10,7 @@ import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
+import { setRememberSession } from '../../../supabaseClient'
 
 // Serif de manuscris pentru accentele editoriale — doar stiva de sistem (CSP-safe),
 // pentru a păstra contrastul „demonstrație tipărită” cu sans-ul greu, ca pe pagina de start.
@@ -50,6 +51,8 @@ export function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
+      // Redirectul OAuth pleacă și revine; flag-ul stă în localStorage și supraviețuiește.
+      setRememberSession(rememberMe)
       await loginWithGoogle()
     } catch {
       // Eroarea este deja gestionată în provider
@@ -59,6 +62,11 @@ export function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     try {
+      // Setăm preferința ÎNAINTE de login: dacă „Ține-mă minte” nu e bifat, sesiunea
+      // se scrie în sessionStorage și dispare la închiderea browserului (la următoarea
+      // vizită vede WelcomePage și se re-loghează). Bifat → persistă în localStorage.
+      setRememberSession(rememberMe)
+
       const authData = await login({
         email: formData.email,
         password: formData.parola,

@@ -14,11 +14,9 @@ export function getTermsAndConditionsSections() {
     {
       title: '1. Informații despre Furnizor',
       paragraphs: [
-        `${PLATFORM.name} este deținută și administrată în scop demonstrativ și de dezvoltare de către:`,
+        `${PLATFORM.name} este un proiect de tip startup aflat în fază de dezvoltare, nu o societate comercială înregistrată. Platforma este creată și administrată în scop educativ, demonstrativ și de dezvoltare de către:`,
         `Denumire proiect: ${OPERATOR.name}`,
-        `Sediu social: ${OPERATOR.address}`,
-        `Cod Unic de Înregistrare (CUI): ${OPERATOR.cui} (Cod în stadiu de proiect)`,
-        `Nr. Reg. Comerțului: ${OPERATOR.regCom} (Număr în stadiu de proiect)`,
+        `Sediu (corespondență): ${OPERATOR.address}`,
         `E-mail de contact: ${OPERATOR.email}`,
       ],
     },

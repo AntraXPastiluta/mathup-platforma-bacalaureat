@@ -26,11 +26,11 @@ const EQUATIONS = [
 ]
 
 function getRainColumnCount() {
-  if (typeof window === 'undefined') return 16
+  if (typeof window === 'undefined') return 9
   const w = window.innerWidth
-  if (w < 640) return 10
-  if (w < 1024) return 15
-  return 20
+  if (w < 640) return 6
+  if (w < 1024) return 9
+  return 12
 }
 
 function subscribeRainColumns(onStoreChange) {
@@ -71,10 +71,10 @@ export function MathRainCurtain() {
 
       // depth ∈ [0,1]: 0 = fundal (mic, estompat, lent), 1 = prim-plan (mare, clar, rapid).
       // Cometele stau mereu în prim-plan ca să nu apară blurate.
-      const depth = isMeteor ? 0.9 + rand() * 0.1 : rand()
+      const depth = isMeteor ? 0.2 + rand() * 0.05 : rand()
 
       const left = 1 + (i / columnCount) * 98 + rand() * (98 / columnCount - 0.5)
-      const duration = (isMeteor ? 9 : 24) - depth * 9 + rand() * 4
+      const duration = (isMeteor ? 14 : 38) - depth * 12 + rand() * 6
       const delay = -(rand() * duration)
       const drift = -16 + rand() * 32
       const size = 0.55 + depth * 0.72 + rand() * 0.14
