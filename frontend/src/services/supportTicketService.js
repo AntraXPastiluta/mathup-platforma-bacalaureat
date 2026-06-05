@@ -8,7 +8,7 @@ const SUPPORT_UNAVAILABLE = 'Nu am putut trimite solicitarea. Încearcă din nou
 export async function listMyTickets() {
   const { data, error } = await supabase
     .from('support_requests')
-    .select('id, subject, status, category, created_at, assigned_admin_id')
+    .select('id, subject, status, category, created_at, user_name, user_email, user_avatar_id, user_avatar_photo_url, assigned_admin_id, assigned_admin_name, assigned_admin_avatar_id, assigned_admin_avatar_photo_url')
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -18,7 +18,7 @@ export async function listMyTickets() {
 export async function listAllTicketsForAdmin() {
   const { data, error } = await supabase
     .from('support_requests')
-    .select('id, subject, status, category, created_at, user_id, user_email, user_name, assigned_admin_id, assigned_at')
+    .select('id, subject, status, category, created_at, user_id, user_email, user_name, user_avatar_id, user_avatar_photo_url, assigned_admin_id, assigned_admin_name, assigned_admin_email, assigned_admin_avatar_id, assigned_admin_avatar_photo_url, assigned_at')
     .order('created_at', { ascending: false })
 
   if (error) throw error

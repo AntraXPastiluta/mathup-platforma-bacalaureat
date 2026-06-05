@@ -2,12 +2,14 @@ import { User } from 'lucide-react'
 import { getAvatarPhotoUrl, getAvatarPreset } from '../../features/profile/avatarPresets'
 
 const SIZE_CLASSES = {
+  xs: 'size-7',
   sm: 'size-9',
   md: 'size-10',
   lg: 'size-32',
 }
 
 const ICON_SIZE_CLASSES = {
+  xs: 'size-3.5',
   sm: 'size-4',
   md: 'size-5',
   lg: 'size-16',

@@ -13,5 +13,7 @@ export const TICKET_STATUS_LABELS = {
 }
 
 export const MIN_MESSAGE_LENGTH = 10
+// Răspunsurile din conversație pot fi scurte („Da”, „Mulțumesc”) — cerem doar text nevid.
+export const MIN_REPLY_LENGTH = 1
 export const MAX_MESSAGE_LENGTH = 4000
 export const MAX_SUBJECT_LENGTH = 200

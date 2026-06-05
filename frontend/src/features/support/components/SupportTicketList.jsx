@@ -48,7 +48,14 @@ function ticketInitial(subject) {
 
 
 
-export function SupportTicketList({ tickets, selectedId, onSelect, unreadByTicket = {} }) {
+export function SupportTicketList({
+  tickets,
+  selectedId,
+  onSelect,
+  unreadByTicket = {},
+  showRequester = false,
+  emptyLabel,
+}) {
 
   if (!tickets.length) {
 
@@ -56,7 +63,7 @@ export function SupportTicketList({ tickets, selectedId, onSelect, unreadByTicke
 
       <p className="px-3 py-8 text-center text-xs text-muted-foreground">
 
-        Nu ai solicitări încă. Deschide una nouă.
+        {emptyLabel ?? 'Nu ai solicitări încă. Deschide una nouă.'}
 
       </p>
 
@@ -134,7 +141,9 @@ export function SupportTicketList({ tickets, selectedId, onSelect, unreadByTicke
 
                   <span className="line-clamp-1 text-xs text-muted-foreground">
 
-                    {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
+                    {showRequester && ticket.user_email
+                      ? `${ticket.user_email} · ${TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}`
+                      : TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
 
                   </span>
 

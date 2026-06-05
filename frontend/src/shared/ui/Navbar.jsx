@@ -9,7 +9,6 @@ import {
   Crown,
 } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
-import { useNotifications } from '../../app/providers/NotificationProvider'
 import { Button } from './Button'
 import { UserAvatar } from './UserAvatar'
 import { BrandLogo } from './BrandLogo'
@@ -17,7 +16,6 @@ import { BrandLogo } from './BrandLogo'
 export function Navbar() {
   const navigate = useNavigate()
   const { user, signOut, isAdmin, theme, toggleTheme, isPremium, openPremiumModal } = useAuth()
-  const { supportNewTicketUnreadCount } = useNotifications()
   const reduceMotion = useReducedMotion()
 
   const streak = (user?.user_metadata?.streak == null ? 0 : Number(user.user_metadata.streak)) || 0
@@ -148,26 +146,16 @@ export function Navbar() {
               </motion.div>
 
               {isAdmin && (
-                <motion.div variants={item} className="relative hidden md:block">
+                <motion.div variants={item} className="hidden md:block">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate('/admin?section=support')}
+                    onClick={() => navigate('/admin')}
                     className="gap-2 rounded-full border-primary/40 bg-primary/5 font-black text-primary"
                   >
                     <LayoutDashboard className="size-4" />
                     Admin
                   </Button>
-                  {supportNewTicketUnreadCount > 0 && (
-                    <span className="pointer-events-none absolute -right-1 -top-1 flex">
-                      {!reduceMotion && (
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/70" />
-                      )}
-                      <span className="relative flex min-w-[1.15rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white ring-2 ring-white dark:ring-slate-950">
-                        {supportNewTicketUnreadCount > 9 ? '9+' : supportNewTicketUnreadCount}
-                      </span>
-                    </span>
-                  )}
                 </motion.div>
               )}
 

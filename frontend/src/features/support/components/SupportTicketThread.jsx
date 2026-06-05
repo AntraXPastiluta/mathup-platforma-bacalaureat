@@ -8,6 +8,8 @@ import { useAuth } from '../../../app/providers/AuthProvider'
 
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 
+import { UserAvatar } from '../../../shared/ui/UserAvatar'
+
 import { toUserFacingError } from '../../../shared/utils/userFacingError'
 
 import {
@@ -26,7 +28,7 @@ import {
 
 import { useSupportRealtime } from '../hooks/useSupportRealtime'
 
-import { MIN_MESSAGE_LENGTH, MAX_MESSAGE_LENGTH, TICKET_STATUS_LABELS } from '../constants'
+import { MIN_REPLY_LENGTH, MAX_MESSAGE_LENGTH, TICKET_STATUS_LABELS } from '../constants'
 
 
 
@@ -186,7 +188,7 @@ export function SupportTicketThread({
 
     const text = draft.trim()
 
-    if (!text || text.length < MIN_MESSAGE_LENGTH || sending || isClosed || !canReply) return
+    if (!text || text.length < MIN_REPLY_LENGTH || sending || isClosed || !canReply) return
 
 
 
@@ -268,6 +270,31 @@ export function SupportTicketThread({
 
   const statusLabel = TICKET_STATUS_LABELS[ticket?.status] ?? ticket?.status
 
+  // Identitatea celor doi participanți e denormalizată pe ticket (numele + avatarul
+  // celuilalt nu pot fi citite din metadatele lui private). Pentru propriile mesaje
+  // folosim metadatele live, ca avatarul propriu să fie mereu actual.
+  const selfMetadata = user?.user_metadata
+  const selfName = selfMetadata?.full_name?.trim()
+
+  const participantFor = (role) => {
+    if (role === 'admin') {
+      return {
+        name: ticket?.assigned_admin_name || ticket?.assigned_admin_email || 'Echipa MathUP',
+        metadata: {
+          avatar_id: ticket?.assigned_admin_avatar_id,
+          avatar_photo_url: ticket?.assigned_admin_avatar_photo_url,
+        },
+      }
+    }
+    return {
+      name: ticket?.user_name || ticket?.user_email || 'Elev',
+      metadata: {
+        avatar_id: ticket?.user_avatar_id,
+        avatar_photo_url: ticket?.user_avatar_photo_url,
+      },
+    }
+  }
+
 
 
   return (
@@ -334,6 +361,18 @@ export function SupportTicketThread({
 
           const showDay = shouldShowDaySeparator(messages, index)
 
+          const participant = participantFor(msg.author_role)
+
+          const prev = messages[index - 1]
+
+          // Afișăm avatarul + numele doar la primul mesaj dintr-o serie a aceluiași autor.
+
+          const showIdentity = showDay || !prev || prev.author_role !== msg.author_role
+
+          const avatarMetadata = isMine ? selfMetadata || participant.metadata : participant.metadata
+
+          const displayName = isMine ? selfName || participant.name : participant.name
+
 
 
           return (
@@ -352,27 +391,59 @@ export function SupportTicketThread({
 
               <div
 
-                className={`support-chat-msg mb-1.5 flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                className={`support-chat-msg mb-1.5 flex items-end gap-2 ${
+
+                  isMine ? 'flex-row-reverse' : 'flex-row'
+
+                }`}
 
               >
 
+                <span className="w-7 shrink-0 self-end">
+
+                  {showIdentity && <UserAvatar metadata={avatarMetadata} size="xs" />}
+
+                </span>
+
                 <div
 
-                  className={`support-chat-bubble ${
+                  className={`flex min-w-0 flex-1 flex-col ${
 
-                    isMine ? 'support-chat-bubble--mine' : 'support-chat-bubble--theirs'
+                    isMine ? 'items-end' : 'items-start'
 
-                  } ${isPending ? 'opacity-70' : ''}`}
+                  }`}
 
                 >
 
-                  <p>{msg.body}</p>
+                  {showIdentity && (
 
-                  <p className="support-chat-bubble-meta">
+                    <span className="mb-0.5 max-w-full truncate px-1 text-[10px] font-semibold text-muted-foreground">
 
-                    {isPending ? 'Se trimite…' : formatTime(msg.created_at)}
+                      {displayName}
 
-                  </p>
+                    </span>
+
+                  )}
+
+                  <div
+
+                    className={`support-chat-bubble ${
+
+                      isMine ? 'support-chat-bubble--mine' : 'support-chat-bubble--theirs'
+
+                    } ${isPending ? 'opacity-70' : ''}`}
+
+                  >
+
+                    <p>{msg.body}</p>
+
+                    <p className="support-chat-bubble-meta">
+
+                      {isPending ? 'Se trimite…' : formatTime(msg.created_at)}
+
+                    </p>
+
+                  </div>
 
                 </div>
 
@@ -432,7 +503,7 @@ export function SupportTicketThread({
 
             type="submit"
 
-            disabled={sending || draft.trim().length < MIN_MESSAGE_LENGTH}
+            disabled={sending || draft.trim().length < MIN_REPLY_LENGTH}
 
             className="support-chat-send"
 

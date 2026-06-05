@@ -22,9 +22,6 @@ const AccesSection = lazy(() =>
 const PlatformSection = lazy(() =>
   import('../components/PlatformSection').then((m) => ({ default: m.PlatformSection })),
 )
-const SupportSection = lazy(() =>
-  import('../components/SupportSection').then((m) => ({ default: m.SupportSection })),
-)
 const ReportsSection = lazy(() =>
   import('../components/ReportsSection').then((m) => ({ default: m.ReportsSection })),
 )
@@ -33,7 +30,6 @@ const SECTION_LOADERS = {
   curriculum: CurriculumSection,
   roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
-  support: SupportSection,
   rapoarte: ReportsSection,
   admins: AccesSection,
   platform: PlatformSection,
@@ -181,7 +177,7 @@ export function AdminDashboardPage() {
               </h1>
 
               <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-                Curriculum, trasee de studiu, variante, suport și setările platformei —
+                Curriculum, trasee de studiu, variante și setările platformei —
                 într-un singur loc.
               </p>
 
