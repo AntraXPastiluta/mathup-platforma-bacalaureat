@@ -150,12 +150,12 @@ export function AccountDeletionModal({
                     Codul este valabil 15 minute. Poți închide fereastra și reveni mai târziu — progresul
                     se păstrează până expiră codul.
                   </p>
-                  <div className="flex flex-col gap-3 pt-1 sm:flex-row">
+                  <div className="flex flex-col gap-3 pt-1">
                     <Button
                       type="button"
                       onClick={onConfirm}
                       disabled={loading || deletionCode.length !== 6}
-                      className="h-14 flex-1 rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-red-900/30"
+                      className="h-14 w-full rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-red-900/30"
                     >
                       {loading ? 'Se procesează...' : 'Confirmă ștergerea definitivă'}
                     </Button>
@@ -164,7 +164,7 @@ export function AccountDeletionModal({
                       variant="outline"
                       onClick={onRequestCode}
                       disabled={loading}
-                      className="h-14 rounded-xl"
+                      className="h-14 w-full rounded-xl"
                     >
                       Retrimite codul
                     </Button>

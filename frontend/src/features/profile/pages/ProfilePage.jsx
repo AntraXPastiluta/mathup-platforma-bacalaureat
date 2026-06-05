@@ -414,10 +414,10 @@ export function ProfilePage() {
                 </div>
               </div>
             ) : isPremium ? (
-              <div className="relative overflow-hidden rounded-[1.75rem] border border-primary/30 bg-slate-900 p-8 text-white shadow-[0_30px_70px_-32px_rgba(67,56,202,0.7)] sm:p-10">
-                <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-primary/30 blur-3xl" aria-hidden />
-                <div className="pointer-events-none absolute -bottom-24 -left-16 size-64 rounded-full bg-indigo-400/20 blur-3xl" aria-hidden />
-                <span className="profile-foil" aria-hidden />
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-primary/30 bg-gradient-to-br from-white via-indigo-50/40 to-primary/[0.06] p-8 text-slate-900 shadow-[0_24px_60px_-32px_rgba(67,56,202,0.45)] sm:p-10 dark:bg-slate-900 dark:bg-none dark:text-white dark:shadow-[0_30px_70px_-32px_rgba(67,56,202,0.7)]">
+                <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-primary/20 blur-3xl dark:bg-primary/30" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-24 -left-16 size-64 rounded-full bg-indigo-400/15 blur-3xl dark:bg-indigo-400/20" aria-hidden />
+                <span className="profile-foil hidden dark:block" aria-hidden />
                 <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-start gap-5">
                     <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-400 shadow-lg shadow-primary/40 ring-1 ring-white/20">
@@ -437,7 +437,7 @@ export function ProfilePage() {
                           </span>
                         )}
                       </div>
-                      <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-300">
+                      <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
                         {premiumStatusDescription}
                       </p>
                     </div>
@@ -450,7 +450,7 @@ export function ProfilePage() {
                       disabled={cancelPremiumLoading}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      className="shrink-0 self-start rounded-xl border border-white/20 bg-white/5 px-7 py-3.5 text-xs font-black uppercase tracking-widest text-red-300 transition-colors hover:border-red-400/60 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-40 lg:self-auto"
+                      className="shrink-0 self-start rounded-xl border border-red-200 bg-red-50 px-7 py-3.5 text-xs font-black uppercase tracking-widest text-red-600 transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-700 disabled:opacity-40 lg:self-auto dark:border-white/20 dark:bg-white/5 dark:text-red-300 dark:hover:border-red-400/60 dark:hover:bg-red-500/10 dark:hover:text-red-200"
                     >
                       {cancelPremiumLoading ? 'Procesare...' : 'Întrerupe abonamentul'}
                     </motion.button>

@@ -42,9 +42,13 @@ export function getProfilesFromMetadata(metadata) {
 }
 
 const TARGET_GRADE_MAX = 10
-const TARGET_GRADE_MIN = 0
+// Nota-țintă minimă acceptată la salvare: orice valoare sub 5 este rescrisă la 5.
+const TARGET_GRADE_MIN = 5
+// În timpul tastării permitem cifre sub 5 (ex. „1” pe drumul către „10”); plafonul
+// minim de 5 se aplică doar la normalizare (onBlur / salvare).
+const TARGET_GRADE_INPUT_MIN = 0
 
-/** Normalizează nota-țintă la format „X.XX”, limitată în intervalul 0–10. */
+/** Normalizează nota-țintă la format „X.XX”, limitată în intervalul 5–10. */
 export function normalizeTargetGrade(value, fallback = '10.00') {
   // Acceptăm și virgula ca separator zecimal (uzual în România).
   const cleaned = String(value ?? '').trim().replace(',', '.')
@@ -59,20 +63,24 @@ export function normalizeTargetGrade(value, fallback = '10.00') {
 
 /**
  * Restrânge live ce poate tasta utilizatorul în câmpul notă-țintă: doar cifre și
- * un punct zecimal, plafonat la 0–10. Spre deosebire de `normalizeTargetGrade`,
- * nu forțează 2 zecimale, ca să nu strice tastarea în curs.
+ * un punct zecimal, cu maximum 2 zecimale, plafonat superior la 10. Nu impune
+ * minimul de 5 în timpul tastării (altfel „10” s-ar rupe: „1” ar fi rescris la
+ * „5”) — minimul se aplică la `normalizeTargetGrade` (onBlur / salvare). Nu
+ * forțează exact 2 zecimale, ca să nu strice tastarea în curs.
  */
 export function constrainTargetGradeInput(value) {
   const cleaned = String(value ?? '').replace(',', '.').replace(/[^\d.]/g, '')
   const [whole, ...fraction] = cleaned.split('.')
-  const normalized = fraction.length > 0 ? `${whole}.${fraction.join('')}` : whole
+  // Limităm la cel mult 2 zecimale chiar în timpul tastării.
+  const decimals = fraction.join('').slice(0, 2)
+  const normalized = fraction.length > 0 ? `${whole}.${decimals}` : whole
 
   if (!normalized || normalized === '.') return normalized
 
   const parsed = Number.parseFloat(normalized)
   if (!Number.isFinite(parsed)) return normalized
   if (parsed > TARGET_GRADE_MAX) return String(TARGET_GRADE_MAX)
-  if (parsed < TARGET_GRADE_MIN) return String(TARGET_GRADE_MIN)
+  if (parsed < TARGET_GRADE_INPUT_MIN) return String(TARGET_GRADE_INPUT_MIN)
 
   return normalized
 }
