@@ -1,5 +1,6 @@
 node_modules/
 .cursor/
+.claude/
 
 # Documentație locală (licență / agent) — vezi și scholar-bac/.gitignore
 ARHITECTURA-APLICATIE.md

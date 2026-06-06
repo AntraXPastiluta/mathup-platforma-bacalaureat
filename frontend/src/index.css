@@ -916,6 +916,51 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   }
 }
 
+/* —— Skeleton loading (primitiv reutilizabil) ——
+   Bază tonală derivată din token-uri (merge în light + dark), peste care alunecă
+   un highlight (shimmer). Forma/rotunjirea vin din utilitarele Tailwind ale apelantului. */
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--muted) 64%, var(--border) 36%);
+}
+
+.skeleton-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.6),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.dark .skeleton-block::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.12),
+    transparent
+  );
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block::after {
+    animation: none;
+    display: none;
+  }
+}
+
 /* —— Support chat (widget + admin thread) —— */
 .support-chat-panel {
   display: flex;

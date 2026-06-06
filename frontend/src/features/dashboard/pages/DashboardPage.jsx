@@ -38,6 +38,7 @@ import { Navbar } from '../../../shared/ui/Navbar'
 import { UserAvatar } from '../../../shared/ui/UserAvatar'
 import { SUBJECT_PARTS, getProfileMeta } from '../../lessons/profiles'
 import { DashboardAmbient } from '../components/DashboardAmbient'
+import { DashboardSkeleton } from '../components/DashboardSkeleton'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 
 // Serif de manuscris pentru accentele editoriale — fără fonturi externe (CSP-safe),
@@ -631,9 +632,9 @@ export function DashboardPage() {
         {errorMessage && <AlertMessage message={errorMessage} className="relative mb-4" />}
 
         {loadingData ? (
-          <div className="dashboard-reveal relative flex h-80 flex-col items-center justify-center gap-4">
-            <div className="size-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-            <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${mutedText}`}>Se încarcă datele...</p>
+          <div className="relative" role="status" aria-busy="true">
+            <span className="sr-only">Se încarcă tabloul de bord…</span>
+            <DashboardSkeleton />
           </div>
         ) : (
           <div className="relative space-y-6 sm:space-y-7">
