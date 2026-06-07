@@ -16,7 +16,7 @@ import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFaci
 
 export function PlatformSection() {
   const { refresh } = useMaintenanceMode()
-  const { isPrimaryAdmin } = useAuth()
+  const { isTechnicalAdmin } = useAuth()
   const [enabled, setEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -25,7 +25,7 @@ export function PlatformSection() {
   const [examDateInput, setExamDateInput] = useState('')
   const [savingExamDate, setSavingExamDate] = useState(false)
 
-  const canToggle = isPrimaryAdmin
+  const canToggle = isTechnicalAdmin
 
   useEffect(() => {
     let mounted = true
@@ -57,7 +57,7 @@ export function PlatformSection() {
 
   const handleToggle = async () => {
     if (!canToggle) {
-      setError('Doar administratorul principal poate modifica modul de mentenanță.')
+      setError('Doar administratorii tehnici pot modifica modul de mentenanță.')
       return
     }
 
@@ -92,7 +92,7 @@ export function PlatformSection() {
   const handleSaveExamDate = async (event) => {
     event.preventDefault()
     if (!canToggle) {
-      setError('Doar administratorul principal poate modifica data examenului BAC.')
+      setError('Doar administratorii tehnici pot modifica data examenului BAC.')
       return
     }
     if (!examDateInput) {
@@ -175,7 +175,7 @@ export function PlatformSection() {
               </Button>
               {!canToggle ? (
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Doar administratorul principal poate folosi acest comutator.
+                  Doar administratorii tehnici pot folosi acest comutator.
                 </p>
               ) : null}
             </div>
@@ -242,7 +242,7 @@ export function PlatformSection() {
               />
               {!canToggle ? (
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  Doar administratorul principal poate modifica această dată.
+                  Doar administratorii tehnici pot modifica această dată.
                 </p>
               ) : (
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">

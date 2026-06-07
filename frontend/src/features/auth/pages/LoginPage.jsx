@@ -8,22 +8,15 @@ import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
+import { WorkedExerciseShowcase } from '../components/WorkedExerciseShowcase'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 import { setRememberSession } from '../../../supabaseClient'
 
 // Serif de manuscris pentru accentele editoriale — doar stiva de sistem (CSP-safe),
 // pentru a păstra contrastul „demonstrație tipărită” cu sans-ul greu, ca pe pagina de start.
-const SERIF = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
+const SERIF = '”Iowan Old Style”, “Palatino Linotype”, “Book Antiqua”, Palatino, Georgia, “Times New Roman”, serif'
 
-// Fișa demonstrativă din panoul de brand — o variantă rezolvată reală.
-const WORKED_STATEMENT = 'x² − 5x + 6 = 0'
-const WORKED_LINES = [
-  'Δ = b² − 4ac = 25 − 24 = 1',
-  'x₁ = (5 + √Δ) / 2 = 3',
-  'x₂ = (5 − √Δ) / 2 = 2',
-  'S = {2, 3}',
-]
 const PROGRAMS = ['M1', 'M2', 'M3']
 
 const formContainer = {
@@ -96,11 +89,11 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen transition-colors duration-500">
-      {/* ── Panou de brand (showpiece) — întunecat permanent, doar pe desktop ── */}
-      <aside className="relative hidden w-[44%] max-w-2xl flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:flex xl:p-16">
+      {/* ── Panou de brand (showpiece) — urmează tema (luminos în light, întunecat în dark), doar pe desktop ── */}
+      <aside className="relative hidden w-[44%] max-w-2xl flex-col justify-between overflow-hidden border-r border-border bg-slate-100 p-12 text-slate-900 lg:flex xl:p-16 dark:border-transparent dark:bg-slate-950 dark:text-white">
         <DashboardAmbient />
-        <div className="scholar-grid pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/30 to-transparent" aria-hidden />
+        <div className="scholar-grid pointer-events-none absolute inset-0 opacity-[0.04] dark:opacity-[0.07]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-slate-50 via-transparent to-transparent dark:from-slate-950 dark:via-slate-950/30 dark:to-transparent" aria-hidden />
 
         {/* Brand */}
         <motion.button
@@ -114,8 +107,8 @@ export function LoginPage() {
             <BrandLogo className="size-6" />
           </div>
           <div className="text-left">
-            <strong className="block text-lg font-black uppercase leading-tight tracking-tighter">MathUP</strong>
-            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary-300">Excelență Academică</span>
+            <strong className="block text-lg font-black uppercase leading-tight tracking-tighter">Math<span className="text-primary">UP</span></strong>
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/80 dark:text-primary-300">Excelență Academică</span>
           </div>
         </motion.button>
 
@@ -128,50 +121,21 @@ export function LoginPage() {
         >
           <div className="mb-7 flex items-center gap-3">
             <span className="h-px w-10 bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.24em] text-primary-200">Reia de unde ai rămas</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.24em] text-primary dark:text-primary-200">Reia de unde ai rămas</span>
           </div>
           <h2 className="max-w-md text-4xl font-black leading-[1.05] tracking-tighter xl:text-5xl">
             Pregătirea ta te{' '}
-            <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-primary-300">
+            <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-primary dark:text-primary-300">
               așteaptă
             </span>
             .
           </h2>
 
-          <div className="relative mt-10 max-w-sm">
+          <div className="relative mt-10 max-w-md">
             {/* strat-umbră în spate, pentru adâncime tipărită */}
-            <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl border border-primary/20 bg-primary/[0.06]" aria-hidden />
+            <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-[1.4rem] border border-primary/20 bg-primary/[0.06]" aria-hidden />
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
-              <div className="scholar-grid pointer-events-none absolute inset-0 opacity-[0.12]" aria-hidden />
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                    Fișă · Variantă rezolvată
-                  </span>
-                  <span
-                    style={{ fontFamily: SERIF }}
-                    className="rounded-md bg-primary px-2.5 py-0.5 text-xs font-semibold italic text-white shadow-sm shadow-primary/40"
-                  >
-                    M1
-                  </span>
-                </div>
-                <p style={{ fontFamily: SERIF }} className="mt-5 text-2xl font-semibold tracking-tight text-white">
-                  {WORKED_STATEMENT}
-                </p>
-                <div className="my-5 h-px w-full bg-white/10" />
-                <div style={{ fontFamily: SERIF }} className="space-y-2 text-base text-slate-200">
-                  {WORKED_LINES.map((line, i) => (
-                    <div key={line} className="flex items-baseline gap-3">
-                      <span className="select-none font-sans text-[10px] font-black text-primary-300/60">
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <span className={i === WORKED_LINES.length - 1 ? 'font-bold text-primary-200' : ''}>{line}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <WorkedExerciseShowcase variant="light" />
           </div>
         </motion.div>
 
@@ -187,14 +151,14 @@ export function LoginPage() {
               <span
                 key={code}
                 style={{ fontFamily: SERIF }}
-                className="rounded-lg border border-white/15 bg-white/5 px-3 py-1 text-sm font-semibold italic text-slate-200"
+                className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-slate-200"
               >
                 {code}
               </span>
             ))}
           </div>
           <div className="flex size-16 rotate-[-10deg] items-center justify-center rounded-full border-2 border-primary/30 text-center" aria-hidden>
-            <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary-200">
+            <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary dark:text-primary-200">
               BAC
               <br />
               2026
@@ -226,7 +190,7 @@ export function LoginPage() {
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20">
               <BrandLogo className="size-5" />
             </div>
-            <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">MathUP</strong>
+            <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Math<span className="text-primary">UP</span></strong>
           </button>
           <button
             type="button"

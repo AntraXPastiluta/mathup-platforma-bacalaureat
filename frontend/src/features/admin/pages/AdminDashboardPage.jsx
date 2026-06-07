@@ -82,21 +82,19 @@ function SectionFallback() {
 }
 
 export function AdminDashboardPage() {
-  const { isPrimaryAdmin, user } = useAuth()
+  const { isPrimaryAdmin, isTechnicalAdmin, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const visibleSectionIds = useMemo(
-    () => new Set(getAdminSectionsForUser(isPrimaryAdmin).map((s) => s.id)),
-    [isPrimaryAdmin],
+    () => new Set(getAdminSectionsForUser(isTechnicalAdmin).map((s) => s.id)),
+    [isTechnicalAdmin],
   )
 
   const adminSection = useMemo(() => {
     const fromUrl = searchParams.get('section')
-    if (fromUrl === 'platform' && !isPrimaryAdmin) {
-      return 'curriculum'
-    }
+    // Secțiunile invizibile (ex. un profesor care nimerește ?section=rapoarte) cad pe Curriculum.
     return visibleSectionIds.has(fromUrl) ? fromUrl : 'curriculum'
-  }, [searchParams, visibleSectionIds, isPrimaryAdmin])
+  }, [searchParams, visibleSectionIds])
 
   useEffect(() => {
     const fromUrl = searchParams.get('section')
@@ -115,7 +113,11 @@ export function AdminDashboardPage() {
 
   const ActiveSection = SECTION_LOADERS[adminSection] ?? CurriculumSection
 
-  const roleLabel = isPrimaryAdmin ? 'Administrator principal' : 'Administrator'
+  const roleLabel = isPrimaryAdmin
+    ? 'Administrator principal'
+    : isTechnicalAdmin
+      ? 'Administrator tehnic'
+      : 'Profesor'
   const sectionCount = visibleSectionIds.size
   const adminName = useMemo(() => {
     const full = user?.user_metadata?.full_name?.trim()

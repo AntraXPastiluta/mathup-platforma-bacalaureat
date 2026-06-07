@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  BookOpen,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -15,6 +16,7 @@ import {
   Sunrise,
   Target,
   TrendingUp,
+  User,
 } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonsForProfiles } from '../../../services/lessonService'
@@ -32,7 +34,6 @@ import {
   getDefaultBacExamDate,
 } from '../../../shared/utils/bacExamDate'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
-import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { UserAvatar } from '../../../shared/ui/UserAvatar'
@@ -419,17 +420,59 @@ function WeekDayRing({ day }) {
   )
 }
 
-function StatChip({ icon: Icon, label, value, iconClass = 'text-primary' }) {
+// Card statistic proeminent — grila principală de metrici (în spiritul „fișă tipărită”).
+function StatCard({ icon: Icon, label, value, sublabel, iconClass = 'text-primary', accentBg = 'bg-primary/10', delay = 0 }) {
   return (
-    <div className="dashboard-stat-chip">
-      <span className="dashboard-stat-chip__icon" aria-hidden>
-        <Icon className={`size-4 ${iconClass}`} />
-      </span>
-      <div className="min-w-0">
-        <p className={`text-[9px] font-black uppercase tracking-[0.16em] leading-tight ${mutedText}`}>{label}</p>
-        <p className={`mt-0.5 font-heading text-base font-black tabular-nums ${headingText}`}>{value}</p>
+    <Reveal delay={delay} className={`${cardClass} dashboard-card-lift relative overflow-hidden p-4 sm:p-5`}>
+      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.3] dark:opacity-[0.22]" aria-hidden />
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`text-[10px] font-black uppercase tracking-[0.16em] ${mutedText}`}>{label}</p>
+          <p className={`mt-2 font-heading text-2xl font-black leading-none tabular-nums ${headingText} sm:text-[1.75rem]`}>
+            {value}
+          </p>
+          {sublabel && (
+            <p className={`mt-1.5 truncate text-[10px] font-bold uppercase tracking-wide ${mutedText}`}>{sublabel}</p>
+          )}
+        </div>
+        <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/50 ${accentBg}`}>
+          <Icon className={`size-5 ${iconClass}`} aria-hidden />
+        </span>
       </div>
-    </div>
+    </Reveal>
+  )
+}
+
+// Buton de navigare lateral — comutator de vizualizare + scurtături de rută.
+function SidebarNavButton({ icon: Icon, label, active = false, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={`group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-200 ${
+        active
+          ? 'border-primary/30 bg-primary/10 shadow-sm shadow-primary/10'
+          : 'border-transparent hover:border-border hover:bg-background'
+      }`}
+    >
+      <span
+        className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+          active
+            ? 'border-primary/30 bg-primary/15 text-primary'
+            : 'border-border/60 bg-background/60 text-muted-foreground group-hover:text-primary'
+        }`}
+      >
+        <Icon className="size-4" aria-hidden />
+      </span>
+      <span className={`min-w-0 flex-1 truncate text-xs font-black uppercase tracking-wide ${active ? 'text-primary' : headingText}`}>
+        {label}
+      </span>
+      <ChevronRight
+        className={`hidden size-4 shrink-0 transition-transform lg:block ${active ? 'text-primary' : 'text-muted-foreground/50 group-hover:translate-x-0.5'}`}
+        aria-hidden
+      />
+    </button>
   )
 }
 
@@ -562,6 +605,28 @@ export function DashboardPage() {
     return grouped
   }, [lessons])
 
+  // Statistici per subiect — refolosite atât în rezumatul „Progres pe subiecte"
+  // (vizualizarea Progres) cât și în cardurile de lecții (vizualizarea Lecții).
+  const subjectStats = useMemo(
+    () =>
+      SUBJECT_PARTS.map((subject) => {
+        const subjectLessons = lessonsBySubject[subject.value] || []
+        const completedCount = subjectLessons.filter((l) => completedSet.has(l.id)).length
+        const totalCount = subjectLessons.length
+        const progress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100)
+        return {
+          subject,
+          subjectLessons,
+          completedCount,
+          totalCount,
+          progress,
+          accent: SUBJECT_ACCENTS[subject.value] || SUBJECT_ACCENTS[1],
+          isFree: subject.value === 3,
+        }
+      }),
+    [lessonsBySubject, completedSet],
+  )
+
   const weekDays = useMemo(
     () => buildWeekDays(lastActivityKey, streak, bacExamDate),
     [lastActivityKey, streak, bacExamDate],
@@ -597,6 +662,7 @@ export function DashboardPage() {
   const progressPct = overallProgress.progressPercent
   const progressBarPct = Math.max(progressPct, 4)
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'elev'
+  const fullName = user?.user_metadata?.full_name?.trim() || 'Elev MathUP'
   const greeting = useMemo(() => getTimeGreeting(), [])
   const GreetingIcon = greeting.Icon
   const examLongDate = useMemo(() => formatLongDate(bacExamDate), [bacExamDate])
@@ -612,17 +678,18 @@ export function DashboardPage() {
     [progressPct, overallProgress.total],
   )
 
-  // Tab-uri editoriale — segmented control cu majuscule grele.
-  const dashboardTabBase = 'flex-1 rounded-lg px-4 py-2 text-xs font-black uppercase tracking-[0.1em] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
-  const dashboardTabActive = 'bg-primary text-white shadow-sm shadow-primary/25'
-  const dashboardTabInactive = `${mutedText} hover:text-foreground`
+  // Navigarea laterală mapează comutatorul de vizualizare (Progres / Lecții) pe un rail vertical.
+  const sidebarPrimaryNav = [
+    { key: 'progress', label: 'Progres', Icon: TrendingUp, active: activeView === 'progress', onClick: () => setActiveView('progress') },
+    { key: 'topics', label: 'Lecții', Icon: BookOpen, active: activeView === 'topics', onClick: () => setActiveView('topics') },
+  ]
 
   return (
     <div className="relative min-h-screen text-foreground transition-colors duration-500">
       <MathRainCurtain />
       <Navbar />
 
-      <main className="page-ambient-content container relative max-w-4xl py-8 pb-20 sm:py-10">
+      <main className="page-ambient-content container relative py-8 pb-20 sm:py-10">
         <div className="ambient-backdrop-fixed pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
           <DashboardAmbient />
           <div className="absolute inset-0 scholar-grid opacity-[0.04] dark:opacity-[0.06]" />
@@ -637,240 +704,485 @@ export function DashboardPage() {
             <DashboardSkeleton />
           </div>
         ) : (
-          <div className="relative space-y-6 sm:space-y-7">
-            {/* ── Cover sheet / hero editorial ─────────────────── */}
-            <Reveal as="section" className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
-              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-              <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/12 blur-3xl" aria-hidden />
-              <div className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-indigo-400/8 blur-3xl" aria-hidden />
-
-              <div className="relative grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-                {/* Coloana editorială */}
-                <div className="flex min-w-0 flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <SectionLabel>Tabloul tău · Matematică BAC</SectionLabel>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate('/profile')}
-                      className="-mt-1.5 shrink-0 gap-2 rounded-xl"
-                    >
-                      <UserAvatar metadata={user?.user_metadata} size="sm" className="size-6 ring-1 ring-primary/25" />
-                      <span className="hidden text-[11px] font-black uppercase tracking-widest sm:inline">Profil</span>
-                    </Button>
-                  </div>
-
-                  <p className={`mt-5 inline-flex items-center gap-2 text-sm font-medium ${mutedText}`}>
-                    <GreetingIcon className="size-4 shrink-0 text-primary" aria-hidden />
-                    {greeting.text},
-                    <span style={{ fontFamily: SERIF }} className="text-base font-semibold not-italic text-primary">
-                      {firstName}
-                    </span>
-                  </p>
-
-                  <h1 className={`mt-2 text-3xl leading-[0.95] sm:text-4xl ${editorialHeading}`}>
-                    {dashboardTitle}
-                  </h1>
-
-                  <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${mutedText}`}>
-                      Programul tău
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {profileCodes.map((code) => (
-                        <span
-                          key={code}
-                          style={{ fontFamily: SERIF }}
-                          className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-primary"
-                        >
-                          {code}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Showpiece: ștampila de countdown (fișă tipărită) */}
-                <div className="relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none">
-                  <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-[1.1rem] border border-primary/20 bg-primary/[0.04]" aria-hidden />
-
-                  <div
-                    className="dashboard-countdown relative rotate-1 p-5 transition-transform duration-500 hover:rotate-0"
-                    title={examCountdownLabel}
-                  >
-                    <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.35]" aria-hidden />
-
-                    <div className="relative">
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                        <GraduationCap className="size-3.5" aria-hidden />
-                        Examen BAC
-                      </span>
-
-                      <div className="mt-1.5 flex items-end gap-3">
-                        <span
-                          style={{ fontFamily: SERIF }}
-                          className="text-[3.6rem] font-bold italic leading-[0.78] tabular-nums text-primary sm:text-[4.25rem]"
-                        >
-                          {examFocus.value}
-                        </span>
-                        <span className={`mb-2 text-[11px] font-bold uppercase leading-tight tracking-wide ${mutedText}`}>
-                          {examFocus.caption}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3.5">
-                        <div className="leading-tight">
-                          <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Progres</p>
-                          <p style={{ fontFamily: SERIF }} className="mt-0.5 text-xl font-bold italic tabular-nums text-primary">
-                            {progressPct}%
-                          </p>
-                        </div>
-                        <div className="leading-tight">
-                          <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
-                          <p className="mt-0.5 flex items-center gap-1.5">
-                            <span style={{ fontFamily: SERIF }} className="text-xl font-bold italic tabular-nums text-foreground">
-                              {streak}
-                            </span>
-                            <Flame className="size-4 text-orange-500" aria-hidden />
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className={`mt-3.5 flex items-center gap-1.5 border-t border-border/60 pt-3 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
-                        <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
-                        {examLongDate}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ștampilă plutitoare BAC */}
-                  <div
-                    className="absolute -right-4 -top-4 hidden size-[4.5rem] rotate-[12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
-                    aria-hidden
-                  >
-                    <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
-                      BAC
-                      <br />
-                      {examYear}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* fâșia săptămânii */}
-              <div className="relative mt-7 border-t border-border/60 pt-5">
-                <SectionLabel className="mb-4">Săptămâna ta</SectionLabel>
-                <div className="dashboard-week-strip">
-                  {weekDays.map((day) => (
-                    <WeekDayRing key={day.key} day={day} />
-                  ))}
-                </div>
-              </div>
-            </Reveal>
-
-            {/* ── Comutator vizualizare ────────────────────────── */}
-            <Reveal
-              delay={50}
-              className="flex w-full rounded-xl border-2 border-border bg-background/70 p-1 sm:inline-flex sm:w-auto"
-            >
-              <button
-                type="button"
-                onClick={() => setActiveView('topics')}
-                className={`${dashboardTabBase} ${activeView === 'topics' ? dashboardTabActive : dashboardTabInactive}`}
-                aria-pressed={activeView === 'topics'}
-              >
-                Lecții
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('progress')}
-                className={`${dashboardTabBase} flex items-center justify-center gap-2 ${activeView === 'progress' ? dashboardTabActive : dashboardTabInactive}`}
-                aria-pressed={activeView === 'progress'}
-              >
-                Progres
-                <span
-                  style={{ fontFamily: SERIF }}
-                  className={`text-sm font-bold italic tabular-nums ${activeView === 'progress' ? 'text-white' : 'text-primary'}`}
-                >
-                  {progressPct}%
-                </span>
-              </button>
-            </Reveal>
-
-            {activeView === 'progress' ? (
-              <div className="dashboard-bento">
-                <Reveal as="section" delay={90} className={`dashboard-bento__main ${cardClass} relative overflow-hidden p-5 sm:p-7`}>
-                  <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-                  <div className="relative">
-                    <div className="flex items-start justify-between gap-3">
-                      <SectionLabel>Progres la lecții</SectionLabel>
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/5">
-                        <TrendingUp className="size-4 text-primary" aria-hidden />
-                      </span>
-                    </div>
-
-                    <div className="mt-4 flex items-end gap-3">
-                      <span
-                        style={{ fontFamily: SERIF }}
-                        className="text-6xl font-bold italic leading-none tabular-nums text-primary sm:text-7xl"
-                      >
-                        {progressPct}
-                        <span className="text-3xl sm:text-4xl">%</span>
-                      </span>
-                      <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${mutedText}`}>
-                        {overallProgress.completed} din {overallProgress.total}
-                        <br />finalizate
-                      </p>
-                    </div>
-
-                    <div className="relative mt-7 pt-2">
-                      <div className="relative h-2.5 overflow-visible rounded-full bg-slate-200 dark:bg-white/10">
-                        <div
-                          className="dashboard-progress-fill absolute inset-y-0 left-0 overflow-hidden rounded-full bg-gradient-to-r from-primary to-indigo-400 transition-[width] duration-700 ease-out"
-                          style={{ width: `${progressBarPct}%` }}
-                        />
-                        <div
-                          className="absolute top-1/2 z-10 -translate-y-1/2 transition-[left] duration-700 ease-out"
-                          style={{ left: `clamp(0px, calc(${progressPct}% - 14px), calc(100% - 28px))` }}
-                        >
-                          <UserAvatar
-                            metadata={user?.user_metadata}
-                            size="sm"
-                            className="size-7 ring-2 ring-background dark:ring-slate-900"
-                          />
-                        </div>
-                        <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                          <div className="h-px w-5 border-t border-dashed border-slate-300 dark:border-border" aria-hidden />
-                          <Target className="size-4 text-primary" aria-hidden />
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className={`mt-5 text-sm leading-relaxed ${mutedText}`}>
-                      {progressMessage}
+          <div className="relative grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-6">
+            {/* ══ Bara laterală — profil · navigare · Premium ══════ */}
+            <Reveal as="aside" className="space-y-3 lg:sticky lg:top-24 lg:self-start">
+              {/* Cartonaș de profil */}
+              <div className={`${cardClass} relative overflow-hidden p-4`}>
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
+                <div className="relative flex items-center gap-3">
+                  <UserAvatar metadata={user?.user_metadata} size="sm" className="size-12 shrink-0 ring-2 ring-primary/20" />
+                  <div className="min-w-0">
+                    <p className={`truncate font-heading text-sm font-black ${headingText}`}>{fullName}</p>
+                    <p className={`mt-0.5 flex items-center gap-1 truncate text-[10px] font-black uppercase tracking-[0.14em] ${isPremium ? 'text-primary' : mutedText}`}>
+                      {isPremium && <Crown className="size-3 shrink-0" aria-hidden />}
+                      {isPremium ? 'Cont Premium' : 'Cont gratuit'}
                     </p>
-                    {isPremium && targetGradeReport && (
-                      <p className={`mt-3 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5 text-sm leading-relaxed ${mutedText}`}>
-                        {targetGradeReport.message}
-                      </p>
-                    )}
                   </div>
-                </Reveal>
+                </div>
+                {profileCodes.length > 0 && (
+                  <div className="relative mt-3 flex flex-wrap gap-1.5 border-t border-border/60 pt-3">
+                    {profileCodes.map((code) => (
+                      <span
+                        key={code}
+                        style={{ fontFamily: SERIF }}
+                        className="rounded-lg border border-border bg-background/60 px-2 py-0.5 text-xs font-semibold italic text-primary"
+                      >
+                        {code}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                <aside className="dashboard-bento__aside space-y-3">
-                  <Reveal delay={120} className="grid grid-cols-2 gap-2">
-                    <StatChip icon={GraduationCap} label="Examen" value={formatShortDate(bacExamDate)} iconClass="text-red-500" />
-                    <StatChip icon={Target} label="Notă țintă" value={targetScoreLabel} iconClass="text-primary" />
-                    <StatChip icon={Flame} label="Streak" value={String(streak)} iconClass="text-orange-500" />
-                    <StatChip
-                      icon={CheckCircle2}
-                      label="Finalizate"
-                      value={String(overallProgress.completed)}
-                      iconClass="text-emerald-600 dark:text-emerald-400"
+              {/* Rail de navigare */}
+              <nav className={`${cardClass} p-3`} aria-label="Navigare tablou de bord">
+                <SectionLabel className="mb-3 px-1">Navigare</SectionLabel>
+                <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
+                  {sidebarPrimaryNav.map((nav) => (
+                    <SidebarNavButton
+                      key={nav.key}
+                      icon={nav.Icon}
+                      label={nav.label}
+                      active={nav.active}
+                      onClick={nav.onClick}
+                    />
+                  ))}
+                  {isPremium && roadmaps.length > 0 && (
+                    <SidebarNavButton icon={Map} label="Plan de studiu" onClick={() => navigate('/roadmap')} />
+                  )}
+                  {isPremium && solvedVariants.length > 0 && (
+                    <SidebarNavButton icon={NotebookPen} label="Variante" onClick={() => navigate('/variante-rezolvate')} />
+                  )}
+                  <SidebarNavButton icon={User} label="Profil" onClick={() => navigate('/profile')} />
+                </div>
+              </nav>
+
+              {/* Statut / upsell Premium */}
+              {isPremium ? (
+                <div className={`${cardClass} flex items-center gap-2.5 border-primary/25 bg-primary/5 px-3.5 py-3`}>
+                  <Crown className="size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="text-xs font-black uppercase tracking-wide text-primary">Premium activ</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openPremiumModal}
+                  className={`${cardClass} dashboard-card-lift flex w-full items-center gap-2.5 border-primary/25 bg-primary/5 px-3.5 py-3 text-left hover:border-primary/50`}
+                >
+                  <Crown className="size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="min-w-0 flex-1 text-sm font-bold text-primary">
+                    Raport complet cu{' '}
+                    <span style={{ fontFamily: SERIF }} className="italic">Premium</span>
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-primary" aria-hidden />
+                </button>
+              )}
+            </Reveal>
+
+            {/* ══ Zona de conținut ════════════════════════════════ */}
+            <div className="min-w-0 space-y-5 sm:space-y-6">
+              {/* ── Antet / cover sheet editorial ─────────────────── */}
+              <Reveal as="section" delay={40} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/12 blur-3xl" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-indigo-400/8 blur-3xl" aria-hidden />
+
+                <div className="relative grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
+                  {/* Coloana editorială */}
+                  <div className="flex min-w-0 flex-col">
+                    <SectionLabel>Tabloul tău · Matematică BAC</SectionLabel>
+
+                    <p className={`mt-5 inline-flex items-center gap-2 text-sm font-medium ${mutedText}`}>
+                      <GreetingIcon className="size-4 shrink-0 text-primary" aria-hidden />
+                      {greeting.text},
+                      <span style={{ fontFamily: SERIF }} className="text-base font-semibold not-italic text-primary">
+                        {firstName}
+                      </span>
+                    </p>
+
+                    <h1 className={`mt-2 text-3xl leading-[0.95] sm:text-4xl ${editorialHeading}`}>
+                      {dashboardTitle}
+                    </h1>
+
+                    <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+                      <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${mutedText}`}>
+                        Programul tău
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {profileCodes.map((code) => (
+                          <span
+                            key={code}
+                            style={{ fontFamily: SERIF }}
+                            className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-primary"
+                          >
+                            {code}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Showpiece: ștampila de countdown (fișă tipărită) */}
+                  <div className="relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none">
+                    <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-[1.1rem] border border-primary/20 bg-primary/[0.04]" aria-hidden />
+
+                    <div
+                      className="dashboard-countdown relative rotate-1 p-5 transition-transform duration-500 hover:rotate-0"
+                      title={examCountdownLabel}
+                    >
+                      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.35]" aria-hidden />
+
+                      <div className="relative">
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                          <GraduationCap className="size-3.5" aria-hidden />
+                          Examen BAC
+                        </span>
+
+                        <div className="mt-1.5 flex items-end gap-3">
+                          <span
+                            style={{ fontFamily: SERIF }}
+                            className="text-[3.6rem] font-bold italic leading-[0.78] tabular-nums text-primary sm:text-[4.25rem]"
+                          >
+                            {examFocus.value}
+                          </span>
+                          <span className={`mb-2 text-[11px] font-bold uppercase leading-tight tracking-wide ${mutedText}`}>
+                            {examFocus.caption}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3.5">
+                          <div className="leading-tight">
+                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Progres</p>
+                            <p style={{ fontFamily: SERIF }} className="mt-0.5 text-xl font-bold italic tabular-nums text-primary">
+                              {progressPct}%
+                            </p>
+                          </div>
+                          <div className="leading-tight">
+                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
+                            <p className="mt-0.5 flex items-center gap-1.5">
+                              <span style={{ fontFamily: SERIF }} className="text-xl font-bold italic tabular-nums text-foreground">
+                                {streak}
+                              </span>
+                              <Flame className="size-4 text-orange-500" aria-hidden />
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className={`mt-3.5 flex items-center gap-1.5 border-t border-border/60 pt-3 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
+                          <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
+                          {examLongDate}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ștampilă plutitoare BAC */}
+                    <div
+                      className="absolute -right-4 -top-4 hidden size-[4.5rem] rotate-[12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
+                      aria-hidden
+                    >
+                      <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
+                        BAC
+                        <br />
+                        {examYear}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* fâșia săptămânii */}
+                <div className="relative mt-7 border-t border-border/60 pt-5">
+                  <SectionLabel className="mb-4">Săptămâna ta</SectionLabel>
+                  <div className="dashboard-week-strip">
+                    {weekDays.map((day) => (
+                      <WeekDayRing key={day.key} day={day} />
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+
+              {/* ── Grila de statistici ───────────────────────────── */}
+              <section aria-label="Statistici cheie">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                  <StatCard
+                    delay={70}
+                    icon={GraduationCap}
+                    label="Examen"
+                    value={formatShortDate(bacExamDate)}
+                    sublabel={examFocus.caption}
+                    iconClass="text-red-500"
+                    accentBg="bg-red-500/10"
+                  />
+                  <StatCard
+                    delay={90}
+                    icon={TrendingUp}
+                    label="Progres"
+                    value={`${progressPct}%`}
+                    sublabel={`${overallProgress.completed}/${overallProgress.total} lecții`}
+                  />
+                  <StatCard
+                    delay={110}
+                    icon={Flame}
+                    label="Streak"
+                    value={String(streak)}
+                    sublabel={streak === 1 ? 'zi consecutivă' : 'zile consecutive'}
+                    iconClass="text-orange-500"
+                    accentBg="bg-orange-500/10"
+                  />
+                  <StatCard
+                    delay={130}
+                    icon={Target}
+                    label="Notă țintă"
+                    value={targetScoreLabel}
+                    sublabel="medie quiz"
+                  />
+                  <StatCard
+                    delay={150}
+                    icon={CheckCircle2}
+                    label="Finalizate"
+                    value={String(overallProgress.completed)}
+                    sublabel="lecții parcurse"
+                    iconClass="text-emerald-600 dark:text-emerald-400"
+                    accentBg="bg-emerald-500/10"
+                  />
+                </div>
+              </section>
+
+              {/* ── Feed principal + coloana laterală dreaptă ─────── */}
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-6">
+                {/* Feed principal — își schimbă conținutul în funcție de vizualizare */}
+                <div className="min-w-0 space-y-5">
+                  {activeView === 'progress' ? (
+                    <>
+                      {/* Card mare de progres */}
+                      <Reveal as="section" delay={90} className={`${cardClass} relative overflow-hidden p-5 sm:p-7`}>
+                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                        <div className="relative">
+                          <div className="flex items-start justify-between gap-3">
+                            <SectionLabel>Progres la lecții</SectionLabel>
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/5">
+                              <TrendingUp className="size-4 text-primary" aria-hidden />
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-end gap-3">
+                            <span
+                              style={{ fontFamily: SERIF }}
+                              className="text-6xl font-bold italic leading-none tabular-nums text-primary sm:text-7xl"
+                            >
+                              {progressPct}
+                              <span className="text-3xl sm:text-4xl">%</span>
+                            </span>
+                            <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${mutedText}`}>
+                              {overallProgress.completed} din {overallProgress.total}
+                              <br />finalizate
+                            </p>
+                          </div>
+
+                          <div className="relative mt-7 pt-2">
+                            <div className="relative h-2.5 overflow-visible rounded-full bg-slate-200 dark:bg-white/10">
+                              <div
+                                className="dashboard-progress-fill absolute inset-y-0 left-0 overflow-hidden rounded-full bg-gradient-to-r from-primary to-indigo-400 transition-[width] duration-700 ease-out"
+                                style={{ width: `${progressBarPct}%` }}
+                              />
+                              <div
+                                className="absolute top-1/2 z-10 -translate-y-1/2 transition-[left] duration-700 ease-out"
+                                style={{ left: `clamp(0px, calc(${progressPct}% - 14px), calc(100% - 28px))` }}
+                              >
+                                <UserAvatar
+                                  metadata={user?.user_metadata}
+                                  size="sm"
+                                  className="size-7 ring-2 ring-background dark:ring-slate-900"
+                                />
+                              </div>
+                              <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                                <div className="h-px w-5 border-t border-dashed border-slate-300 dark:border-border" aria-hidden />
+                                <Target className="size-4 text-primary" aria-hidden />
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className={`mt-5 text-sm leading-relaxed ${mutedText}`}>
+                            {progressMessage}
+                          </p>
+                          {isPremium && targetGradeReport && (
+                            <p className={`mt-3 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5 text-sm leading-relaxed ${mutedText}`}>
+                              {targetGradeReport.message}
+                            </p>
+                          )}
+                        </div>
+                      </Reveal>
+
+                      {/* Rezumat „Progres pe subiecte" — refolosește subjectStats */}
+                      <Reveal as="section" delay={120} className={`${cardClass} relative overflow-hidden p-5 sm:p-6`}>
+                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                        <div className="relative">
+                          <div className="flex items-start justify-between gap-3">
+                            <SectionLabel>Progres pe subiecte</SectionLabel>
+                            <button
+                              type="button"
+                              onClick={() => setActiveView('topics')}
+                              className="shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-primary transition-colors hover:text-primary/70"
+                            >
+                              Vezi lecțiile
+                            </button>
+                          </div>
+
+                          <ul className="mt-4 space-y-2.5">
+                            {subjectStats.map(({ subject, completedCount, totalCount, progress, accent, isFree }) => (
+                              <li key={subject.value}>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveView('topics')}
+                                  className="group flex w-full items-center gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-background dark:bg-white/5"
+                                >
+                                  <span
+                                    style={{ fontFamily: SERIF }}
+                                    className="w-7 shrink-0 text-center text-2xl font-bold italic leading-none text-slate-300 transition-colors group-hover:text-primary dark:text-slate-700"
+                                    aria-hidden
+                                  >
+                                    {subject.roman}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className={`flex min-w-0 items-center gap-1.5 truncate text-xs font-black uppercase tracking-wide ${headingText}`}>
+                                        {subject.label}
+                                        {isFree && (
+                                          <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
+                                            Gratuit
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span className={`shrink-0 text-[10px] font-black tabular-nums ${mutedText}`}>
+                                        {completedCount}/{totalCount}
+                                      </span>
+                                    </div>
+                                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
+                                      <div
+                                        className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
+                                        style={{ width: `${progress}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </Reveal>
+                    </>
+                  ) : (
+                    subjectStats.map(({ subject, subjectLessons, completedCount, totalCount, progress, accent, isFree }, idx) => (
+                      <Reveal
+                        as="article"
+                        key={subject.value}
+                        delay={90 + idx * 50}
+                        className={`group ${cardClass} dashboard-card-lift relative overflow-hidden`}
+                      >
+                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
+
+                        {/* Capitol numerotat — numeral roman serif, ca pe Welcome */}
+                        <div className="relative grid grid-cols-[auto_1fr] items-start gap-4 border-b border-border/60 p-4 sm:gap-6 sm:p-5">
+                          <span
+                            style={{ fontFamily: SERIF }}
+                            className="select-none text-5xl font-bold italic leading-none text-slate-300 transition-colors duration-300 group-hover:text-primary dark:text-slate-700 sm:text-6xl"
+                            aria-hidden
+                          >
+                            {subject.roman}
+                          </span>
+
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className={`text-lg sm:text-xl ${editorialHeading}`}>{subject.label}</h3>
+                              {isFree && (
+                                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
+                                  Gratuit
+                                </span>
+                              )}
+                            </div>
+                            <p className={`mt-1 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
+                              {completedCount}/{totalCount} finalizate · {progress}%
+                            </p>
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
+                              <div
+                                className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <ul className="custom-scrollbar relative max-h-64 space-y-1 overflow-y-auto p-3">
+                          {subjectLessons.length > 0 ? (
+                            subjectLessons.map((lesson, lessonIdx) => {
+                              const isCompleted = completedSet.has(lesson.id)
+                              const locked = !canAccessLessonForUser(lesson, isPremium, activeProfiles)
+                              return (
+                                <li key={lesson.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (locked) {
+                                        openPremiumModal()
+                                        return
+                                      }
+                                      navigate(`/lessons/${lesson.id}`)
+                                    }}
+                                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all duration-200 ${
+                                      isCompleted
+                                        ? 'border-transparent bg-emerald-500/5 opacity-70'
+                                        : 'border-border/80 bg-background/60 hover:border-primary hover:bg-background hover:shadow-md hover:shadow-primary/5 dark:bg-white/5'
+                                    }`}
+                                  >
+                                    <span className="flex size-6 shrink-0 items-center justify-center">
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="size-4 text-emerald-600" />
+                                      ) : (
+                                        <span
+                                          style={{ fontFamily: SERIF }}
+                                          className="text-sm font-bold italic tabular-nums text-primary/45"
+                                        >
+                                          {String(lessonIdx + 1).padStart(2, '0')}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className={`min-w-0 flex-1 truncate font-medium ${
+                                      isCompleted ? 'text-slate-500 line-through' : headingText
+                                    }`}>
+                                      {lesson.title}
+                                    </span>
+                                    {locked && <Crown className="size-4 shrink-0 text-primary" />}
+                                  </button>
+                                </li>
+                              )
+                            })
+                          ) : (
+                            <li className={`rounded-xl border-2 border-dashed border-border py-8 text-center text-[11px] font-black uppercase tracking-[0.16em] ${mutedText}`}>
+                              Nicio lecție publicată încă
+                            </li>
+                          )}
+                        </ul>
+                      </Reveal>
+                    ))
+                  )}
+                </div>
+
+                {/* Coloana laterală dreaptă — calendar + obiectiv zilnic (persistente) */}
+                <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+                  <Reveal delay={110}>
+                    <StudyMonthCalendar
+                      monthView={calendarMonth}
+                      selectedDate={selectedCalendarDate}
+                      onMonthChange={setCalendarMonth}
+                      onSelectDate={setSelectedCalendarDate}
+                      lastActivityKey={lastActivityKey}
+                      streak={streak}
+                      examDate={bacExamDate}
                     />
                   </Reveal>
 
-                  <Reveal as="section" delay={150} className={`${cardClass} px-4 py-3.5`}>
+                  <Reveal as="section" delay={140} className={`${cardClass} px-4 py-3.5`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="relative size-11 shrink-0">
@@ -900,169 +1212,9 @@ export function DashboardPage() {
                       </span>
                     </div>
                   </Reveal>
-
-                  {isPremium && (roadmaps.length > 0 || solvedVariants.length > 0) && (
-                    <Reveal delay={180} className="grid gap-2">
-                      {roadmaps.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => navigate('/roadmap')}
-                          className={`${cardClass} dashboard-card-lift flex items-center gap-2.5 px-3.5 py-3 text-left hover:border-primary/40`}
-                        >
-                          <Map className="size-4 shrink-0 text-primary" aria-hidden />
-                          <span className={`min-w-0 flex-1 text-xs font-black uppercase tracking-wide ${headingText}`}>Plan de studiu</span>
-                          <ChevronRight className={`size-4 shrink-0 ${mutedText}`} aria-hidden />
-                        </button>
-                      )}
-                      {solvedVariants.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => navigate('/variante-rezolvate')}
-                          className={`${cardClass} dashboard-card-lift flex items-center gap-2.5 px-3.5 py-3 text-left hover:border-primary/40`}
-                        >
-                          <NotebookPen className="size-4 shrink-0 text-primary" aria-hidden />
-                          <span className={`min-w-0 flex-1 text-xs font-black uppercase tracking-wide ${headingText}`}>Variante rezolvate</span>
-                          <ChevronRight className={`size-4 shrink-0 ${mutedText}`} aria-hidden />
-                        </button>
-                      )}
-                    </Reveal>
-                  )}
-
-                  {!isPremium && (
-                    <Reveal
-                      as="button"
-                      delay={180}
-                      type="button"
-                      onClick={openPremiumModal}
-                      className={`${cardClass} dashboard-card-lift flex w-full items-center gap-2.5 border-primary/25 bg-primary/5 px-3.5 py-3 text-left hover:border-primary/50`}
-                    >
-                      <Crown className="size-4 shrink-0 text-primary" aria-hidden />
-                      <span className="text-sm font-bold text-primary">
-                        Raport complet cu{' '}
-                        <span style={{ fontFamily: SERIF }} className="italic">Premium</span>
-                      </span>
-                    </Reveal>
-                  )}
                 </aside>
-
-                <Reveal delay={130} className="dashboard-bento__calendar">
-                  <StudyMonthCalendar
-                    monthView={calendarMonth}
-                    selectedDate={selectedCalendarDate}
-                    onMonthChange={setCalendarMonth}
-                    onSelectDate={setSelectedCalendarDate}
-                    lastActivityKey={lastActivityKey}
-                    streak={streak}
-                    examDate={bacExamDate}
-                  />
-                </Reveal>
               </div>
-            ) : (
-              <div className="space-y-4 sm:space-y-5">
-                {SUBJECT_PARTS.map((subject, idx) => {
-                  const subjectLessons = lessonsBySubject[subject.value] || []
-                  const completedCount = subjectLessons.filter((l) => completedSet.has(l.id)).length
-                  const totalCount = subjectLessons.length
-                  const subjectProgress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100)
-                  const accent = SUBJECT_ACCENTS[subject.value] || SUBJECT_ACCENTS[1]
-                  const isFreeSubject = subject.value === 3
-
-                  return (
-                    <Reveal
-                      as="article"
-                      key={subject.value}
-                      delay={90 + idx * 50}
-                      className={`group ${cardClass} dashboard-card-lift relative overflow-hidden`}
-                    >
-                      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
-
-                      {/* Capitol numerotat — numeral roman serif, ca pe Welcome */}
-                      <div className="relative grid grid-cols-[auto_1fr] items-start gap-4 border-b border-border/60 p-4 sm:gap-6 sm:p-5">
-                        <span
-                          style={{ fontFamily: SERIF }}
-                          className="select-none text-5xl font-bold italic leading-none text-slate-300 transition-colors duration-300 group-hover:text-primary dark:text-slate-700 sm:text-6xl"
-                          aria-hidden
-                        >
-                          {subject.roman}
-                        </span>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className={`text-lg sm:text-xl ${editorialHeading}`}>{subject.label}</h3>
-                            {isFreeSubject && (
-                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
-                                Gratuit
-                              </span>
-                            )}
-                          </div>
-                          <p className={`mt-1 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
-                            {completedCount}/{totalCount} finalizate · {subjectProgress}%
-                          </p>
-                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
-                            <div
-                              className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
-                              style={{ width: `${subjectProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <ul className="custom-scrollbar relative max-h-64 space-y-1 overflow-y-auto p-3">
-                        {subjectLessons.length > 0 ? (
-                          subjectLessons.map((lesson, lessonIdx) => {
-                            const isCompleted = completedSet.has(lesson.id)
-                            const locked = !canAccessLessonForUser(lesson, isPremium, activeProfiles)
-                            return (
-                              <li key={lesson.id}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (locked) {
-                                      openPremiumModal()
-                                      return
-                                    }
-                                    navigate(`/lessons/${lesson.id}`)
-                                  }}
-                                  className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all duration-200 ${
-                                    isCompleted
-                                      ? 'border-transparent bg-emerald-500/5 opacity-70'
-                                      : 'border-border/80 bg-background/60 hover:border-primary hover:bg-background hover:shadow-md hover:shadow-primary/5 dark:bg-white/5'
-                                  }`}
-                                >
-                                  <span className="flex size-6 shrink-0 items-center justify-center">
-                                    {isCompleted ? (
-                                      <CheckCircle2 className="size-4 text-emerald-600" />
-                                    ) : (
-                                      <span
-                                        style={{ fontFamily: SERIF }}
-                                        className="text-sm font-bold italic tabular-nums text-primary/45"
-                                      >
-                                        {String(lessonIdx + 1).padStart(2, '0')}
-                                      </span>
-                                    )}
-                                  </span>
-                                  <span className={`min-w-0 flex-1 truncate font-medium ${
-                                    isCompleted ? 'text-slate-500 line-through' : headingText
-                                  }`}>
-                                    {lesson.title}
-                                  </span>
-                                  {locked && <Crown className="size-4 shrink-0 text-primary" />}
-                                </button>
-                              </li>
-                            )
-                          })
-                        ) : (
-                          <li className={`rounded-xl border-2 border-dashed border-border py-8 text-center text-[11px] font-black uppercase tracking-[0.16em] ${mutedText}`}>
-                            Nicio lecție publicată încă
-                          </li>
-                        )}
-                      </ul>
-                    </Reveal>
-                  )
-                })}
-
-              </div>
-            )}
+            </div>
           </div>
         )}
       </main>

@@ -15,14 +15,18 @@ export const ADMIN_SECTIONS = [
   { id: 'curriculum', label: 'Curriculum', icon: BookOpen, description: 'Lecții și materie' },
   { id: 'roadmaps', label: 'Roadmaps', icon: Map, description: 'Trasee de studiu' },
   { id: 'variants', label: 'Variante', icon: FileText, description: 'Arhivă rezolvări' },
-  { id: 'rapoarte', label: 'Rapoarte', icon: BarChart3, description: 'Statistici platformă' },
-  { id: 'admins', label: 'Admins', icon: Shield, description: 'Control acces' },
-  { id: 'platform', label: 'Platformă', icon: Hammer, description: 'Mentenanță', primaryAdminOnly: true },
+  { id: 'rapoarte', label: 'Rapoarte', icon: BarChart3, description: 'Statistici platformă', technicalOnly: true },
+  { id: 'admins', label: 'Admins', icon: Shield, description: 'Control acces', technicalOnly: true },
+  { id: 'platform', label: 'Platformă', icon: Hammer, description: 'Mentenanță', technicalOnly: true },
 ]
 
-/** Secțiuni vizibile în panou (Platformă = doar admin principal, verificat server-side). */
-export function getAdminSectionsForUser(isPrimaryAdmin) {
-  return ADMIN_SECTIONS.filter((section) => !section.primaryAdminOnly || isPrimaryAdmin)
+/**
+ * Secțiuni vizibile în panou. Profesorii văd doar conținutul (Curriculum, Roadmaps,
+ * Variante); secțiunile `technicalOnly` (Rapoarte, Acces, Platformă) sunt rezervate
+ * administratorilor tehnici (și principalului). Restricția e dublată server-side de RLS.
+ */
+export function getAdminSectionsForUser(isTechnicalAdmin) {
+  return ADMIN_SECTIONS.filter((section) => !section.technicalOnly || isTechnicalAdmin)
 }
 
 export const LESSON_EDITOR_TABS = [

@@ -8,7 +8,7 @@ export function getTermsAndConditionsSections() {
         `Bun venit pe ${PLATFORM.name}, platformă accesibilă la adresa web ${PLATFORM.url} (numită în continuare „Platforma” sau „Aplicația”).`,
         'Aplicația este o platformă SaaS (Software as a Service) educațională, concepută ca un proiect de startup pentru pregătirea elevilor în vederea susținerii examenului de Bacalaureat la matematică.',
         'Prin crearea unui cont și utilizarea serviciilor noastre, vă exprimați acordul deplin și necondiționat cu prezenții Termeni și Condiții.',
-        `Ultima actualizare: 29 mai 2026. Versiune document: ${LEGAL_DOCS_VERSION}.`,
+        `Ultima actualizare: 7 iunie 2026. Versiune document: ${LEGAL_DOCS_VERSION}.`,
       ],
     },
     {
@@ -83,14 +83,13 @@ export function getTermsAndConditionsSections() {
         'Dacă există un abonament Premium activ, acesta este încheiat odată cu ștergerea contului; plățile deja efectuate nu sunt rambursabile, conform secțiunii 4.',
       ],
       afterList: [
-        `Dacă nu puteți finaliza ștergerea din aplicație (de exemplu, nu mai aveți acces la e-mailul contului), ne puteți contacta la ${OPERATOR.email} sau la ${OPERATOR.dpoEmail} pentru asistență.`,
+        `Dacă nu puteți finaliza ștergerea din aplicație (de exemplu, nu mai aveți acces la e-mailul contului), ne puteți contacta la ${OPERATOR.email} pentru asistență.`,
       ],
     },
     {
       title: '9. Legea Aplicabilă și Litigii',
       paragraphs: [
         `Prezenții termeni sunt guvernați de legislația din România. Orice neînțelegere sau dispută apărută în legătură cu utilizarea platformei ${PLATFORM.url} se va soluționa pe cale amiabilă între utilizator și echipa de dezvoltare.`,
-        `Pentru întrebări: ${OPERATOR.email}.`,
       ],
     },
   ]

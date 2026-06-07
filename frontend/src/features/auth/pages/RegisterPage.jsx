@@ -123,7 +123,7 @@ export function RegisterPage() {
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg transition-transform duration-500 group-hover:-rotate-6">
               <BrandLogo className="size-5" />
             </div>
-            <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">MathUP</strong>
+            <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Math<span className="text-primary">UP</span></strong>
           </motion.div>
 
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Comută tema" className="rounded-lg text-slate-500">

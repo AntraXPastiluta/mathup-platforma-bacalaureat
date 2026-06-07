@@ -1,4 +1,4 @@
-export const LEGAL_DOCS_VERSION = '2026-05-29'
+export const LEGAL_DOCS_VERSION = '2026-06-07'
 export const OPERATOR = {
   name: 'MathUP Startup Project',
   cui: 'RO99999999',

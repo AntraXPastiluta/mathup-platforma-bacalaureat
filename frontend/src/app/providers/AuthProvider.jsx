@@ -22,6 +22,7 @@ import { getPremiumEntitlement, isEntitlementActive, startPremiumCheckout as cre
 import {
   checkCurrentUserIsAdmin,
   checkCurrentUserIsPrimaryAdmin,
+  checkCurrentUserIsTechnicalAdmin,
   fetchPrimaryAdminEmail,
 } from '../../services/curriculumAdminService'
 import { normalizeProfile, normalizeProfilesList, syncEnrolledProfiles } from '../../services/profileService'
@@ -64,6 +65,7 @@ export function AuthProvider({ children }) {
   const [premiumModalOpen, setPremiumModalOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isPrimaryAdmin, setIsPrimaryAdmin] = useState(false)
+  const [isTechnicalAdmin, setIsTechnicalAdmin] = useState(false)
   const [primaryAdminEmail, setPrimaryAdminEmail] = useState(null)
   const [adminLoading, setAdminLoading] = useState(true)
 
@@ -103,6 +105,7 @@ export function AuthProvider({ children }) {
     if (cached.admin) {
       setIsAdmin(cached.admin.isAdmin)
       setIsPrimaryAdmin(cached.admin.isPrimaryAdmin)
+      setIsTechnicalAdmin(Boolean(cached.admin.isTechnicalAdmin))
       setPrimaryAdminEmail(cached.admin.primaryAdminEmail)
       setAdminLoading(false)
     }
@@ -116,6 +119,7 @@ export function AuthProvider({ children }) {
     setEntitlementLoading(false)
     setIsAdmin(false)
     setIsPrimaryAdmin(false)
+    setIsTechnicalAdmin(false)
     setPrimaryAdminEmail(null)
     setAdminLoading(false)
   }, [])
@@ -127,11 +131,12 @@ export function AuthProvider({ children }) {
     if (!nextUser?.email) {
       setIsAdmin(false)
       setIsPrimaryAdmin(false)
+      setIsTechnicalAdmin(false)
       setPrimaryAdminEmail(null)
       setAdminLoading(false)
       if (nextUser?.id) {
         writeAuthCache(nextUser.id, {
-          admin: { isAdmin: false, isPrimaryAdmin: false, primaryAdminEmail: null },
+          admin: { isAdmin: false, isPrimaryAdmin: false, isTechnicalAdmin: false, primaryAdminEmail: null },
         })
       }
       return false
@@ -148,23 +153,27 @@ export function AuthProvider({ children }) {
 
       if (!isAdminUser) {
         setIsPrimaryAdmin(false)
+        setIsTechnicalAdmin(false)
         setPrimaryAdminEmail(null)
         writeAuthCache(nextUser.id, {
-          admin: { isAdmin: false, isPrimaryAdmin: false, primaryAdminEmail: null },
+          admin: { isAdmin: false, isPrimaryAdmin: false, isTechnicalAdmin: false, primaryAdminEmail: null },
         })
         return false
       }
 
-      const [isPrimaryUser, primaryEmail] = await Promise.all([
+      const [isPrimaryUser, isTechnicalUser, primaryEmail] = await Promise.all([
         checkCurrentUserIsPrimaryAdmin(),
+        checkCurrentUserIsTechnicalAdmin(),
         fetchPrimaryAdminEmail().catch(() => null),
       ])
       setIsPrimaryAdmin(isPrimaryUser)
+      setIsTechnicalAdmin(isTechnicalUser)
       setPrimaryAdminEmail(primaryEmail)
       writeAuthCache(nextUser.id, {
         admin: {
           isAdmin: isAdminUser,
           isPrimaryAdmin: isPrimaryUser,
+          isTechnicalAdmin: isTechnicalUser,
           primaryAdminEmail: primaryEmail,
         },
       })
@@ -174,6 +183,7 @@ export function AuthProvider({ children }) {
       if (!cachedAdmin) {
         setIsAdmin(false)
         setIsPrimaryAdmin(false)
+        setIsTechnicalAdmin(false)
         setPrimaryAdminEmail(null)
       }
       return false
@@ -690,6 +700,7 @@ export function AuthProvider({ children }) {
     refreshSessionUser,
     isAdmin,
     isPrimaryAdmin,
+    isTechnicalAdmin,
     primaryAdminEmail,
     adminLoading,
     refreshAdminAccess,
@@ -728,6 +739,7 @@ export function AuthProvider({ children }) {
     refreshSessionUser,
     isAdmin,
     isPrimaryAdmin,
+    isTechnicalAdmin,
     primaryAdminEmail,
     adminLoading,
     refreshAdminAccess,

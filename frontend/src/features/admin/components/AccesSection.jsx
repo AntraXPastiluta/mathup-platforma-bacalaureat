@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Shield, Trash2, UserPlus } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Button } from '../../../shared/ui/Button'
+import { Select } from '../../../shared/ui/Select'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import {
   addCurriculumAdminEmail,
@@ -9,8 +10,20 @@ import {
   isEmailPrimaryAdmin,
   normalizeAdminEmail,
   removeCurriculumAdminEmail,
+  updateCurriculumAdminRole,
 } from '../../../services/curriculumAdminService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
+
+// Rolurile pe care le poate avea un admin și ce înseamnă pentru acces.
+// `short` = eticheta compactă folosită în comutatorul din tabel.
+const ROLE_OPTIONS = [
+  { value: 'profesor', label: 'Profesor', short: 'Profesor' },
+  { value: 'technical', label: 'Administrator tehnic', short: 'Tehnic' },
+]
+
+function roleLabel(role) {
+  return role === 'technical' ? 'Administrator tehnic' : 'Profesor'
+}
 
 export function AccesSection() {
   const { user, isPrimaryAdmin, primaryAdminEmail, refreshAdminAccess } = useAuth()
@@ -18,6 +31,7 @@ export function AccesSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [email, setEmail] = useState('')
+  const [role, setRole] = useState('profesor')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -57,13 +71,14 @@ export function AccesSection() {
     setError('')
     setSuccess('')
     try {
-      const created = await addCurriculumAdminEmail(normalized)
+      const created = await addCurriculumAdminEmail(normalized, role)
       setAdmins((current) => {
         if (current.some((row) => row.email === created.email)) return current
         return [...current, created].sort((left, right) => left.email.localeCompare(right.email, 'ro'))
       })
       setEmail('')
-      setSuccess(`Administratorul ${created.email} a fost adăugat.`)
+      setRole('profesor')
+      setSuccess(`Administratorul ${created.email} (${roleLabel(created.role)}) a fost adăugat.`)
       await refreshAdminAccess()
     } catch (saveError) {
       setError(toUserFacingError(saveError, USER_MESSAGES.save))
@@ -73,6 +88,25 @@ export function AccesSection() {
   }
 
   const canManageAdmins = isPrimaryAdmin
+
+  const handleChangeRole = async (adminRow, nextRole) => {
+    if (!canManageAdmins || nextRole === adminRow.role) return
+
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      const updated = await updateCurriculumAdminRole(adminRow.id, nextRole)
+      setAdmins((current) =>
+        current.map((row) => (row.id === adminRow.id ? { ...row, role: updated.role } : row)),
+      )
+      setSuccess(`Rolul lui ${adminRow.email} a fost schimbat în ${roleLabel(updated.role)}.`)
+    } catch (updateError) {
+      setError(toUserFacingError(updateError, USER_MESSAGES.save))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleRemoveAdmin = async (adminRow) => {
     if (!canManageAdmins) {
@@ -114,7 +148,10 @@ export function AccesSection() {
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-white">Administratori</h2>
           <p className="text-sm text-muted-foreground">
-            Conturile cu aceste emailuri pot accesa panoul de administrare și sunt tratate ca Premium. Doar administratorul principal poate elimina administratori.
+            Conturile cu aceste emailuri pot accesa panoul de administrare și sunt tratate ca Premium.
+            <span className="font-semibold text-slate-600 dark:text-slate-300"> Profesorii</span> văd doar Curriculum, Roadmaps și Variante;
+            <span className="font-semibold text-slate-600 dark:text-slate-300"> administratorii tehnici</span> au acces complet (inclusiv Rapoarte, Acces și Platformă).
+            Doar administratorul principal poate adăuga, elimina sau schimba rolul administratorilor.
           </p>
         </div>
       </div>
@@ -124,7 +161,7 @@ export function AccesSection() {
 
       <div className="rounded-3xl border border-slate-300/50 bg-white p-8 shadow-md dark:border-white/10 dark:bg-[#0a0f1c] dark:shadow-none">
         {canManageAdmins ? (
-        <form onSubmit={handleAddAdmin} className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
+        <form onSubmit={handleAddAdmin} className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_minmax(11rem,auto)_auto]">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email administrator</label>
             <input
@@ -134,6 +171,10 @@ export function AccesSection() {
               placeholder="profesor@exemplu.ro"
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-white"
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rol</label>
+            <Select value={role} onChange={setRole} options={ROLE_OPTIONS} className="h-[50px]" />
           </div>
           <div className="flex items-end">
             <Button type="submit" disabled={saving} className="h-[50px] w-full rounded-2xl md:w-auto">
@@ -158,6 +199,7 @@ export function AccesSection() {
               <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:bg-white/5 dark:text-slate-500">
                 <tr>
                   <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Rol</th>
                   <th className="px-6 py-4">Adăugat</th>
                   {canManageAdmins ? <th className="px-6 py-4 text-right">Acțiuni</th> : null}
                 </tr>
@@ -182,6 +224,39 @@ export function AccesSection() {
                             ) : null}
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        {isPrimaryAdminRow ? (
+                          <span className="inline-flex rounded-lg bg-amber-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                            {roleLabel(adminRow.role)}
+                          </span>
+                        ) : canManageAdmins ? (
+                          <div className="inline-flex items-center rounded-xl border border-slate-300 p-0.5 dark:border-white/10">
+                            {ROLE_OPTIONS.map((opt) => {
+                              const active = adminRow.role === opt.value
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => handleChangeRole(adminRow, opt.value)}
+                                  disabled={saving || active}
+                                  aria-pressed={active}
+                                  className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors disabled:cursor-default ${
+                                    active
+                                      ? 'bg-primary text-white shadow-sm'
+                                      : 'text-slate-500 hover:text-primary disabled:opacity-50 dark:text-slate-400'
+                                  }`}
+                                >
+                                  {opt.short}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <span className="inline-flex rounded-lg bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                            {roleLabel(adminRow.role)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-5 text-sm text-slate-500">
                         {new Date(adminRow.created_at).toLocaleDateString('ro-RO')}

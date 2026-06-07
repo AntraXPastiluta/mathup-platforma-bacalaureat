@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
-import { Moon, Sun, BookOpen, GraduationCap, Trophy, ArrowRight, ArrowUpRight, Check } from 'lucide-react'
+import { Moon, Sun, BookOpen, GraduationCap, Trophy, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { PROGRAMS } from '../../../content/programs/programsData'
@@ -9,68 +8,11 @@ import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 import { ScrollGraduationCap } from '../components/ScrollGraduationCap'
+import { WorkedExerciseShowcase } from '../components/WorkedExerciseShowcase'
 
 // Serif de manuscris pentru accentele editoriale — fără fonturi externe (CSP-safe),
 // doar stiva de sistem, ca să păstrăm contrastul „demonstrație tipărită” cu sans-ul greu.
 const SERIF = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
-
-// Fișele demonstrative din hero — câte o variantă rezolvată reală pentru fiecare profil
-// de Bacalaureat (M1–M4), în limbajul matematic al aplicației. Cardul le rotește singur
-// și le poți comuta manual din selectorul de profil, ca să arate că platforma acoperă
-// toate programele, nu doar Matematică-Informatică.
-const WORKED_EXERCISES = [
-  {
-    code: 'M1',
-    program: 'Matematică-Informatică',
-    context: 'Integrală definită',
-    statement: '∫₀¹ (3x² + 2x) dx',
-    lines: [
-      'F(x) = x³ + x²   (primitivă)',
-      '= F(1) − F(0)',
-      '= (1 + 1) − 0',
-      'I = 2',
-    ],
-  },
-  {
-    code: 'M2',
-    program: 'Științele Naturii',
-    context: 'Studiați derivata',
-    statement: 'f(x) = x³ − 3x',
-    lines: [
-      'f′(x) = 3x² − 3',
-      'f′(x) = 0 ⇒ x² = 1',
-      'x₁ = −1,  x₂ = 1',
-      'Extreme în x = ±1',
-    ],
-  },
-  {
-    code: 'M3',
-    program: 'Tehnologic',
-    context: 'Progresie aritmetică',
-    statement: 'a₁ = 3,  r = 4',
-    lines: [
-      'aₙ = a₁ + (n − 1)·r',
-      'a₁₀ = 3 + 9·4 = 39',
-      'S₁₀ = (a₁ + a₁₀)·10 / 2',
-      'S₁₀ = 210',
-    ],
-  },
-  {
-    code: 'M4',
-    program: 'Pedagogic',
-    context: 'Calculați suma',
-    statement: 'log₂ 8 + log₃ 9',
-    lines: [
-      'log₂ 8 = 3   (2³ = 8)',
-      'log₃ 9 = 2   (3² = 9)',
-      'log₂ 8 + log₃ 9 = 3 + 2',
-      'Rezultat = 5',
-    ],
-  },
-]
-
-// Cât stă o fișă pe ecran înainte de rotația automată (ms).
-const EXERCISE_ROTATION_MS = 5200
 
 const chapters = [
   {
@@ -122,22 +64,6 @@ export function WelcomePage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useAuth()
 
-  // Fișa de exercițiu activă din hero + rotația ei automată prin toate profilurile.
-  const reduceMotion = useReducedMotion()
-  const [activeExercise, setActiveExercise] = useState(0)
-  const [exercisePaused, setExercisePaused] = useState(false)
-  const exercise = WORKED_EXERCISES[activeExercise]
-
-  useEffect(() => {
-    // Fără auto-rotație dacă utilizatorul preferă mișcare redusă sau a interacționat cu fișa.
-    if (reduceMotion || exercisePaused) return undefined
-    const id = setTimeout(
-      () => setActiveExercise((i) => (i + 1) % WORKED_EXERCISES.length),
-      EXERCISE_ROTATION_MS,
-    )
-    return () => clearTimeout(id)
-  }, [activeExercise, exercisePaused, reduceMotion])
-
   return (
     <div className="relative min-h-screen overflow-x-hidden text-foreground transition-colors duration-500">
       <MathRainCurtain />
@@ -164,7 +90,7 @@ export function WelcomePage() {
                 <BrandLogo className="size-6" />
               </div>
               <div className="text-left">
-                <strong className="block text-lg font-black uppercase leading-tight tracking-tighter">MathUP</strong>
+                <strong className="block text-lg font-black uppercase leading-tight tracking-tighter">Math<span className="text-primary">UP</span></strong>
                 <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/80">Excelență Academică</span>
               </div>
             </motion.button>
@@ -275,7 +201,7 @@ export function WelcomePage() {
                 </motion.div>
               </motion.div>
 
-              {/* Showpiece: fișă de variantă rezolvată */}
+              {/* Showpiece: fișă de variantă rezolvată (slideshow M1–M4) */}
               <motion.div
                 className="relative mx-auto w-full max-w-md lg:mx-0"
                 initial={{ opacity: 0, y: 40, rotate: -3 }}
@@ -285,113 +211,10 @@ export function WelcomePage() {
                 {/* strat-umbră în spate, pentru adâncime tipărită */}
                 <div className="absolute inset-0 translate-x-3.5 translate-y-3.5 rounded-[1.4rem] border border-primary/20 bg-primary/[0.05]" aria-hidden />
 
-                <div
-                  className="dashboard-glass-card relative rotate-1 overflow-hidden rounded-[1.4rem] p-7 transition-transform duration-500 hover:rotate-0"
-                  onMouseEnter={() => setExercisePaused(true)}
-                  onMouseLeave={() => setExercisePaused(false)}
-                  onFocusCapture={() => setExercisePaused(true)}
-                  onBlurCapture={() => setExercisePaused(false)}
-                >
-                  {/* textură de hârtie milimetrică */}
-                  <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.4]" aria-hidden />
-
-                  <div className="relative">
-                    {/* Antet + selector de profil (M1–M4) cu evidențiere glisantă */}
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                        Fișă · Variantă rezolvată
-                      </span>
-                      <div className="flex items-center gap-0.5 rounded-lg border border-border bg-background/60 p-0.5">
-                        {WORKED_EXERCISES.map((ex, i) => {
-                          const isActive = i === activeExercise
-                          return (
-                            <button
-                              key={ex.code}
-                              type="button"
-                              onClick={() => setActiveExercise(i)}
-                              aria-pressed={isActive}
-                              aria-label={`Vezi un exercițiu rezolvat pentru profilul ${ex.code} — ${ex.program}`}
-                              style={{ fontFamily: SERIF }}
-                              className="relative rounded-md px-2 py-1 text-xs font-semibold italic transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            >
-                              {isActive && (
-                                <motion.span
-                                  layoutId="examFichaTab"
-                                  className="absolute inset-0 rounded-md bg-primary shadow-sm shadow-primary/30"
-                                  transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                                />
-                              )}
-                              <span
-                                className={`relative z-10 ${
-                                  isActive
-                                    ? 'text-white'
-                                    : 'text-slate-500 hover:text-primary dark:text-slate-400'
-                                }`}
-                              >
-                                {ex.code}
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Conținutul fișei — se schimbă cu profilul, înălțime stabilă */}
-                    <div className="relative mt-5 min-h-[16.5rem]">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={exercise.code}
-                          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14 }}
-                          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                        >
-                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-                            {exercise.context}
-                          </div>
-                          <p
-                            style={{ fontFamily: SERIF }}
-                            className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white"
-                          >
-                            {exercise.statement}
-                          </p>
-
-                          <div className="my-6 h-px w-full bg-border" />
-
-                          <div
-                            style={{ fontFamily: SERIF }}
-                            className="space-y-2.5 text-lg text-slate-700 dark:text-slate-200"
-                          >
-                            {exercise.lines.map((line, i) => (
-                              <div key={line} className="flex items-baseline gap-3">
-                                <span className="select-none font-sans text-xs font-black text-primary/40">
-                                  {String(i + 1).padStart(2, '0')}
-                                </span>
-                                <span
-                                  className={
-                                    i === exercise.lines.length - 1 ? 'font-bold text-primary' : ''
-                                  }
-                                >
-                                  {line}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Subsol — comun tuturor fișelor */}
-                    <div className="mt-7 flex items-center gap-2.5 border-t border-border pt-5">
-                      <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                        <Check className="size-3.5" strokeWidth={3} />
-                      </span>
-                      <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                        Rezolvare completă, pas cu pas
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <WorkedExerciseShowcase
+                  variant="light"
+                  className="rotate-1 transition-transform duration-500 hover:rotate-0"
+                />
               </motion.div>
             </div>
           </div>
@@ -524,6 +347,53 @@ export function WelcomePage() {
           </div>
         </section>
 
+        {/* ── Recrutare profesori ──────────────────────────────── */}
+        <section className="pb-16 lg:pb-24">
+          <div className="container">
+            <motion.div
+              className="relative overflow-hidden rounded-[2rem] border border-border bg-background/70 px-8 py-12 sm:px-14 lg:px-16"
+              variants={revealOnScroll}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+            >
+              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.04] dark:opacity-[0.06]" aria-hidden />
+              <div className="relative flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-start gap-5">
+                  <div className="hidden size-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-background text-primary sm:flex">
+                    <GraduationCap className="size-7" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">
+                      Pentru profesori
+                    </span>
+                    <h2 className="mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-tighter sm:text-4xl">
+                      Predai matematică la nivel de{' '}
+                      <span style={{ fontFamily: SERIF }} className="font-medium italic tracking-normal text-primary">
+                        excelență
+                      </span>
+                      ?
+                    </h2>
+                    <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600 dark:text-slate-300">
+                      Alătură-te echipei MathUP. Vezi cerințele și cum decurge procesul de selecție prin interviu.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="group h-14 shrink-0 rounded-xl px-9 text-sm"
+                  onClick={() => navigate('/devino-profesor')}
+                >
+                  Vezi cerințele
+                  <ArrowUpRight className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* ── CTA de final ─────────────────────────────────────── */}
         <section className="pb-24 lg:pb-32">
           <div className="container">
@@ -577,7 +447,7 @@ export function WelcomePage() {
                   <BrandLogo className="size-6" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-black uppercase tracking-tighter">MathUP</span>
+                  <span className="block text-2xl font-black uppercase tracking-tighter">Math<span className="text-primary">UP</span></span>
                   <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Fundament Academic</span>
                 </div>
               </div>
@@ -594,6 +464,12 @@ export function WelcomePage() {
                     className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
                   >
                     Politica de Confidențialitate
+                  </Link>
+                  <Link
+                    to="/devino-profesor"
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-primary"
+                  >
+                    Devino profesor
                   </Link>
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-500">

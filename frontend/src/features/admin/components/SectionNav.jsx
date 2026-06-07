@@ -2,8 +2,8 @@ import { useAuth } from '../../../app/providers/AuthProvider'
 import { getAdminSectionsForUser } from '../constants'
 
 export function SectionNav({ activeSection, onSelectSection }) {
-  const { isPrimaryAdmin } = useAuth()
-  const sections = getAdminSectionsForUser(isPrimaryAdmin)
+  const { isTechnicalAdmin } = useAuth()
+  const sections = getAdminSectionsForUser(isTechnicalAdmin)
 
   return (
     <nav
