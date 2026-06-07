@@ -10,6 +10,7 @@ import {
   BookOpenCheck,
   ShieldCheck,
   Mail,
+  Ticket,
 } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
@@ -234,6 +235,15 @@ export function JoinAsTeacherPage() {
                 <span className="select-all break-all text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                   {OPERATOR.email}
                 </span>
+              </div>
+
+              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-border bg-background/70 p-5 dark:bg-white/[0.03]">
+                <Ticket className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <p className="text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300/90">
+                  Ai deja un cont pe platforma noastră? Creează un tichet de suport cu titlul{' '}
+                  <strong className="font-bold text-slate-800 dark:text-white">„Vreau să devin profesor”</strong>{' '}
+                  și un administrator va lua legătura cu tine.
+                </p>
               </div>
             </div>
           </div>

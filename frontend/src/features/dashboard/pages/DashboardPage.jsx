@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Award,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   Sun,
   Sunrise,
   Target,
+  Ticket,
   TrendingUp,
   User,
 } from 'lucide-react'
@@ -502,7 +504,7 @@ export function DashboardPage() {
     return today
   })
   const [bacExamDate, setBacExamDate] = useState(() => getDefaultBacExamDate())
-  const { user, session, authLoading, isPremium, openPremiumModal, errorMessage } = useAuth()
+  const { user, session, authLoading, isPremium, isAdmin, openPremiumModal, errorMessage } = useAuth()
   const navigate = useNavigate()
 
   const activeProfiles = useMemo(
@@ -1214,6 +1216,61 @@ export function DashboardPage() {
                   </Reveal>
                 </aside>
               </div>
+
+              {/* ── Devino profesor — invitație + flux tichet ─────── */}
+              {/* Ascuns pentru staff (profesori + admini tehnici/primar) — n-are sens să-i recrutăm. */}
+              {!isAdmin && (
+              <Reveal as="section" delay={170} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
+                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+                <span
+                  style={{ fontFamily: SERIF }}
+                  className="pointer-events-none absolute -bottom-8 -right-3 select-none text-[9rem] font-bold italic leading-none text-primary/[0.05] dark:text-primary/[0.07]"
+                  aria-hidden
+                >
+                  Σ
+                </span>
+
+                <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+                  <div className="min-w-0">
+                    <SectionLabel>Cariere la MathUP</SectionLabel>
+
+                    <div className="mt-4 flex items-start gap-4">
+                      <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-background text-primary">
+                        <Award className="size-6" aria-hidden />
+                      </span>
+                      <div className="min-w-0">
+                        <h2 className={`text-2xl sm:text-3xl ${editorialHeading}`}>Devino profesor MathUP</h2>
+                        <p className={`mt-2 max-w-xl text-sm leading-relaxed ${mutedText}`}>
+                          Ești profesor de matematică cu rezultate de excelență? Alătură-te echipei și
+                          scrie lecții și variante rezolvate pentru elevii noștri.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Flux tichet — utilizatorii din dashboard au deja cont */}
+                    <div className="mt-5 flex items-start gap-3 rounded-2xl border border-border bg-background/70 p-4 dark:bg-white/[0.03]">
+                      <Ticket className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                      <p className={`text-sm leading-relaxed ${mutedText}`}>
+                        Ai deja un cont pe platforma noastră? Creează un tichet de suport (butonul din
+                        dreapta-jos) cu titlul{' '}
+                        <strong className="font-bold text-foreground">„Vreau să devin profesor”</strong>{' '}
+                        și un administrator va lua legătura cu tine.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/devino-profesor')}
+                    className="dashboard-card-lift group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
+                  >
+                    Vezi cerințele
+                    <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </button>
+                </div>
+              </Reveal>
+              )}
             </div>
           </div>
         )}
