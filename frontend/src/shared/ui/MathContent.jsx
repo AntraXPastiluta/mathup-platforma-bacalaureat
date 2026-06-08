@@ -1,9 +1,26 @@
-import { InlineMath, BlockMath } from 'react-katex'
+import { useMemo } from 'react'
+import katex from 'katex'
 
 // Convenție: `$...$` formulă inline, `$$...$$` formulă pe rând separat (display).
 // Blocul se potrivește înaintea inline-ului, iar inline-ul nu trece peste linii noi
 // (`[^$\n]`), ca un `$` rătăcit să nu „înghită” paragraful următor.
 const MATH_RE = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g
+
+// Folosim direct `katex` (build ESM), NU `react-katex`: wrapper-ul CJS al acestuia
+// se rupe în bundle-ul de producție (interop rolldown-vite), făcând orice formulă
+// să apară cu text roșu. `throwOnError: false` => formulele invalide sunt afișate
+// roșu inline de KaTeX, fără să arunce excepție.
+function renderMath(value, displayMode) {
+  try {
+    return katex.renderToString(value, {
+      displayMode,
+      throwOnError: false,
+      errorColor: '#ef4444',
+    })
+  } catch {
+    return null
+  }
+}
 
 // Împarte textul în segmente: text simplu, formulă inline, formulă bloc.
 // Orice `$` nepereche sau formulă goală rămâne text literal (nu ajunge la KaTeX).
@@ -41,47 +58,43 @@ function tokenize(text) {
   return tokens
 }
 
-// Afișează o formulă invalidă ca text monospațiat (estompat), în loc să arunce
-// eroare și să blocheze pagina. KaTeX moștenește `currentColor`, deci formulele
-// valide preiau culoarea textului părinte (funcționează și pe temă întunecată).
-function renderMathError(label) {
-  return (error) => (
-    <span
-      className="font-mono text-[0.9em] text-rose-500/80"
-      title={String(error?.message || error)}
-    >
-      {label}
-    </span>
-  )
-}
-
 export function MathContent({ content, className = '', style }) {
-  if (!content) return null
+  // Tokenizăm + randăm HTML-ul KaTeX o singură dată per conținut.
+  const nodes = useMemo(() => {
+    if (!content) return []
+    return tokenize(content).map((token, index) => {
+      if (token.type === 'text') {
+        return { key: index, type: 'text', value: token.value }
+      }
+      const html = renderMath(token.value, token.type === 'block')
+      if (html == null) {
+        const source = token.type === 'block' ? `$$${token.value}$$` : `$${token.value}$`
+        return { key: index, type: 'error', value: source }
+      }
+      return { key: index, type: token.type, html }
+    })
+  }, [content])
 
-  const tokens = tokenize(content)
+  if (!content) return null
 
   return (
     <div className={`whitespace-pre-wrap ${className}`.trim()} style={style}>
-      {tokens.map((token, index) => {
-        if (token.type === 'inline') {
+      {nodes.map((node) => {
+        if (node.type === 'text') {
+          return <span key={node.key}>{node.value}</span>
+        }
+        if (node.type === 'error') {
+          // KaTeX a aruncat o excepție neașteptată — afișăm sursa, nu blocăm pagina.
           return (
-            <InlineMath
-              key={index}
-              math={token.value}
-              renderError={renderMathError(`$${token.value}$`)}
-            />
+            <span key={node.key} className="font-mono text-[0.9em] text-rose-500/80">
+              {node.value}
+            </span>
           )
         }
-        if (token.type === 'block') {
-          return (
-            <BlockMath
-              key={index}
-              math={token.value}
-              renderError={renderMathError(`$$${token.value}$$`)}
-            />
-          )
+        if (node.type === 'block') {
+          return <div key={node.key} dangerouslySetInnerHTML={{ __html: node.html }} />
         }
-        return <span key={index}>{token.value}</span>
+        return <span key={node.key} dangerouslySetInnerHTML={{ __html: node.html }} />
       })}
     </div>
   )
