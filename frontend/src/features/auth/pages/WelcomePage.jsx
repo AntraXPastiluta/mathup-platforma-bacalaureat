@@ -448,7 +448,7 @@ export function WelcomePage() {
                 </div>
                 <div>
                   <span className="block text-2xl font-black uppercase tracking-tighter">Math<span className="text-primary">UP</span></span>
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Fundament Academic</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Excelență Academică</span>
                 </div>
               </div>
               <div className="space-y-2 text-center md:text-right">
@@ -474,9 +474,6 @@ export function WelcomePage() {
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-500">
                   &copy; {new Date().getFullYear()} MathUP. Toate drepturile rezervate.
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">
-                  Rigoare științifică și excelență pedagogică.
                 </p>
               </div>
             </div>
