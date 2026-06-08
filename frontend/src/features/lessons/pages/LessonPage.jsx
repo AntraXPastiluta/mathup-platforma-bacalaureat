@@ -30,6 +30,7 @@ import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
+import { MathContent } from '../../../shared/ui/MathContent'
 import { getProfileMeta, SUBJECT_PARTS } from '../profiles'
 
 // Serif de manuscris pentru numerale și accente — fără fonturi externe (CSP-safe),
@@ -573,12 +574,11 @@ export function LessonPage() {
                           />
                         ) : null}
 
-                        <div
+                        <MathContent
+                          content={currentPart.content}
                           style={{ fontFamily: SERIF }}
-                          className="whitespace-pre-wrap text-[1.075rem] leading-[1.9] text-slate-700 dark:text-slate-300 sm:text-lg"
-                        >
-                          {currentPart.content}
-                        </div>
+                          className="text-[1.075rem] leading-[1.9] text-slate-700 dark:text-slate-300 sm:text-lg"
+                        />
                       </div>
                     ) : (
                       <div className="space-y-7 py-16 text-center">

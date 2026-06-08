@@ -1,6 +1,10 @@
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ExternalLink } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
+import { MathSymbolToolbar } from '../../../shared/ui/MathSymbolToolbar'
+import { MathContent } from '../../../shared/ui/MathContent'
+import { insertMathSnippet } from '../../../shared/utils/mathInsert'
 
 export function LessonContentTab({
   lessonContent,
@@ -9,6 +13,8 @@ export function LessonContentTab({
   setVideoUrl,
   handleUpdateLesson,
 }) {
+  const contentRef = useRef(null)
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       <div className="space-y-4">
@@ -16,12 +22,24 @@ export function LessonContentTab({
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Introducere Lecție (Legacy/Single-Part)</label>
           <span className="text-[10px] font-bold text-primary italic">Se va afișa înaintea tuturor părților</span>
         </div>
+        <MathSymbolToolbar
+          onInsert={(item, block) =>
+            insertMathSnippet(contentRef.current, item, block, lessonContent, setLessonContent)
+          }
+        />
         <textarea
+          ref={contentRef}
           className="w-full min-h-[350px] bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-3xl p-6 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-slate-700 dark:text-slate-200 leading-relaxed custom-scrollbar shadow-inner"
           value={lessonContent}
           onChange={(e) => setLessonContent(e.target.value)}
-          placeholder="Scrie textul introductiv folosind Markdown..."
+          placeholder="Scrie textul introductiv. Folosește $...$ pentru formule (ex: $x^2$) și $$...$$ pentru formule pe rând separat."
         />
+        {lessonContent?.trim() ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 p-5">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Previzualizare</p>
+            <MathContent content={lessonContent} className="text-sm leading-relaxed text-slate-700 dark:text-slate-300" />
+          </div>
+        ) : null}
       </div>
       <div className="space-y-4">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">URL Video Principal</label>

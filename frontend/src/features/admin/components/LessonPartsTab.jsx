@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   PlusCircle,
@@ -10,7 +11,10 @@ import {
 } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
+import { MathSymbolToolbar } from '../../../shared/ui/MathSymbolToolbar'
+import { MathContent } from '../../../shared/ui/MathContent'
 import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
+import { insertMathSnippet } from '../../../shared/utils/mathInsert'
 
 export function LessonPartsTab({
   parts,
@@ -26,6 +30,9 @@ export function LessonPartsTab({
   handleDeletePart,
   updatePartField,
 }) {
+  const newPartRef = useRef(null)
+  const editRefs = useRef({})
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
       {parts.length > 0 && parts.length < 3 ? (
@@ -46,12 +53,26 @@ export function LessonPartsTab({
             value={newPart.title}
             onChange={(e) => setNewPart({ ...newPart, title: e.target.value })}
           />
-          <textarea
-            className="w-full min-h-[150px] bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm leading-relaxed text-slate-700 dark:text-slate-300 shadow-sm"
-            placeholder="Conținutul secțiunii în format Markdown..."
-            value={newPart.content}
-            onChange={(e) => setNewPart({ ...newPart, content: e.target.value })}
-          />
+          <div className="space-y-2">
+            <MathSymbolToolbar
+              onInsert={(item, block) =>
+                insertMathSnippet(newPartRef.current, item, block, newPart.content, (value) => setNewPart({ ...newPart, content: value }))
+              }
+            />
+            <textarea
+              ref={newPartRef}
+              className="w-full min-h-[150px] bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm leading-relaxed text-slate-700 dark:text-slate-300 shadow-sm"
+              placeholder="Conținutul secțiunii. Folosește $...$ pentru formule (ex: $x^2$) și $$...$$ pentru formule pe rând separat."
+              value={newPart.content}
+              onChange={(e) => setNewPart({ ...newPart, content: e.target.value })}
+            />
+            {newPart.content?.trim() ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Previzualizare</p>
+                <MathContent content={newPart.content} className="text-sm leading-relaxed text-slate-700 dark:text-slate-300" />
+              </div>
+            ) : null}
+          </div>
           <input
             type="text"
             className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium text-slate-600 dark:text-slate-400 shadow-sm"
@@ -124,11 +145,25 @@ export function LessonPartsTab({
                           value={part.title}
                           onChange={(e) => updatePartField(part.id, 'title', e.target.value)}
                         />
-                        <textarea
-                          className="w-full min-h-[120px] bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 custom-scrollbar text-slate-700 dark:text-slate-300 shadow-sm"
-                          value={part.content}
-                          onChange={(e) => updatePartField(part.id, 'content', e.target.value)}
-                        />
+                        <div className="space-y-2">
+                          <MathSymbolToolbar
+                            onInsert={(item, block) =>
+                              insertMathSnippet(editRefs.current[part.id], item, block, part.content, (value) => updatePartField(part.id, 'content', value))
+                            }
+                          />
+                          <textarea
+                            ref={(el) => { editRefs.current[part.id] = el }}
+                            className="w-full min-h-[120px] bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 custom-scrollbar text-slate-700 dark:text-slate-300 shadow-sm"
+                            value={part.content}
+                            onChange={(e) => updatePartField(part.id, 'content', e.target.value)}
+                          />
+                          {part.content?.trim() ? (
+                            <div className="rounded-xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 p-4">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Previzualizare</p>
+                              <MathContent content={part.content} className="text-sm leading-relaxed text-slate-700 dark:text-slate-300" />
+                            </div>
+                          ) : null}
+                        </div>
                         <input
                           type="text"
                           className="w-full bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2 text-xs text-slate-500"

@@ -10,6 +10,9 @@ import { useAuth } from '../../../app/providers/AuthProvider'
 const CurriculumSection = lazy(() =>
   import('../components/CurriculumSection').then((m) => ({ default: m.CurriculumSection })),
 )
+const MathGuideSection = lazy(() =>
+  import('../components/MathGuideSection').then((m) => ({ default: m.MathGuideSection })),
+)
 const RoadmapsSection = lazy(() =>
   import('../components/RoadmapsSection').then((m) => ({ default: m.RoadmapsSection })),
 )
@@ -28,6 +31,7 @@ const ReportsSection = lazy(() =>
 
 const SECTION_LOADERS = {
   curriculum: CurriculumSection,
+  'ghid-formule': MathGuideSection,
   roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
   rapoarte: ReportsSection,
