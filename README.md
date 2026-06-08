@@ -2,7 +2,7 @@
 
 Platformă web educațională de tip SaaS, dedicată pregătirii elevilor de liceu pentru examenul de Bacalaureat la matematică. Aplicația structurează conținutul pe programele liceale (M1, M2, M3) și pe subiectele de examen, oferind un parcurs clar de învățare, evaluare și urmărire a progresului.
 
-**Demo public:** [mathup-bacalureat.vercel.app](https://mathup-bacalureat.vercel.app)
+**Demo public:** [mathup-bacalaureat.vercel.app](https://mathup-bacalaureat.vercel.app)
 
 ---
 

@@ -2,7 +2,7 @@
 
 Platformă web de pregătire pentru examenul de Bacalaureat la matematică, orientată pe programele liceale (M1, M2, M3), lecții structurate pe subiecte de examen, quiz-uri, progres personal și funcții MathUP Premium (roadmap, variante rezolvate, raport față de nota țintă).
 
-**Producție:** [https://mathup-bacalureat.vercel.app](https://mathup-bacalureat.vercel.app)
+**Producție:** [https://mathup-bacalaureat.vercel.app](https://mathup-bacalaureat.vercel.app)
 
 ## Cuprins
 
