@@ -29,6 +29,7 @@ import { PrivacyPage } from './features/legal/pages/PrivacyPage'
 import { NotFoundPage } from './features/notfound/pages/NotFoundPage'
 import { MathPaperBackground } from './shared/ui/MathPaperBackground'
 import { PremiumUpgradeModal } from './shared/ui/PremiumUpgradeModal'
+import { BacExamWishModal } from './shared/ui/BacExamWishModal'
 import { SupportWidget } from './features/support/components/SupportWidget'
 import { persistLastLocation, sanitizeLocation } from './services/lastLocationService'
 
@@ -233,6 +234,7 @@ export default function App() {
         <NotificationProvider>
           <MathPaperBackground />
           <PremiumUpgradeModal />
+          <BacExamWishModal />
           <MaintenanceAwareSupportWidget />
           <AppRoutes />
         </NotificationProvider>
