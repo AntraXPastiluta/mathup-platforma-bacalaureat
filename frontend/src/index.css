@@ -1163,6 +1163,12 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   white-space: pre-wrap;
 }
 
+/* Regula globală `p { color: var(--muted-foreground) }` ar suprascrie culoarea bulei */
+.support-chat-bubble p {
+  color: inherit;
+  line-height: inherit;
+}
+
 .support-chat-bubble--mine {
   border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
   background: var(--primary);
