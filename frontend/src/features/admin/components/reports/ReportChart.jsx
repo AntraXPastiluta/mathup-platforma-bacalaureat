@@ -96,7 +96,7 @@ export function ReportChart({ title, subtitle, data = [], dataKey, name, color =
           Nu există date pentru această perioadă.
         </div>
       ) : (
-        <div className="text-slate-400 dark:text-slate-500">
+        <div className="text-slate-500 dark:text-slate-400">
           <ResponsiveContainer width="100%" height={240}>
             {renderChart()}
           </ResponsiveContainer>

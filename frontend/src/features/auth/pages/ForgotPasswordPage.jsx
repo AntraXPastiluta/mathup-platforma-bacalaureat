@@ -89,7 +89,7 @@ export function ForgotPasswordPage() {
               <AlertMessage message={errorMessage} />
 
               <div className="space-y-2">
-                <label htmlFor="forgot-email" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                <label htmlFor="forgot-email" className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">
                   Email Academic
                 </label>
                 <input

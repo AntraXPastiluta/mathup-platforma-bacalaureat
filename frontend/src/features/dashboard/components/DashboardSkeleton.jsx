@@ -1,9 +1,9 @@
 import { Skeleton } from '../../../shared/ui/Skeleton'
 
-// Skeleton al tabloului de bord. Oglindește noua structură (bară laterală + antet editorial +
-// grilă de statistici + feed „Progres" cu coloană de calendar) ca să nu existe salt de layout
-// când datele se încarcă. Reutilizează aceleași clase de chrome data-independente
-// (`dashboard-*`, `scholar-grid`, `study-calendar-grid`) ca pagina propriu-zisă.
+// Skeleton al tabloului de bord. Oglindește structura pe capitole (bară laterală cu cuprins +
+// capitolul implicit „Prezentare generală": antet editorial + grilă de statistici + card lat)
+// ca să nu existe salt de layout când datele se încarcă. Reutilizează aceleași clase de chrome
+// data-independente (`dashboard-*`, `scholar-grid`) ca pagina propriu-zisă.
 
 const cardClass = 'dashboard-glass-card'
 
@@ -62,13 +62,17 @@ export function DashboardSkeleton() {
           </div>
         </div>
 
-        {/* Navigare */}
+        {/* Cuprins + scurtături */}
         <div className={`${cardClass} p-3`}>
           <Skeleton className="mb-3 ml-1 h-2.5 w-20" />
           <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
-            {Array.from({ length: 3 }).map((_, index) => (
+            {Array.from({ length: 4 }).map((_, index) => (
               <SidebarNavSkeleton key={index} />
             ))}
+          </div>
+          <Skeleton className="mb-2 ml-1 mt-4 h-2.5 w-20" />
+          <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
+            <SidebarNavSkeleton />
           </div>
         </div>
 
@@ -152,110 +156,32 @@ export function DashboardSkeleton() {
           ))}
         </div>
 
-        {/* Feed principal + coloana de calendar */}
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-6">
-          {/* Feed principal */}
-          <div className="min-w-0 space-y-5">
-            {/* Card mare de progres */}
-            <section className={`${cardClass} relative overflow-hidden p-5 sm:p-7`}>
-              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-              <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                  <Skeleton className="h-3 w-32" />
-                  <Skeleton rounded="rounded-xl" className="size-10" />
+        {/* Card lat — secțiunea „Devino profesor” din capitolul Prezentare */}
+        <section className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
+          <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+          <div className="pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+          <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="min-w-0">
+              <Skeleton className="h-3 w-36" />
+              <div className="mt-4 flex items-start gap-4">
+                <Skeleton rounded="rounded-2xl" className="size-12 shrink-0" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-7 w-2/3 sm:h-8" />
+                  <Skeleton className="h-3.5 w-full max-w-xl" />
+                  <Skeleton className="h-3.5 w-3/4 max-w-md" />
                 </div>
-
-                <div className="mt-4 flex items-end gap-3">
-                  <Skeleton rounded="rounded-2xl" className="h-16 w-32 sm:h-20" />
-                  <Skeleton className="mb-2 h-7 w-20" />
-                </div>
-
-                <Skeleton rounded="rounded-full" className="mt-9 h-2.5 w-full" />
-
-                <div className="mt-5 space-y-2">
+              </div>
+              <div className="mt-5 flex items-start gap-3 rounded-2xl border border-border bg-background/70 p-4 dark:bg-white/[0.03]">
+                <Skeleton rounded="rounded-md" className="mt-0.5 size-4 shrink-0" />
+                <div className="min-w-0 flex-1 space-y-2">
                   <Skeleton className="h-3.5 w-full" />
                   <Skeleton className="h-3.5 w-2/3" />
                 </div>
               </div>
-            </section>
-
-            {/* Progres pe subiecte */}
-            <section className={`${cardClass} relative overflow-hidden p-5 sm:p-6`}>
-              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-              <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                  <Skeleton className="h-3 w-36" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-                <div className="mt-4 space-y-2.5">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <div key={index} className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 dark:bg-white/5">
-                      <Skeleton rounded="rounded" className="h-7 w-7 shrink-0" />
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Skeleton className="h-3 w-1/3" />
-                        <Skeleton rounded="rounded-full" className="h-1.5 w-full" />
-                      </div>
-                      <Skeleton rounded="rounded-md" className="size-4 shrink-0" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
+            </div>
+            <Skeleton rounded="rounded-xl" className="h-11 w-40 shrink-0" />
           </div>
-
-          {/* Coloana laterală dreaptă */}
-          <aside className="space-y-4">
-            {/* Calendar de studiu */}
-            <section className={`${cardClass} relative overflow-hidden p-4 sm:p-5`}>
-              <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-              <div className="relative">
-                <Skeleton className="mb-3 h-3 w-36" />
-
-                <div className="flex items-center gap-2">
-                  <Skeleton rounded="rounded-lg" className="size-7 shrink-0" />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <Skeleton className="mx-auto h-4 w-28" />
-                    <Skeleton className="mx-auto h-2.5 w-20" />
-                  </div>
-                  <Skeleton rounded="rounded-lg" className="size-7 shrink-0" />
-                </div>
-
-                <div className="study-calendar-grid mx-auto mt-3 w-full max-w-sm">
-                  {Array.from({ length: 7 }).map((_, index) => (
-                    <span key={`wd-${index}`} className="study-calendar-weekday">
-                      <Skeleton className="h-2 w-4" />
-                    </span>
-                  ))}
-                  {Array.from({ length: 35 }).map((_, index) => (
-                    <span key={`cell-${index}`} className="study-calendar-day">
-                      <Skeleton rounded="rounded-md" className="size-full" />
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-                  <Skeleton className="h-2.5 w-12" />
-                  <Skeleton className="h-2.5 w-16" />
-                  <Skeleton className="h-2.5 w-20" />
-                </div>
-              </div>
-            </section>
-
-            {/* Obiectiv azi */}
-            <section className={`${cardClass} px-4 py-3.5`}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton rounded="rounded-full" className="size-11 shrink-0" />
-                  <div className="space-y-1.5">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-2.5 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-5 w-9" />
-              </div>
-            </section>
-          </aside>
-        </div>
+        </section>
       </div>
     </div>
   )

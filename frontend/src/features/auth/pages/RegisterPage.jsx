@@ -10,6 +10,7 @@ import { LegalDocumentModal } from '../../../shared/ui/LegalDocumentModal'
 import { LEGAL_DOCS_VERSION, LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { PROFILES, PROFILE_KEYS, getProfileKeyByProgramCode } from '../../lessons/profiles'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
+import { useTilt3D } from '../hooks/useTilt3D'
 import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 
 // Aceeași stivă serif „de manuscris" ca pe WelcomePage — accente editoriale fără
@@ -37,8 +38,14 @@ const railVariants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
 }
 const railItem = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 18, rotateX: 8, transformPerspective: 700 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transformPerspective: 700,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
 }
 
 export function RegisterPage() {
@@ -57,6 +64,12 @@ export function RegisterPage() {
   const [dossierNo] = useState(() => Math.floor(Math.random() * 9000) + 1000)
   const { register, loginWithGoogle, loading, errorMessage, successMessage, theme, toggleTheme, user, isAdmin } = useAuth()
   const navigate = useNavigate()
+
+  // Sigiliul de specializare și cardul de formular se înclină 3D după cursor
+  // (formularul foarte discret, ca să nu deranjeze completarea câmpurilor).
+  const sealTilt = useTilt3D(7)
+  const formTilt = useTilt3D(3)
+  const reduce = sealTilt.reduce
 
   const selectedProfile = PROFILES.find((p) => formData.profiles.includes(p.key)) ?? PROFILES[0]
 
@@ -120,7 +133,7 @@ export function RegisterPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg transition-transform duration-500 group-hover:-rotate-6">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:perspective(420px)_rotateY(-24deg)_rotateX(8deg)_scale(1.05)]">
               <BrandLogo className="size-5" />
             </div>
             <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Math<span className="text-primary">UP</span></strong>
@@ -169,15 +182,23 @@ export function RegisterPage() {
                 construit pentru programa ta de Bacalaureat.
               </motion.p>
 
-              {/* Sigiliu „specializare selectată" — se schimbă în timp real cu profilul ales */}
+              {/* Sigiliu „specializare selectată" — se schimbă în timp real cu profilul ales;
+                  tot cardul se înclină 3D după cursor, cu ștampila ridicată deasupra (translateZ). */}
               <motion.div variants={railItem} className="relative mt-9 max-w-md">
-                <div className="absolute -right-3 -top-3 z-10 hidden size-16 rotate-12 items-center justify-center rounded-full border-2 border-primary/30 bg-white/90 text-center shadow-sm dark:bg-slate-900/90 sm:flex">
+                <motion.div className="relative" style={sealTilt.style} {...sealTilt.handlers}>
+                <motion.div
+                  className="absolute -right-3 -top-3 z-10 hidden size-16 items-center justify-center rounded-full border-2 border-primary/30 bg-white/90 text-center shadow-sm dark:bg-slate-900/90 sm:flex"
+                  style={reduce ? undefined : { z: 28 }}
+                  initial={{ rotate: 12 }}
+                  animate={reduce ? { rotate: 12 } : { rotate: [12, 6, 12] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                >
                   <span className="text-[8px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
                     BAC
                     <br />
                     2026
                   </span>
-                </div>
+                </motion.div>
 
                 <div className="relative overflow-hidden rounded-2xl border-2 border-border bg-white/80 p-6 backdrop-blur-sm dark:bg-white/5">
                   <div className="pointer-events-none absolute inset-0 scholar-grid opacity-50 dark:opacity-40" aria-hidden />
@@ -187,11 +208,11 @@ export function RegisterPage() {
                       <AnimatePresence mode="wait">
                         <motion.span
                           key={selectedProfile.key}
-                          initial={{ opacity: 0, scale: 0.6, rotate: -8 }}
-                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                          exit={{ opacity: 0, scale: 0.6, rotate: 8 }}
-                          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                          style={{ fontFamily: SERIF }}
+                          initial={{ opacity: 0, rotateY: -90, scale: 0.8 }}
+                          animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+                          exit={{ opacity: 0, rotateY: 90, scale: 0.8 }}
+                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                          style={{ fontFamily: SERIF, transformPerspective: 500 }}
                           className="text-3xl font-semibold italic text-primary"
                         >
                           {selectedProfile.shortLabel}
@@ -221,6 +242,7 @@ export function RegisterPage() {
                     </div>
                   </div>
                 </div>
+                </motion.div>
               </motion.div>
 
               {/* Pașii înscrierii (cuprins numerotat, ca pe WelcomePage) */}
@@ -243,14 +265,18 @@ export function RegisterPage() {
 
             {/* ── Formularul ── */}
             <motion.section
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 32, rotateX: 7, transformPerspective: 1400 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0, transformPerspective: 1400 }}
+              transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="relative"
             >
               <div className="absolute -inset-2 rounded-[2rem] bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-60 blur-2xl" aria-hidden />
 
-              <div className="relative overflow-hidden rounded-[1.5rem] border-2 border-border bg-white/95 p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:bg-slate-900/95 dark:shadow-none sm:p-10">
+              <motion.div
+                style={formTilt.style}
+                {...formTilt.handlers}
+                className="relative overflow-hidden rounded-[1.5rem] border-2 border-border bg-white/95 p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:bg-slate-900/95 dark:shadow-none sm:p-10"
+              >
                 {/* Sigiliu academic în colț */}
                 <div className="pointer-events-none absolute -right-12 -top-12 size-40 rounded-full border-2 border-primary/10 bg-primary/5 opacity-30" aria-hidden>
                   <div className="absolute inset-6 rounded-full border border-dashed border-primary/30" />
@@ -315,7 +341,7 @@ export function RegisterPage() {
                               type="button"
                               aria-pressed={active}
                               onClick={() => setFormData((prev) => ({ ...prev, profiles: [p.key] }))}
-                              className={`group relative flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                              className={`group relative flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all hover:[transform:perspective(700px)_rotateX(3deg)_rotateY(-2deg)_translateY(-2px)] ${
                                 active
                                   ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
                                   : 'border-border bg-white hover:border-primary/50 dark:bg-white/5'
@@ -467,7 +493,7 @@ export function RegisterPage() {
                 <div className="pointer-events-none absolute bottom-5 right-7 select-none text-[10px] font-black uppercase tracking-[0.5em] text-slate-300 dark:text-slate-700">
                   Dosar MU-{dossierNo}
                 </div>
-              </div>
+              </motion.div>
             </motion.section>
           </div>
         </div>

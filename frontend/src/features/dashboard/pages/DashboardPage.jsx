@@ -10,6 +10,7 @@ import {
   Crown,
   Flame,
   GraduationCap,
+  LayoutDashboard,
   Map,
   Moon,
   NotebookPen,
@@ -66,6 +67,14 @@ const SUBJECT_ACCENTS = {
   2: { bar: 'from-violet-500 to-fuchsia-400' },
   3: { bar: 'from-emerald-500 to-teal-400' },
 }
+
+// Secțiunile tabloului de bord — fiecare este o sub-pagină proprie, cu pictograma ei.
+const DASHBOARD_CHAPTERS = [
+  { key: 'overview', label: 'Prezentare', Icon: LayoutDashboard },
+  { key: 'progress', label: 'Progres', Icon: TrendingUp },
+  { key: 'topics', label: 'Lecții', Icon: BookOpen },
+  { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+]
 
 function toDateKey(date) {
   return date.toISOString().slice(0, 10)
@@ -189,6 +198,17 @@ function SectionLabel({ children, tone = 'primary', className = '' }) {
         {children}
       </span>
     </span>
+  )
+}
+
+// Antet de secțiune — titlu editorial + linie de subliniere.
+function ChapterHeader({ title, lead }) {
+  return (
+    <Reveal as="header" delay={40} className="relative">
+      <h2 className={`text-2xl leading-none sm:text-3xl ${editorialHeading}`}>{title}</h2>
+      {lead && <p className={`mt-3 max-w-2xl text-sm leading-relaxed ${mutedText}`}>{lead}</p>}
+      <div className="mt-4 h-px w-full bg-gradient-to-r from-primary/40 via-border to-transparent" aria-hidden />
+    </Reveal>
   )
 }
 
@@ -445,7 +465,7 @@ function StatCard({ icon: Icon, label, value, sublabel, iconClass = 'text-primar
   )
 }
 
-// Buton de navigare lateral — comutator de vizualizare + scurtături de rută.
+// Buton de navigare lateral — intrare în secțiunile tabloului + scurtături de rută.
 function SidebarNavButton({ icon: Icon, label, active = false, onClick }) {
   return (
     <button
@@ -496,7 +516,7 @@ export function DashboardPage() {
   const [quizMistakeCount, setQuizMistakeCount] = useState(0)
   const [quizCorrectCount, setQuizCorrectCount] = useState(0)
   const [error, setError] = useState('')
-  const [activeView, setActiveView] = useState('progress')
+  const [activeView, setActiveView] = useState('overview')
   const [calendarMonth, setCalendarMonth] = useState(() => startOfMonth(new Date()))
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => {
     const today = new Date()
@@ -563,6 +583,11 @@ export function DashboardPage() {
     }
   }, [authLoading, user?.id, session?.access_token, activeProfiles, isPremium])
 
+  // La schimbarea capitolului revenim în capul paginii — ca răsfoirea unei lucrări.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [activeView])
+
   const completedSet = useMemo(
     () => new Set(progressRows.filter((item) => item.completed).map((item) => item.lesson_id)),
     [progressRows],
@@ -608,7 +633,7 @@ export function DashboardPage() {
   }, [lessons])
 
   // Statistici per subiect — refolosite atât în rezumatul „Progres pe subiecte"
-  // (vizualizarea Progres) cât și în cardurile de lecții (vizualizarea Lecții).
+  // (capitolul Progres) cât și în cardurile de lecții (capitolul Lecții).
   const subjectStats = useMemo(
     () =>
       SUBJECT_PARTS.map((subject) => {
@@ -680,12 +705,6 @@ export function DashboardPage() {
     [progressPct, overallProgress.total],
   )
 
-  // Navigarea laterală mapează comutatorul de vizualizare (Progres / Lecții) pe un rail vertical.
-  const sidebarPrimaryNav = [
-    { key: 'progress', label: 'Progres', Icon: TrendingUp, active: activeView === 'progress', onClick: () => setActiveView('progress') },
-    { key: 'topics', label: 'Lecții', Icon: BookOpen, active: activeView === 'topics', onClick: () => setActiveView('topics') },
-  ]
-
   return (
     <div className="relative min-h-screen text-foreground transition-colors duration-500">
       <MathRainCurtain />
@@ -707,7 +726,7 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="relative grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-6">
-            {/* ══ Bara laterală — profil · navigare · Premium ══════ */}
+            {/* ══ Bara laterală — profil · cuprins · Premium ═══════ */}
             <Reveal as="aside" className="space-y-3 lg:sticky lg:top-24 lg:self-start">
               {/* Cartonaș de profil */}
               <div className={`${cardClass} relative overflow-hidden p-4`}>
@@ -737,19 +756,23 @@ export function DashboardPage() {
                 )}
               </div>
 
-              {/* Rail de navigare */}
+              {/* Navigare — secțiunile tabloului de bord, cu pictograme */}
               <nav className={`${cardClass} p-3`} aria-label="Navigare tablou de bord">
                 <SectionLabel className="mb-3 px-1">Navigare</SectionLabel>
                 <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
-                  {sidebarPrimaryNav.map((nav) => (
+                  {DASHBOARD_CHAPTERS.map((chapter) => (
                     <SidebarNavButton
-                      key={nav.key}
-                      icon={nav.Icon}
-                      label={nav.label}
-                      active={nav.active}
-                      onClick={nav.onClick}
+                      key={chapter.key}
+                      icon={chapter.Icon}
+                      label={chapter.label}
+                      active={activeView === chapter.key}
+                      onClick={() => setActiveView(chapter.key)}
                     />
                   ))}
+                </div>
+
+                <SectionLabel tone="muted" className="mb-2 mt-4 px-1">Scurtături</SectionLabel>
+                <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
                   {isPremium && roadmaps.length > 0 && (
                     <SidebarNavButton icon={Map} label="Plan de studiu" onClick={() => navigate('/roadmap')} />
                   )}
@@ -782,494 +805,560 @@ export function DashboardPage() {
               )}
             </Reveal>
 
-            {/* ══ Zona de conținut ════════════════════════════════ */}
+            {/* ══ Zona de conținut — capitolul activ ══════════════ */}
             <div className="min-w-0 space-y-5 sm:space-y-6">
-              {/* ── Antet / cover sheet editorial ─────────────────── */}
-              <Reveal as="section" delay={40} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
-                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-                <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/12 blur-3xl" aria-hidden />
-                <div className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-indigo-400/8 blur-3xl" aria-hidden />
+              {/* ── Capitolul I · Prezentare generală ─────────────── */}
+              {activeView === 'overview' && (
+                <>
+                  {/* Antet / cover sheet editorial */}
+                  <Reveal as="section" delay={40} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
+                    <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                    <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/12 blur-3xl" aria-hidden />
+                    <div className="pointer-events-none absolute -bottom-20 left-1/4 size-40 rounded-full bg-indigo-400/8 blur-3xl" aria-hidden />
 
-                <div className="relative grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-                  {/* Coloana editorială */}
-                  <div className="flex min-w-0 flex-col">
-                    <SectionLabel>Tabloul tău · Matematică BAC</SectionLabel>
+                    <div className="relative grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
+                      {/* Coloana editorială */}
+                      <div className="flex min-w-0 flex-col">
+                        <SectionLabel>Tabloul tău · Matematică BAC</SectionLabel>
 
-                    <p className={`mt-5 inline-flex items-center gap-2 text-sm font-medium ${mutedText}`}>
-                      <GreetingIcon className="size-4 shrink-0 text-primary" aria-hidden />
-                      {greeting.text},
-                      <span style={{ fontFamily: SERIF }} className="text-base font-semibold not-italic text-primary">
-                        {firstName}
-                      </span>
-                    </p>
-
-                    <h1 className={`mt-2 text-3xl leading-[0.95] sm:text-4xl ${editorialHeading}`}>
-                      {dashboardTitle}
-                    </h1>
-
-                    <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
-                      <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${mutedText}`}>
-                        Programul tău
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {profileCodes.map((code) => (
-                          <span
-                            key={code}
-                            style={{ fontFamily: SERIF }}
-                            className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-primary"
-                          >
-                            {code}
+                        <p className={`mt-5 inline-flex items-center gap-2 text-sm font-medium ${mutedText}`}>
+                          <GreetingIcon className="size-4 shrink-0 text-primary" aria-hidden />
+                          {greeting.text},
+                          <span style={{ fontFamily: SERIF }} className="text-base font-semibold not-italic text-primary">
+                            {firstName}
                           </span>
+                        </p>
+
+                        <h1 className={`mt-2 text-3xl leading-[0.95] sm:text-4xl ${editorialHeading}`}>
+                          {dashboardTitle}
+                        </h1>
+
+                        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+                          <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${mutedText}`}>
+                            Programul tău
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {profileCodes.map((code) => (
+                              <span
+                                key={code}
+                                style={{ fontFamily: SERIF }}
+                                className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-primary"
+                              >
+                                {code}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Showpiece: ștampila de countdown (fișă tipărită) */}
+                      <div className="relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none">
+                        <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-[1.1rem] border border-primary/20 bg-primary/[0.04]" aria-hidden />
+
+                        <div
+                          className="dashboard-countdown relative rotate-1 p-5 transition-transform duration-500 hover:rotate-0"
+                          title={examCountdownLabel}
+                        >
+                          <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.35]" aria-hidden />
+
+                          <div className="relative">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                              <GraduationCap className="size-3.5" aria-hidden />
+                              Examen BAC
+                            </span>
+
+                            <div className="mt-1.5 flex items-end gap-3">
+                              <span
+                                style={{ fontFamily: SERIF }}
+                                className="text-[3.6rem] font-bold italic leading-[0.78] tabular-nums text-primary sm:text-[4.25rem]"
+                              >
+                                {examFocus.value}
+                              </span>
+                              <span className={`mb-2 text-[11px] font-bold uppercase leading-tight tracking-wide ${mutedText}`}>
+                                {examFocus.caption}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3.5">
+                              <div className="leading-tight">
+                                <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Progres</p>
+                                <p style={{ fontFamily: SERIF }} className="mt-0.5 text-xl font-bold italic tabular-nums text-primary">
+                                  {progressPct}%
+                                </p>
+                              </div>
+                              <div className="leading-tight">
+                                <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
+                                <p className="mt-0.5 flex items-center gap-1.5">
+                                  <span style={{ fontFamily: SERIF }} className="text-xl font-bold italic tabular-nums text-foreground">
+                                    {streak}
+                                  </span>
+                                  <Flame className="size-4 text-orange-500" aria-hidden />
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className={`mt-3.5 flex items-center gap-1.5 border-t border-border/60 pt-3 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
+                              <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
+                              {examLongDate}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ștampilă plutitoare BAC */}
+                        <div
+                          className="absolute -right-4 -top-4 hidden size-[4.5rem] rotate-[12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
+                          aria-hidden
+                        >
+                          <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
+                            BAC
+                            <br />
+                            {examYear}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* fâșia săptămânii */}
+                    <div className="relative mt-7 border-t border-border/60 pt-5">
+                      <SectionLabel className="mb-4">Săptămâna ta</SectionLabel>
+                      <div className="dashboard-week-strip">
+                        {weekDays.map((day) => (
+                          <WeekDayRing key={day.key} day={day} />
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </Reveal>
 
-                  {/* Showpiece: ștampila de countdown (fișă tipărită) */}
-                  <div className="relative mx-auto w-full max-w-xs lg:mx-0 lg:max-w-none">
-                    <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-[1.1rem] border border-primary/20 bg-primary/[0.04]" aria-hidden />
-
-                    <div
-                      className="dashboard-countdown relative rotate-1 p-5 transition-transform duration-500 hover:rotate-0"
-                      title={examCountdownLabel}
-                    >
-                      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.5] dark:opacity-[0.35]" aria-hidden />
-
-                      <div className="relative">
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                          <GraduationCap className="size-3.5" aria-hidden />
-                          Examen BAC
-                        </span>
-
-                        <div className="mt-1.5 flex items-end gap-3">
-                          <span
-                            style={{ fontFamily: SERIF }}
-                            className="text-[3.6rem] font-bold italic leading-[0.78] tabular-nums text-primary sm:text-[4.25rem]"
-                          >
-                            {examFocus.value}
-                          </span>
-                          <span className={`mb-2 text-[11px] font-bold uppercase leading-tight tracking-wide ${mutedText}`}>
-                            {examFocus.caption}
-                          </span>
-                        </div>
-
-                        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3.5">
-                          <div className="leading-tight">
-                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Progres</p>
-                            <p style={{ fontFamily: SERIF }} className="mt-0.5 text-xl font-bold italic tabular-nums text-primary">
-                              {progressPct}%
-                            </p>
-                          </div>
-                          <div className="leading-tight">
-                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
-                            <p className="mt-0.5 flex items-center gap-1.5">
-                              <span style={{ fontFamily: SERIF }} className="text-xl font-bold italic tabular-nums text-foreground">
-                                {streak}
-                              </span>
-                              <Flame className="size-4 text-orange-500" aria-hidden />
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className={`mt-3.5 flex items-center gap-1.5 border-t border-border/60 pt-3 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
-                          <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
-                          {examLongDate}
-                        </div>
-                      </div>
+                  {/* Grila de statistici */}
+                  <section aria-label="Statistici cheie">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                      <StatCard
+                        delay={70}
+                        icon={GraduationCap}
+                        label="Examen"
+                        value={formatShortDate(bacExamDate)}
+                        sublabel={examFocus.caption}
+                        iconClass="text-red-500"
+                        accentBg="bg-red-500/10"
+                      />
+                      <StatCard
+                        delay={90}
+                        icon={TrendingUp}
+                        label="Progres"
+                        value={`${progressPct}%`}
+                        sublabel={`${overallProgress.completed}/${overallProgress.total} lecții`}
+                      />
+                      <StatCard
+                        delay={110}
+                        icon={Flame}
+                        label="Streak"
+                        value={String(streak)}
+                        sublabel={streak === 1 ? 'zi consecutivă' : 'zile consecutive'}
+                        iconClass="text-orange-500"
+                        accentBg="bg-orange-500/10"
+                      />
+                      <StatCard
+                        delay={130}
+                        icon={Target}
+                        label="Notă țintă"
+                        value={targetScoreLabel}
+                        sublabel="medie quiz"
+                      />
+                      <StatCard
+                        delay={150}
+                        icon={CheckCircle2}
+                        label="Finalizate"
+                        value={String(overallProgress.completed)}
+                        sublabel="lecții parcurse"
+                        iconClass="text-emerald-600 dark:text-emerald-400"
+                        accentBg="bg-emerald-500/10"
+                      />
                     </div>
+                  </section>
 
-                    {/* ștampilă plutitoare BAC */}
-                    <div
-                      className="absolute -right-4 -top-4 hidden size-[4.5rem] rotate-[12deg] items-center justify-center rounded-full border-2 border-primary/30 bg-background/85 text-center sm:flex"
-                      aria-hidden
-                    >
-                      <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary">
-                        BAC
-                        <br />
-                        {examYear}
+                  {/* Devino profesor — invitație + flux tichet */}
+                  {/* Ascuns pentru staff (profesori + admini tehnici/primar) — n-are sens să-i recrutăm. */}
+                  {!isAdmin && (
+                    <Reveal as="section" delay={170} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
+                      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                      <div className="pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+                      <span
+                        style={{ fontFamily: SERIF }}
+                        className="pointer-events-none absolute -bottom-8 -right-3 select-none text-[9rem] font-bold italic leading-none text-primary/[0.05] dark:text-primary/[0.07]"
+                        aria-hidden
+                      >
+                        Σ
                       </span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* fâșia săptămânii */}
-                <div className="relative mt-7 border-t border-border/60 pt-5">
-                  <SectionLabel className="mb-4">Săptămâna ta</SectionLabel>
-                  <div className="dashboard-week-strip">
-                    {weekDays.map((day) => (
-                      <WeekDayRing key={day.key} day={day} />
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
+                      <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+                        <div className="min-w-0">
+                          <SectionLabel>Cariere la MathUP</SectionLabel>
 
-              {/* ── Grila de statistici ───────────────────────────── */}
-              <section aria-label="Statistici cheie">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-                  <StatCard
-                    delay={70}
-                    icon={GraduationCap}
-                    label="Examen"
-                    value={formatShortDate(bacExamDate)}
-                    sublabel={examFocus.caption}
-                    iconClass="text-red-500"
-                    accentBg="bg-red-500/10"
-                  />
-                  <StatCard
-                    delay={90}
-                    icon={TrendingUp}
-                    label="Progres"
-                    value={`${progressPct}%`}
-                    sublabel={`${overallProgress.completed}/${overallProgress.total} lecții`}
-                  />
-                  <StatCard
-                    delay={110}
-                    icon={Flame}
-                    label="Streak"
-                    value={String(streak)}
-                    sublabel={streak === 1 ? 'zi consecutivă' : 'zile consecutive'}
-                    iconClass="text-orange-500"
-                    accentBg="bg-orange-500/10"
-                  />
-                  <StatCard
-                    delay={130}
-                    icon={Target}
-                    label="Notă țintă"
-                    value={targetScoreLabel}
-                    sublabel="medie quiz"
-                  />
-                  <StatCard
-                    delay={150}
-                    icon={CheckCircle2}
-                    label="Finalizate"
-                    value={String(overallProgress.completed)}
-                    sublabel="lecții parcurse"
-                    iconClass="text-emerald-600 dark:text-emerald-400"
-                    accentBg="bg-emerald-500/10"
-                  />
-                </div>
-              </section>
-
-              {/* ── Feed principal + coloana laterală dreaptă ─────── */}
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-6">
-                {/* Feed principal — își schimbă conținutul în funcție de vizualizare */}
-                <div className="min-w-0 space-y-5">
-                  {activeView === 'progress' ? (
-                    <>
-                      {/* Card mare de progres */}
-                      <Reveal as="section" delay={90} className={`${cardClass} relative overflow-hidden p-5 sm:p-7`}>
-                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-                        <div className="relative">
-                          <div className="flex items-start justify-between gap-3">
-                            <SectionLabel>Progres la lecții</SectionLabel>
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/5">
-                              <TrendingUp className="size-4 text-primary" aria-hidden />
+                          <div className="mt-4 flex items-start gap-4">
+                            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-background text-primary">
+                              <Award className="size-6" aria-hidden />
                             </span>
-                          </div>
-
-                          <div className="mt-4 flex items-end gap-3">
-                            <span
-                              style={{ fontFamily: SERIF }}
-                              className="text-6xl font-bold italic leading-none tabular-nums text-primary sm:text-7xl"
-                            >
-                              {progressPct}
-                              <span className="text-3xl sm:text-4xl">%</span>
-                            </span>
-                            <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${mutedText}`}>
-                              {overallProgress.completed} din {overallProgress.total}
-                              <br />finalizate
-                            </p>
-                          </div>
-
-                          <div className="relative mt-7 pt-2">
-                            <div className="relative h-2.5 overflow-visible rounded-full bg-slate-200 dark:bg-white/10">
-                              <div
-                                className="dashboard-progress-fill absolute inset-y-0 left-0 overflow-hidden rounded-full bg-gradient-to-r from-primary to-indigo-400 transition-[width] duration-700 ease-out"
-                                style={{ width: `${progressBarPct}%` }}
-                              />
-                              <div
-                                className="absolute top-1/2 z-10 -translate-y-1/2 transition-[left] duration-700 ease-out"
-                                style={{ left: `clamp(0px, calc(${progressPct}% - 14px), calc(100% - 28px))` }}
-                              >
-                                <UserAvatar
-                                  metadata={user?.user_metadata}
-                                  size="sm"
-                                  className="size-7 ring-2 ring-background dark:ring-slate-900"
-                                />
-                              </div>
-                              <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                                <div className="h-px w-5 border-t border-dashed border-slate-300 dark:border-border" aria-hidden />
-                                <Target className="size-4 text-primary" aria-hidden />
-                              </div>
+                            <div className="min-w-0">
+                              <h2 className={`text-2xl sm:text-3xl ${editorialHeading}`}>Devino profesor MathUP</h2>
+                              <p className={`mt-2 max-w-xl text-sm leading-relaxed ${mutedText}`}>
+                                Ești profesor de matematică cu rezultate de excelență? Alătură-te echipei și
+                                scrie lecții și variante rezolvate pentru elevii noștri.
+                              </p>
                             </div>
                           </div>
 
-                          <p className={`mt-5 text-sm leading-relaxed ${mutedText}`}>
-                            {progressMessage}
-                          </p>
-                          {isPremium && targetGradeReport && (
-                            <p className={`mt-3 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5 text-sm leading-relaxed ${mutedText}`}>
-                              {targetGradeReport.message}
+                          {/* Flux tichet — utilizatorii din dashboard au deja cont */}
+                          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-border bg-background/70 p-4 dark:bg-white/[0.03]">
+                            <Ticket className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                            <p className={`text-sm leading-relaxed ${mutedText}`}>
+                              Ai deja un cont pe platforma noastră? Creează un tichet de suport (butonul din
+                              dreapta-jos) cu titlul{' '}
+                              <strong className="font-bold text-foreground">„Vreau să devin profesor”</strong>{' '}
+                              și un administrator va lua legătura cu tine.
                             </p>
-                          )}
+                          </div>
                         </div>
-                      </Reveal>
 
-                      {/* Rezumat „Progres pe subiecte" — refolosește subjectStats */}
-                      <Reveal as="section" delay={120} className={`${cardClass} relative overflow-hidden p-5 sm:p-6`}>
-                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-                        <div className="relative">
-                          <div className="flex items-start justify-between gap-3">
-                            <SectionLabel>Progres pe subiecte</SectionLabel>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/devino-profesor')}
+                          className="dashboard-card-lift group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
+                        >
+                          Vezi cerințele
+                          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        </button>
+                      </div>
+                    </Reveal>
+                  )}
+                </>
+              )}
+
+              {/* ── Capitolul II · Progres ────────────────────────── */}
+              {activeView === 'progress' && (
+                <>
+                  <ChapterHeader
+                    title="Progresul tău"
+                    lead="Cât din materie ai parcurs și cum stai pe fiecare subiect de examen."
+                  />
+
+                  {/* Card mare de progres */}
+                  <Reveal as="section" delay={90} className={`${cardClass} relative overflow-hidden p-5 sm:p-7`}>
+                    <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                    <div className="relative">
+                      <div className="flex items-start justify-between gap-3">
+                        <SectionLabel>Progres la lecții</SectionLabel>
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/5">
+                          <TrendingUp className="size-4 text-primary" aria-hidden />
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex items-end gap-3">
+                        <span
+                          style={{ fontFamily: SERIF }}
+                          className="text-6xl font-bold italic leading-none tabular-nums text-primary sm:text-7xl"
+                        >
+                          {progressPct}
+                          <span className="text-3xl sm:text-4xl">%</span>
+                        </span>
+                        <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${mutedText}`}>
+                          {overallProgress.completed} din {overallProgress.total}
+                          <br />finalizate
+                        </p>
+                      </div>
+
+                      <div className="relative mt-7 pt-2">
+                        <div className="relative h-2.5 overflow-visible rounded-full bg-slate-200 dark:bg-white/10">
+                          <div
+                            className="dashboard-progress-fill absolute inset-y-0 left-0 overflow-hidden rounded-full bg-gradient-to-r from-primary to-indigo-400 transition-[width] duration-700 ease-out"
+                            style={{ width: `${progressBarPct}%` }}
+                          />
+                          <div
+                            className="absolute top-1/2 z-10 -translate-y-1/2 transition-[left] duration-700 ease-out"
+                            style={{ left: `clamp(0px, calc(${progressPct}% - 14px), calc(100% - 28px))` }}
+                          >
+                            <UserAvatar
+                              metadata={user?.user_metadata}
+                              size="sm"
+                              className="size-7 ring-2 ring-background dark:ring-slate-900"
+                            />
+                          </div>
+                          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                            <div className="h-px w-5 border-t border-dashed border-slate-300 dark:border-border" aria-hidden />
+                            <Target className="size-4 text-primary" aria-hidden />
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className={`mt-5 text-sm leading-relaxed ${mutedText}`}>
+                        {progressMessage}
+                      </p>
+                      {isPremium && targetGradeReport && (
+                        <p className={`mt-3 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5 text-sm leading-relaxed ${mutedText}`}>
+                          {targetGradeReport.message}
+                        </p>
+                      )}
+                    </div>
+                  </Reveal>
+
+                  {/* Rezumat „Progres pe subiecte" — refolosește subjectStats */}
+                  <Reveal as="section" delay={120} className={`${cardClass} relative overflow-hidden p-5 sm:p-6`}>
+                    <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
+                    <div className="relative">
+                      <div className="flex items-start justify-between gap-3">
+                        <SectionLabel>Progres pe subiecte</SectionLabel>
+                        <button
+                          type="button"
+                          onClick={() => setActiveView('topics')}
+                          className="shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-primary transition-colors hover:text-primary/70"
+                        >
+                          Vezi lecțiile
+                        </button>
+                      </div>
+
+                      <ul className="mt-4 space-y-2.5">
+                        {subjectStats.map(({ subject, completedCount, totalCount, progress, accent, isFree }) => (
+                          <li key={subject.value}>
                             <button
                               type="button"
                               onClick={() => setActiveView('topics')}
-                              className="shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-primary transition-colors hover:text-primary/70"
+                              className="group flex w-full items-center gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-background dark:bg-white/5"
                             >
-                              Vezi lecțiile
+                              <span
+                                style={{ fontFamily: SERIF }}
+                                className="w-7 shrink-0 text-center text-2xl font-bold italic leading-none text-slate-300 transition-colors group-hover:text-primary dark:text-slate-700"
+                                aria-hidden
+                              >
+                                {subject.roman}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`flex min-w-0 items-center gap-1.5 truncate text-xs font-black uppercase tracking-wide ${headingText}`}>
+                                    {subject.label}
+                                    {isFree && (
+                                      <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
+                                        Gratuit
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className={`shrink-0 text-[10px] font-black tabular-nums ${mutedText}`}>
+                                    {completedCount}/{totalCount}
+                                  </span>
+                                </div>
+                                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
+                                  <div
+                                    className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" aria-hidden />
                             </button>
-                          </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Reveal>
+                </>
+              )}
 
-                          <ul className="mt-4 space-y-2.5">
-                            {subjectStats.map(({ subject, completedCount, totalCount, progress, accent, isFree }) => (
-                              <li key={subject.value}>
+              {/* ── Capitolul III · Lecții pe subiecte ────────────── */}
+              {activeView === 'topics' && (
+                <>
+                  <ChapterHeader
+                    title="Lecții pe subiecte"
+                    lead="Materia organizată pe cele trei subiecte ale probei scrise de BAC."
+                  />
+
+                  {subjectStats.map(({ subject, subjectLessons, completedCount, totalCount, progress, accent, isFree }, idx) => (
+                    <Reveal
+                      as="article"
+                      key={subject.value}
+                      delay={90 + idx * 50}
+                      className={`group ${cardClass} dashboard-card-lift relative overflow-hidden`}
+                    >
+                      <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
+
+                      {/* Capitol numerotat — numeral roman serif, ca pe Welcome */}
+                      <div className="relative grid grid-cols-[auto_1fr] items-start gap-4 border-b border-border/60 p-4 sm:gap-6 sm:p-5">
+                        <span
+                          style={{ fontFamily: SERIF }}
+                          className="select-none text-5xl font-bold italic leading-none text-slate-300 transition-colors duration-300 group-hover:text-primary dark:text-slate-700 sm:text-6xl"
+                          aria-hidden
+                        >
+                          {subject.roman}
+                        </span>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className={`text-lg sm:text-xl ${editorialHeading}`}>{subject.label}</h3>
+                            {isFree && (
+                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
+                                Gratuit
+                              </span>
+                            )}
+                          </div>
+                          <p className={`mt-1 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
+                            {completedCount}/{totalCount} finalizate · {progress}%
+                          </p>
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <ul className="custom-scrollbar relative grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto p-3 sm:grid-cols-2">
+                        {subjectLessons.length > 0 ? (
+                          subjectLessons.map((lesson, lessonIdx) => {
+                            const isCompleted = completedSet.has(lesson.id)
+                            const locked = !canAccessLessonForUser(lesson, isPremium, activeProfiles)
+                            return (
+                              <li key={lesson.id}>
                                 <button
                                   type="button"
-                                  onClick={() => setActiveView('topics')}
-                                  className="group flex w-full items-center gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-background dark:bg-white/5"
+                                  onClick={() => {
+                                    if (locked) {
+                                      openPremiumModal()
+                                      return
+                                    }
+                                    navigate(`/lessons/${lesson.id}`)
+                                  }}
+                                  className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all duration-200 ${
+                                    isCompleted
+                                      ? 'border-transparent bg-emerald-500/5 opacity-70'
+                                      : 'border-border/80 bg-background/60 hover:border-primary hover:bg-background hover:shadow-md hover:shadow-primary/5 dark:bg-white/5'
+                                  }`}
                                 >
-                                  <span
-                                    style={{ fontFamily: SERIF }}
-                                    className="w-7 shrink-0 text-center text-2xl font-bold italic leading-none text-slate-300 transition-colors group-hover:text-primary dark:text-slate-700"
-                                    aria-hidden
-                                  >
-                                    {subject.roman}
+                                  <span className="flex size-6 shrink-0 items-center justify-center">
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="size-4 text-emerald-600" />
+                                    ) : (
+                                      <span
+                                        style={{ fontFamily: SERIF }}
+                                        className="text-sm font-bold italic tabular-nums text-primary/45"
+                                      >
+                                        {String(lessonIdx + 1).padStart(2, '0')}
+                                      </span>
+                                    )}
                                   </span>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className={`flex min-w-0 items-center gap-1.5 truncate text-xs font-black uppercase tracking-wide ${headingText}`}>
-                                        {subject.label}
-                                        {isFree && (
-                                          <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
-                                            Gratuit
-                                          </span>
-                                        )}
-                                      </span>
-                                      <span className={`shrink-0 text-[10px] font-black tabular-nums ${mutedText}`}>
-                                        {completedCount}/{totalCount}
-                                      </span>
-                                    </div>
-                                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
-                                      <div
-                                        className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                                  <span className={`min-w-0 flex-1 truncate font-medium ${
+                                    isCompleted ? 'text-slate-500 line-through' : headingText
+                                  }`}>
+                                    {lesson.title}
+                                  </span>
+                                  {locked && <Crown className="size-4 shrink-0 text-primary" />}
                                 </button>
                               </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </Reveal>
-                    </>
-                  ) : (
-                    subjectStats.map(({ subject, subjectLessons, completedCount, totalCount, progress, accent, isFree }, idx) => (
-                      <Reveal
-                        as="article"
-                        key={subject.value}
-                        delay={90 + idx * 50}
-                        className={`group ${cardClass} dashboard-card-lift relative overflow-hidden`}
-                      >
+                            )
+                          })
+                        ) : (
+                          <li className={`rounded-xl border-2 border-dashed border-border py-8 text-center text-[11px] font-black uppercase tracking-[0.16em] sm:col-span-2 ${mutedText}`}>
+                            Nicio lecție publicată încă
+                          </li>
+                        )}
+                      </ul>
+                    </Reveal>
+                  ))}
+                </>
+              )}
+
+              {/* ── Capitolul IV · Calendar de studiu ─────────────── */}
+              {activeView === 'calendar' && (
+                <>
+                  <ChapterHeader
+                    title="Calendar de studiu"
+                    lead="Zilele tale de studiu, obiectivul zilnic și data examenului."
+                  />
+
+                  <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
+                    <Reveal delay={90}>
+                      <StudyMonthCalendar
+                        monthView={calendarMonth}
+                        selectedDate={selectedCalendarDate}
+                        onMonthChange={setCalendarMonth}
+                        onSelectDate={setSelectedCalendarDate}
+                        lastActivityKey={lastActivityKey}
+                        streak={streak}
+                        examDate={bacExamDate}
+                      />
+                    </Reveal>
+
+                    <div className="space-y-4">
+                      {/* Săptămâna curentă */}
+                      <Reveal as="section" delay={110} className={`${cardClass} relative overflow-hidden p-4 sm:p-5`}>
                         <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
-
-                        {/* Capitol numerotat — numeral roman serif, ca pe Welcome */}
-                        <div className="relative grid grid-cols-[auto_1fr] items-start gap-4 border-b border-border/60 p-4 sm:gap-6 sm:p-5">
-                          <span
-                            style={{ fontFamily: SERIF }}
-                            className="select-none text-5xl font-bold italic leading-none text-slate-300 transition-colors duration-300 group-hover:text-primary dark:text-slate-700 sm:text-6xl"
-                            aria-hidden
-                          >
-                            {subject.roman}
-                          </span>
-
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className={`text-lg sm:text-xl ${editorialHeading}`}>{subject.label}</h3>
-                              {isFree && (
-                                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
-                                  Gratuit
-                                </span>
-                              )}
-                            </div>
-                            <p className={`mt-1 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
-                              {completedCount}/{totalCount} finalizate · {progress}%
-                            </p>
-                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted dark:bg-white/10">
-                              <div
-                                className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-700 ease-out ${accent.bar}`}
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
+                        <div className="relative">
+                          <SectionLabel className="mb-4">Săptămâna ta</SectionLabel>
+                          <div className="dashboard-week-strip">
+                            {weekDays.map((day) => (
+                              <WeekDayRing key={day.key} day={day} />
+                            ))}
                           </div>
                         </div>
-
-                        <ul className="custom-scrollbar relative max-h-64 space-y-1 overflow-y-auto p-3">
-                          {subjectLessons.length > 0 ? (
-                            subjectLessons.map((lesson, lessonIdx) => {
-                              const isCompleted = completedSet.has(lesson.id)
-                              const locked = !canAccessLessonForUser(lesson, isPremium, activeProfiles)
-                              return (
-                                <li key={lesson.id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (locked) {
-                                        openPremiumModal()
-                                        return
-                                      }
-                                      navigate(`/lessons/${lesson.id}`)
-                                    }}
-                                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all duration-200 ${
-                                      isCompleted
-                                        ? 'border-transparent bg-emerald-500/5 opacity-70'
-                                        : 'border-border/80 bg-background/60 hover:border-primary hover:bg-background hover:shadow-md hover:shadow-primary/5 dark:bg-white/5'
-                                    }`}
-                                  >
-                                    <span className="flex size-6 shrink-0 items-center justify-center">
-                                      {isCompleted ? (
-                                        <CheckCircle2 className="size-4 text-emerald-600" />
-                                      ) : (
-                                        <span
-                                          style={{ fontFamily: SERIF }}
-                                          className="text-sm font-bold italic tabular-nums text-primary/45"
-                                        >
-                                          {String(lessonIdx + 1).padStart(2, '0')}
-                                        </span>
-                                      )}
-                                    </span>
-                                    <span className={`min-w-0 flex-1 truncate font-medium ${
-                                      isCompleted ? 'text-slate-500 line-through' : headingText
-                                    }`}>
-                                      {lesson.title}
-                                    </span>
-                                    {locked && <Crown className="size-4 shrink-0 text-primary" />}
-                                  </button>
-                                </li>
-                              )
-                            })
-                          ) : (
-                            <li className={`rounded-xl border-2 border-dashed border-border py-8 text-center text-[11px] font-black uppercase tracking-[0.16em] ${mutedText}`}>
-                              Nicio lecție publicată încă
-                            </li>
-                          )}
-                        </ul>
                       </Reveal>
-                    ))
-                  )}
-                </div>
 
-                {/* Coloana laterală dreaptă — calendar + obiectiv zilnic (persistente) */}
-                <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-                  <Reveal delay={110}>
-                    <StudyMonthCalendar
-                      monthView={calendarMonth}
-                      selectedDate={selectedCalendarDate}
-                      onMonthChange={setCalendarMonth}
-                      onSelectDate={setSelectedCalendarDate}
-                      lastActivityKey={lastActivityKey}
-                      streak={streak}
-                      examDate={bacExamDate}
-                    />
-                  </Reveal>
-
-                  <Reveal as="section" delay={140} className={`${cardClass} px-4 py-3.5`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative size-11 shrink-0">
-                          <svg className="size-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
-                            <circle cx="18" cy="18" r="14" fill="none" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="3" />
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="14"
-                              fill="none"
-                              className="stroke-emerald-500 transition-[stroke-dasharray] duration-500"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeDasharray={`${(dailyGoal.goalDone / dailyGoal.goalTotal) * 88} 88`}
-                            />
-                          </svg>
+                      {/* Obiectiv zilnic */}
+                      <Reveal as="section" delay={130} className={`${cardClass} px-4 py-3.5`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative size-11 shrink-0">
+                              <svg className="size-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
+                                <circle cx="18" cy="18" r="14" fill="none" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="3" />
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="14"
+                                  fill="none"
+                                  className="stroke-emerald-500 transition-[stroke-dasharray] duration-500"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeDasharray={`${(dailyGoal.goalDone / dailyGoal.goalTotal) * 88} 88`}
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className={`text-xs font-black uppercase tracking-wide ${headingText}`}>Obiectiv azi</p>
+                              <p className={`mt-0.5 text-xs ${mutedText}`}>
+                                {dailyGoal.studiedToday ? 'Ai studiat azi' : 'Încă nu ai studiat'}
+                              </p>
+                            </div>
+                          </div>
+                          <span style={{ fontFamily: SERIF }} className={`text-lg font-bold italic tabular-nums ${headingText}`}>
+                            {dailyGoal.goalDone}/{dailyGoal.goalTotal}
+                          </span>
                         </div>
-                        <div>
-                          <p className={`text-xs font-black uppercase tracking-wide ${headingText}`}>Obiectiv azi</p>
-                          <p className={`mt-0.5 text-xs ${mutedText}`}>
-                            {dailyGoal.studiedToday ? 'Ai studiat azi' : 'Încă nu ai studiat'}
-                          </p>
+                      </Reveal>
+
+                      {/* Fișa examenului */}
+                      <Reveal as="section" delay={150} className={`${cardClass} relative overflow-hidden p-4 sm:p-5`} title={examCountdownLabel}>
+                        <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.35] dark:opacity-[0.24]" aria-hidden />
+                        <div className="relative">
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                            <GraduationCap className="size-3.5" aria-hidden />
+                            Examen BAC {examYear}
+                          </span>
+                          <div className="mt-2 flex items-end gap-3">
+                            <span
+                              style={{ fontFamily: SERIF }}
+                              className="text-5xl font-bold italic leading-[0.8] tabular-nums text-primary"
+                            >
+                              {examFocus.value}
+                            </span>
+                            <span className={`mb-1 text-[11px] font-bold uppercase leading-tight tracking-wide ${mutedText}`}>
+                              {examFocus.caption}
+                            </span>
+                          </div>
+                          <div className={`mt-3.5 flex items-center gap-1.5 border-t border-border/60 pt-3 text-[10px] font-black uppercase tracking-[0.14em] ${mutedText}`}>
+                            <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
+                            {examLongDate}
+                          </div>
                         </div>
-                      </div>
-                      <span style={{ fontFamily: SERIF }} className={`text-lg font-bold italic tabular-nums ${headingText}`}>
-                        {dailyGoal.goalDone}/{dailyGoal.goalTotal}
-                      </span>
-                    </div>
-                  </Reveal>
-                </aside>
-              </div>
-
-              {/* ── Devino profesor — invitație + flux tichet ─────── */}
-              {/* Ascuns pentru staff (profesori + admini tehnici/primar) — n-are sens să-i recrutăm. */}
-              {!isAdmin && (
-              <Reveal as="section" delay={170} className="dashboard-hero-card relative overflow-hidden p-5 sm:p-7">
-                <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.4] dark:opacity-[0.28]" aria-hidden />
-                <div className="pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-                <span
-                  style={{ fontFamily: SERIF }}
-                  className="pointer-events-none absolute -bottom-8 -right-3 select-none text-[9rem] font-bold italic leading-none text-primary/[0.05] dark:text-primary/[0.07]"
-                  aria-hidden
-                >
-                  Σ
-                </span>
-
-                <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-                  <div className="min-w-0">
-                    <SectionLabel>Cariere la MathUP</SectionLabel>
-
-                    <div className="mt-4 flex items-start gap-4">
-                      <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-background text-primary">
-                        <Award className="size-6" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <h2 className={`text-2xl sm:text-3xl ${editorialHeading}`}>Devino profesor MathUP</h2>
-                        <p className={`mt-2 max-w-xl text-sm leading-relaxed ${mutedText}`}>
-                          Ești profesor de matematică cu rezultate de excelență? Alătură-te echipei și
-                          scrie lecții și variante rezolvate pentru elevii noștri.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Flux tichet — utilizatorii din dashboard au deja cont */}
-                    <div className="mt-5 flex items-start gap-3 rounded-2xl border border-border bg-background/70 p-4 dark:bg-white/[0.03]">
-                      <Ticket className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                      <p className={`text-sm leading-relaxed ${mutedText}`}>
-                        Ai deja un cont pe platforma noastră? Creează un tichet de suport (butonul din
-                        dreapta-jos) cu titlul{' '}
-                        <strong className="font-bold text-foreground">„Vreau să devin profesor”</strong>{' '}
-                        și un administrator va lua legătura cu tine.
-                      </p>
+                      </Reveal>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/devino-profesor')}
-                    className="dashboard-card-lift group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
-                  >
-                    Vezi cerințele
-                    <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                  </button>
-                </div>
-              </Reveal>
+                </>
               )}
             </div>
           </div>

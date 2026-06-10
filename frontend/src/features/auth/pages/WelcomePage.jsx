@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, useMotionTemplate, useTransform } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
 import { Moon, Sun, BookOpen, GraduationCap, Trophy, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
@@ -9,6 +9,7 @@ import { MathRainCurtain } from '../../../shared/ui/MathRainCurtain'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 import { ScrollGraduationCap } from '../components/ScrollGraduationCap'
 import { WorkedExerciseShowcase } from '../components/WorkedExerciseShowcase'
+import { useTilt3D } from '../hooks/useTilt3D'
 
 // Serif de manuscris pentru accentele editoriale — fără fonturi externe (CSP-safe),
 // doar stiva de sistem, ca să păstrăm contrastul „demonstrație tipărită” cu sans-ul greu.
@@ -51,18 +52,105 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 24, rotateX: 10, transformPerspective: 800 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transformPerspective: 800,
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+  },
 }
 
 const revealOnScroll = {
-  hidden: { opacity: 0, y: 28 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 32, rotateX: 12, transformPerspective: 900 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transformPerspective: 900,
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
+// Rândurile „cuprinsului" se așază în pagină ca niște fișe care se redresează în 3D.
+const flipRowVariants = {
+  hidden: { opacity: 0, y: 44, rotateX: -20, transformPerspective: 1000 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transformPerspective: 1000,
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
+// Card de profil cu înclinare 3D după cursor, reflex de lumină care urmărește
+// pointerul și parallax discret pe filigranul cu litera profilului.
+function ProgramCard({ program }) {
+  const { px, py, reduce, style, handlers } = useTilt3D(7)
+  const sheenX = useTransform(px, (v) => v * 100)
+  const sheenY = useTransform(py, (v) => v * 100)
+  const sheen = useMotionTemplate`radial-gradient(420px circle at ${sheenX}% ${sheenY}%, rgba(99, 102, 241, 0.14), transparent 65%)`
+  const watermarkX = useTransform(px, [0, 1], [14, -14])
+  const watermarkY = useTransform(py, [0, 1], [12, -12])
+
+  return (
+    <motion.div variants={itemVariants} className="h-full">
+      <MotionLink
+        to={`/programa/${program.slug}`}
+        aria-label={`Vezi programa profilului ${program.code} — ${program.name}`}
+        style={style}
+        whileHover={reduce ? undefined : { y: -8, scale: 1.015 }}
+        {...handlers}
+        className="group relative block h-full overflow-hidden rounded-2xl border border-border bg-background/80 p-8 transition-[border-color,box-shadow] duration-500 hover:border-primary hover:shadow-2xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <motion.div
+          className="pointer-events-none absolute -right-6 -top-8 select-none opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.12]"
+          style={reduce ? undefined : { x: watermarkX, y: watermarkY }}
+          aria-hidden
+        >
+          <span style={{ fontFamily: SERIF }} className="text-[9rem] font-bold italic leading-none text-primary">
+            {program.code}
+          </span>
+        </motion.div>
+
+        {/* reflex de lumină care urmărește cursorul */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          style={{ background: sheen }}
+          aria-hidden
+        />
+
+        <div className="relative">
+          <span
+            style={{ fontFamily: SERIF }}
+            className="text-2xl font-semibold italic text-primary"
+          >
+            {program.code}
+          </span>
+          <h3 className="mt-3 text-xl font-black uppercase tracking-tight">{program.name}</h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            {program.description}
+          </p>
+          <span className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-primary">
+            Vezi programa
+            <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+          </span>
+        </div>
+      </MotionLink>
+    </motion.div>
+  )
 }
 
 export function WelcomePage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useAuth()
+
+  // Fișa-vedetă din hero și cardul CTA primesc înclinare 3D după cursor.
+  const heroTilt = useTilt3D(10)
+  const ctaTilt = useTilt3D(3.5)
+  const reduce = heroTilt.reduce
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-foreground transition-colors duration-500">
@@ -86,7 +174,7 @@ export function WelcomePage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform duration-500 group-hover:-rotate-6">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:perspective(420px)_rotateY(-24deg)_rotateX(8deg)_scale(1.05)]">
                 <BrandLogo className="size-6" />
               </div>
               <div className="text-left">
@@ -201,20 +289,36 @@ export function WelcomePage() {
                 </motion.div>
               </motion.div>
 
-              {/* Showpiece: fișă de variantă rezolvată (slideshow M1–M4) */}
+              {/* Showpiece: fișă de variantă rezolvată (slideshow M1–M4), ca un obiect 3D
+                  real — intră cu o basculare în perspectivă, plutește lent și se înclină
+                  după cursor, cu stratul-umbră așezat fizic în spatele fișei (translateZ). */}
               <motion.div
                 className="relative mx-auto w-full max-w-md lg:mx-0"
-                initial={{ opacity: 0, y: 40, rotate: -3 }}
-                animate={{ opacity: 1, y: 0, rotate: 0 }}
-                transition={{ duration: 0.9, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 56, rotateX: -16, transformPerspective: 1200 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0, transformPerspective: 1200 }}
+                transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
               >
-                {/* strat-umbră în spate, pentru adâncime tipărită */}
-                <div className="absolute inset-0 translate-x-3.5 translate-y-3.5 rounded-[1.4rem] border border-primary/20 bg-primary/[0.05]" aria-hidden />
+                {/* plutire ușoară în repaus */}
+                <motion.div
+                  animate={reduce ? undefined : { y: [0, -10, 0] }}
+                  transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <motion.div className="relative" style={heroTilt.style} {...heroTilt.handlers}>
+                    {/* strat-umbră în spate, împins în adâncime pentru paralaxă reală */}
+                    <div
+                      className="absolute inset-0 rounded-[1.4rem] border border-primary/20 bg-primary/[0.05]"
+                      style={{ transform: 'translate3d(0.875rem, 0.875rem, -3.5rem)' }}
+                      aria-hidden
+                    />
 
-                <WorkedExerciseShowcase
-                  variant="light"
-                  className="rotate-1 transition-transform duration-500 hover:rotate-0"
-                />
+                    <div style={reduce ? undefined : { transform: 'translateZ(2.2rem)' }}>
+                      <WorkedExerciseShowcase
+                        variant="light"
+                        className="rotate-1 transition-transform duration-500 hover:rotate-0"
+                      />
+                    </div>
+                  </motion.div>
+                </motion.div>
               </motion.div>
             </div>
           </div>
@@ -259,7 +363,7 @@ export function WelcomePage() {
                 return (
                   <motion.div
                     key={chapter.n}
-                    variants={itemVariants}
+                    variants={flipRowVariants}
                     className="group grid grid-cols-[auto_1fr] items-start gap-6 border-t border-border py-9 transition-colors duration-300 last:border-b sm:grid-cols-[5rem_1fr_auto] sm:gap-8"
                   >
                     <span
@@ -277,8 +381,8 @@ export function WelcomePage() {
                     </div>
 
                     <div className="col-span-2 sm:col-span-1 sm:self-center">
-                      <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-background text-slate-400 transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:text-white">
-                        <Icon className="size-6" />
+                      <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-background text-slate-400 transition-all duration-300 [perspective:600px] group-hover:border-primary group-hover:bg-primary group-hover:text-white">
+                        <Icon className="size-6 transition-transform duration-700 group-hover:[transform:rotateY(360deg)]" />
                       </div>
                     </div>
                   </motion.div>
@@ -312,36 +416,7 @@ export function WelcomePage() {
               viewport={{ once: true, margin: '-80px' }}
             >
               {programs.map((program) => (
-                <MotionLink
-                  key={program.code}
-                  to={`/programa/${program.slug}`}
-                  aria-label={`Vezi programa profilului ${program.code} — ${program.name}`}
-                  variants={itemVariants}
-                  className="group relative block overflow-hidden rounded-2xl border border-border bg-background/80 p-8 transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:shadow-2xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <div className="pointer-events-none absolute -right-6 -top-8 select-none opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.12]" aria-hidden>
-                    <span style={{ fontFamily: SERIF }} className="text-[9rem] font-bold italic leading-none text-primary">
-                      {program.code}
-                    </span>
-                  </div>
-
-                  <div className="relative">
-                    <span
-                      style={{ fontFamily: SERIF }}
-                      className="text-2xl font-semibold italic text-primary"
-                    >
-                      {program.code}
-                    </span>
-                    <h3 className="mt-3 text-xl font-black uppercase tracking-tight">{program.name}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                      {program.description}
-                    </p>
-                    <span className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-primary">
-                      Vezi programa
-                      <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                    </span>
-                  </div>
-                </MotionLink>
+                <ProgramCard key={program.code} program={program} />
               ))}
             </motion.div>
           </div>
@@ -399,6 +474,8 @@ export function WelcomePage() {
           <div className="container">
             <motion.div
               className="relative overflow-hidden rounded-[2rem] bg-primary px-8 py-16 text-white sm:px-14 lg:px-20 lg:py-24"
+              style={ctaTilt.style}
+              {...ctaTilt.handlers}
               initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}

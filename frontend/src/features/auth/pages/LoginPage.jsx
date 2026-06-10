@@ -9,6 +9,7 @@ import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { LEGAL_ROUTES } from '../../../content/legal/legalConstants'
 import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { WorkedExerciseShowcase } from '../components/WorkedExerciseShowcase'
+import { useTilt3D } from '../hooks/useTilt3D'
 import { DashboardAmbient } from '../../dashboard/components/DashboardAmbient'
 import { resolvePostAuthRedirect } from '../../../services/lastLocationService'
 import { setRememberSession } from '../../../supabaseClient'
@@ -25,8 +26,14 @@ const formContainer = {
 }
 
 const formItem = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 16, rotateX: 8, transformPerspective: 700 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transformPerspective: 700,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
 }
 
 export function LoginPage() {
@@ -41,6 +48,10 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { login, loginWithGoogle, loading, errorMessage, theme, toggleTheme, user, isAdmin } = useAuth()
   const navigate = useNavigate()
+
+  // Fișa de variantă rezolvată din panoul de brand se înclină 3D după cursor.
+  const showcaseTilt = useTilt3D(9)
+  const reduce = showcaseTilt.reduce
 
   const handleGoogleSignIn = async () => {
     try {
@@ -103,7 +114,7 @@ export function LoginPage() {
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30 transition-transform duration-500 group-hover:-rotate-6">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30 transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:perspective(420px)_rotateY(-24deg)_rotateX(8deg)_scale(1.05)]">
             <BrandLogo className="size-6" />
           </div>
           <div className="text-left">
@@ -112,11 +123,12 @@ export function LoginPage() {
           </div>
         </motion.button>
 
-        {/* Showpiece — fișă de variantă rezolvată */}
+        {/* Showpiece — fișă de variantă rezolvată, ca un obiect 3D real: intră cu o
+            basculare în perspectivă, plutește lent și se înclină după cursor. */}
         <motion.div
           className="relative z-10 my-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 40, rotateX: -12, transformPerspective: 1100 }}
+          animate={{ opacity: 1, y: 0, rotateX: 0, transformPerspective: 1100 }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="mb-7 flex items-center gap-3">
@@ -132,10 +144,24 @@ export function LoginPage() {
           </h2>
 
           <div className="relative mt-10 max-w-md">
-            {/* strat-umbră în spate, pentru adâncime tipărită */}
-            <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-[1.4rem] border border-primary/20 bg-primary/[0.06]" aria-hidden />
+            {/* plutire ușoară în repaus */}
+            <motion.div
+              animate={reduce ? undefined : { y: [0, -8, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <motion.div className="relative" style={showcaseTilt.style} {...showcaseTilt.handlers}>
+                {/* strat-umbră în spate, împins în adâncime pentru paralaxă reală */}
+                <div
+                  className="absolute inset-0 rounded-[1.4rem] border border-primary/20 bg-primary/[0.06]"
+                  style={{ transform: 'translate3d(0.75rem, 0.75rem, -3rem)' }}
+                  aria-hidden
+                />
 
-            <WorkedExerciseShowcase variant="light" />
+                <div style={reduce ? undefined : { transform: 'translateZ(1.8rem)' }}>
+                  <WorkedExerciseShowcase variant="light" />
+                </div>
+              </motion.div>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -151,19 +177,25 @@ export function LoginPage() {
               <span
                 key={code}
                 style={{ fontFamily: SERIF }}
-                className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-slate-200"
+                className="rounded-lg border border-border bg-background/60 px-3 py-1 text-sm font-semibold italic text-slate-700 transition-transform duration-300 hover:[transform:perspective(320px)_rotateX(12deg)_translateY(-3px)] dark:border-white/15 dark:bg-white/5 dark:text-slate-200"
               >
                 {code}
               </span>
             ))}
           </div>
-          <div className="flex size-16 rotate-[-10deg] items-center justify-center rounded-full border-2 border-primary/30 text-center" aria-hidden>
+          <motion.div
+            className="flex size-16 items-center justify-center rounded-full border-2 border-primary/30 text-center"
+            initial={{ rotate: -10 }}
+            animate={reduce ? { rotate: -10 } : { rotate: [-10, -4, -10] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            aria-hidden
+          >
             <span className="text-[9px] font-black uppercase leading-tight tracking-[0.14em] text-primary dark:text-primary-200">
               BAC
               <br />
               2026
             </span>
-          </div>
+          </motion.div>
         </motion.div>
       </aside>
 
@@ -187,7 +219,7 @@ export function LoginPage() {
             onClick={() => navigate('/')}
             className="group flex items-center gap-3 lg:hidden"
           >
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:perspective(420px)_rotateY(-24deg)_rotateX(8deg)_scale(1.05)]">
               <BrandLogo className="size-5" />
             </div>
             <strong className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Math<span className="text-primary">UP</span></strong>

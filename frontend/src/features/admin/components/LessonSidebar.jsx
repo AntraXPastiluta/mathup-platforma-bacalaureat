@@ -162,7 +162,7 @@ export function LessonSidebar({
                   sidebarLessonsOrdered.map((lesson) => (
                     <div
                       key={lesson.id}
-                      className={`w-full text-left p-4 rounded-2xl transition-all group/item ${selectedLesson?.id === lesson.id ? 'bg-primary/10 border-primary/40 shadow-md ring-1 ring-primary/10' : 'hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent'}`}
+                      className={`w-full text-left p-4 rounded-2xl transition-all group/item ${selectedLesson?.id === lesson.id ? 'bg-primary/10 border border-primary/40 shadow-md ring-1 ring-primary/10' : 'hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent'}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <button

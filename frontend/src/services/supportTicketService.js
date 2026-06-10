@@ -95,6 +95,23 @@ export async function closeTicket(ticketId) {
   return data
 }
 
+export async function deleteTicket(ticketId) {
+  const { data, error } = await supabase
+    .from('support_requests')
+    .delete()
+    .eq('id', ticketId)
+    .eq('status', 'closed')
+    .select('id')
+
+  if (error) throw error
+  // RLS permite ștergerea doar adminilor și doar pentru tickete închise;
+  // un rezultat gol înseamnă că ștergerea a fost refuzată.
+  if (!data?.length) {
+    throw new Error('Doar ticketele închise pot fi șterse.')
+  }
+  return data[0]
+}
+
 async function invokeSubmitSupportRequest(accessToken, payload) {
   const { data, error } = await supabase.functions.invoke('submit-support-request', {
     body: payload,

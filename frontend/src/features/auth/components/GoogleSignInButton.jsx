@@ -37,13 +37,12 @@ export function GoogleSignInButton({ onClick, loading = false, disabled = false 
         {loading ? 'Redirecționare către Google...' : 'Continuă cu Google'}
       </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-[10px] font-black uppercase tracking-[0.2em]">
-          <span className="bg-white dark:bg-slate-900 px-4 text-slate-400">sau</span>
-        </div>
+      {/* Divizor independent de fundalul paginii — fără „petic" alb care iese în
+          evidență pe fundalurile slate (LoginPage în light, coloana dark etc.). */}
+      <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em]">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-slate-400 dark:text-slate-500">sau</span>
+        <span className="h-px flex-1 bg-border" />
       </div>
     </div>
   )

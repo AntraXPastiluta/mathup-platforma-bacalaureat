@@ -373,7 +373,7 @@ export function RoadmapCanvas({
                       x={(getNodeAnchor(fromNode, 'right').x + getNodeAnchor(toNode, 'left').x) / 2}
                       y={(getNodeAnchor(fromNode, 'right').y + getNodeAnchor(toNode, 'left').y) / 2 - 8}
                       textAnchor="middle"
-                      className="fill-slate-500 text-[10px] font-bold"
+                      className="fill-slate-500 dark:fill-slate-400 text-[10px] font-bold"
                     >
                       {edge.label}
                     </text>

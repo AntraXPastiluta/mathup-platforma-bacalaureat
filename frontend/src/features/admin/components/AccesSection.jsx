@@ -191,7 +191,7 @@ export function AccesSection() {
           </div>
         ) : admins.length === 0 ? (
           <div className="rounded-3xl border border-slate-300 bg-slate-50 p-10 text-center dark:border-white/5 dark:bg-white/2">
-            <p className="text-sm font-medium italic text-slate-500">Nu există administratori configurați în baza de date.</p>
+            <p className="text-sm font-medium italic text-slate-500 dark:text-slate-400">Nu există administratori configurați în baza de date.</p>
           </div>
         ) : (
           <div className="overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-white/5 dark:shadow-none">

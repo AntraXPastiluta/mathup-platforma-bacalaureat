@@ -15,7 +15,7 @@ function mergeTicketById(existing, incoming) {
 }
 
 /**
- * Live ticket queue for admins (INSERT + UPDATE on support_requests).
+ * Live ticket queue for admins (INSERT + UPDATE + DELETE on support_requests).
  */
 export function useSupportInboxRealtime(enabled, onTicketsChange) {
   useEffect(() => {
@@ -38,6 +38,16 @@ export function useSupportInboxRealtime(enabled, onTicketsChange) {
         (payload) => {
           if (payload.new) {
             onTicketsChange((prev) => mergeTicketById(prev, payload.new))
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'support_requests' },
+        (payload) => {
+          // La DELETE, payload.old conține doar cheia primară.
+          if (payload.old?.id) {
+            onTicketsChange((prev) => prev.filter((t) => t.id !== payload.old.id))
           }
         },
       )

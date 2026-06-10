@@ -137,7 +137,7 @@ export function ResetPasswordPage() {
                 <AlertMessage message={localError || errorMessage} />
 
                 <div className="space-y-2">
-                  <label htmlFor="reset-password" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                  <label htmlFor="reset-password" className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">
                     Parolă nouă
                   </label>
                   <input
@@ -153,7 +153,7 @@ export function ResetPasswordPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="reset-password-confirm" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                  <label htmlFor="reset-password-confirm" className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">
                     Confirmă parola
                   </label>
                   <input

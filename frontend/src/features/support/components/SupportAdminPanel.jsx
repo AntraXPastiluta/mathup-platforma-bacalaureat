@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { ArrowLeft, Headphones, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Headphones, Loader2, Trash2, X } from 'lucide-react'
 
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { useNotifications } from '../../../app/providers/NotificationProvider'
@@ -10,6 +10,7 @@ import { toUserFacingError } from '../../../shared/utils/userFacingError'
 import {
   claimTicket,
   closeTicket,
+  deleteTicket,
   listAllTicketsForAdmin,
 } from '../../../services/supportTicketService'
 import { TICKET_STATUS_LABELS } from '../constants'
@@ -72,6 +73,7 @@ export function SupportAdminPanel({ onClose }) {
   const canReplyAsAdmin = isAssignedToMe && selected?.status !== 'closed'
   const canClaim = selected && !selected.assigned_admin_id && selected.status !== 'closed'
   const canClose = isAssignedToMe && selected?.status !== 'closed'
+  const canDelete = selected?.status === 'closed'
 
   const handleClaim = async () => {
     if (!selected?.id) return
@@ -97,6 +99,26 @@ export function SupportAdminPanel({ onClose }) {
       const closed = { ...selected, status: 'closed' }
       setSelected(closed)
       setTickets((prev) => prev.map((t) => (t.id === closed.id ? { ...t, status: 'closed' } : t)))
+    } catch (err) {
+      setError(toUserFacingError(err))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selected?.id) return
+    const confirmed = window.confirm(
+      'Ștergi definitiv acest ticket închis? Conversația și notificările asociate vor fi pierdute.',
+    )
+    if (!confirmed) return
+    setActionLoading(true)
+    setError('')
+    try {
+      await deleteTicket(selected.id)
+      setTickets((prev) => prev.filter((t) => t.id !== selected.id))
+      setView('list')
+      setSelected(null)
     } catch (err) {
       setError(toUserFacingError(err))
     } finally {
@@ -171,7 +193,7 @@ export function SupportAdminPanel({ onClose }) {
 
       {inThread ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          {(canClaim || canClose) && (
+          {(canClaim || canClose || canDelete) && (
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 border-b border-border px-3 py-2">
               {canClaim && (
                 <Button
@@ -193,6 +215,18 @@ export function SupportAdminPanel({ onClose }) {
                   className="!h-7 !px-2.5 !text-xs"
                 >
                   Închide
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={actionLoading}
+                  onClick={handleDelete}
+                  className="!h-7 !px-2.5 !text-xs !text-red-600 hover:!bg-red-50 dark:!text-red-400 dark:hover:!bg-red-500/10"
+                >
+                  <Trash2 className="!size-3.5" />
+                  Șterge ticket
                 </Button>
               )}
             </div>
