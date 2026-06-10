@@ -17,6 +17,7 @@ backend/.temp/
 backend/supabase/.temp/
 backend/.env
 backend/.env.*
+.env.docker
 
 # OS/editor noise
 .DS_Store
