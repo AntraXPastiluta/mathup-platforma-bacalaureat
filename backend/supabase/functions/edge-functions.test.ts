@@ -221,16 +221,6 @@ function makeExportDb(options: { recentExports?: number } = {}) {
         }
       }
 
-      if (table === 'user_study_roadmaps') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => emptyList(),
-            }),
-          }),
-        }
-      }
-
       return {
         select: () => ({
           eq: () => emptyList(),
@@ -428,7 +418,7 @@ Deno.test('export-user-data returns structured export payload', async () => {
 
   assert.equal(response.status, 200)
   const payload = await response.json()
-  assert.equal(payload.export_version, '1')
+  assert.equal(payload.export_version, '2')
   assert.equal(payload.account.email, 'student@example.com')
   assert.equal(payload.profile.full_name, 'Test User')
   assert.equal(payload.meta.platform, 'MathUP')
