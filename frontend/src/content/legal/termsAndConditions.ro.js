@@ -79,7 +79,7 @@ export function getTermsAndConditionsSections() {
         'La inițierea ștergerii, Platforma trimite un cod numeric de confirmare de 6 cifre la adresa de e-mail asociată contului.',
         'Codul este valabil 15 minute de la trimitere. Dacă expiră, poate fi solicitat un cod nou (maximum 3 solicitări la o oră).',
         'Ștergerea devine efectivă numai după introducerea corectă a codului în fereastra de confirmare din aplicație.',
-        'Procesul este ireversibil: se șterg contul de autentificare, progresul la lecții, rezultatele quiz-urilor, roadmaps-urile personale, mesajele de suport și celelalte date legate de cont.',
+        'Procesul este ireversibil: se șterg contul de autentificare, progresul la lecții, rezultatele quiz-urilor, mesajele de suport și celelalte date legate de cont.',
         'Dacă există un abonament Premium activ, acesta este încheiat odată cu ștergerea contului; plățile deja efectuate nu sunt rambursabile, conform secțiunii 4.',
       ],
       afterList: [

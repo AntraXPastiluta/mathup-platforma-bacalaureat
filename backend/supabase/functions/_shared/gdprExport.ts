@@ -1,4 +1,4 @@
-export const EXPORT_VERSION = '1'
+export const EXPORT_VERSION = '2'
 export const EXPORT_RATE_LIMIT_COUNT = 3
 export const EXPORT_RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000
 
@@ -92,7 +92,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
   const [
     progressResult,
     quizResult,
-    roadmapsResult,
     entitlementResult,
     ordersResult,
   ] = await Promise.all([
@@ -104,11 +103,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
       .from('user_quiz_attempts')
       .select('question_id,lesson_id,is_correct')
       .eq('user_id', userId),
-    admin
-      .from('user_study_roadmaps')
-      .select('id,title,created_at,updated_at,user_study_roadmap_subjects(subject_part,importance_grade,position_x,position_y)')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false }),
     admin
       .from('premium_entitlements')
       .select(
@@ -127,7 +121,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
   const errors = [
     progressResult.error,
     quizResult.error,
-    roadmapsResult.error,
     entitlementResult.error,
     ordersResult.error,
   ].filter(Boolean)
@@ -135,14 +128,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
   if (errors.length > 0) {
     throw errors[0]
   }
-
-  const studyRoadmaps = (roadmapsResult.data ?? []).map((row: Record<string, unknown>) => {
-    const { user_study_roadmap_subjects: subjects, ...roadmap } = row
-    return {
-      ...roadmap,
-      subjects: Array.isArray(subjects) ? subjects : [],
-    }
-  })
 
   return {
     export_version: EXPORT_VERSION,
@@ -157,7 +142,6 @@ export async function buildUserDataExport(admin: AdminClient, user: AuthUser) {
     profile: sanitizeProfileMetadata(metadata),
     progress: progressResult.data ?? [],
     quiz_attempts: quizResult.data ?? [],
-    study_roadmaps: studyRoadmaps,
     premium: {
       entitlement: entitlementResult.data ?? null,
       orders: ordersResult.data ?? [],
