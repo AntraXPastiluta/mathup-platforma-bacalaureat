@@ -21,7 +21,8 @@ import { DashboardPage } from './features/dashboard/pages/DashboardPage'
 import { ProfilePage } from './features/profile/pages/ProfilePage'
 import { LessonPage } from './features/lessons/pages/LessonPage'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
-import { RoadmapWorkspacePage } from './features/roadmap/pages/RoadmapWorkspacePage'
+import { RoadmapViewerPage } from './features/roadmap/pages/RoadmapViewerPage'
+import { RoadmapStudioPage } from './features/roadmap/pages/RoadmapStudioPage'
 import { SolvedVariantsPage } from './features/variants/pages/SolvedVariantsPage'
 import { MaintenancePage } from './features/maintenance/pages/MaintenancePage'
 import { TermsPage } from './features/legal/pages/TermsPage'
@@ -55,6 +56,14 @@ function MaintenanceRoutes() {
         element={(
           <AdminRoute>
             <AdminDashboardPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/roadmaps"
+        element={(
+          <AdminRoute>
+            <RoadmapStudioPage />
           </AdminRoute>
         )}
       />
@@ -174,7 +183,7 @@ function NormalRoutes() {
               path="/roadmap"
               element={(
                 <ProtectedRoute>
-                  <RoadmapWorkspacePage />
+                  <RoadmapViewerPage />
                 </ProtectedRoute>
               )}
             />
@@ -191,6 +200,14 @@ function NormalRoutes() {
               element={(
                 <AdminRoute>
                   <AdminDashboardPage />
+                </AdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/roadmaps"
+              element={(
+                <AdminRoute>
+                  <RoadmapStudioPage />
                 </AdminRoute>
               )}
             />

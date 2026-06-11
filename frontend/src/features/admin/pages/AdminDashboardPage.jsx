@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarDays, Layers, Lock, ShieldCheck } from 'lucide-react'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { SectionNav } from '../components/SectionNav'
-import { getAdminSectionsForUser } from '../constants'
+import { getAdminSectionsForUser, getSectionHref } from '../constants'
 import { useAuth } from '../../../app/providers/AuthProvider'
 
 const CurriculumSection = lazy(() =>
@@ -12,9 +12,6 @@ const CurriculumSection = lazy(() =>
 )
 const MathGuideSection = lazy(() =>
   import('../components/MathGuideSection').then((m) => ({ default: m.MathGuideSection })),
-)
-const RoadmapsSection = lazy(() =>
-  import('../components/RoadmapsSection').then((m) => ({ default: m.RoadmapsSection })),
 )
 const SolvedVariantsSection = lazy(() =>
   import('../components/SolvedVariantsSection').then((m) => ({ default: m.SolvedVariantsSection })),
@@ -32,7 +29,6 @@ const ReportsSection = lazy(() =>
 const SECTION_LOADERS = {
   curriculum: CurriculumSection,
   'ghid-formule': MathGuideSection,
-  roadmaps: RoadmapsSection,
   variants: SolvedVariantsSection,
   rapoarte: ReportsSection,
   admins: AccesSection,
@@ -88,6 +84,7 @@ function SectionFallback() {
 export function AdminDashboardPage() {
   const { isPrimaryAdmin, isTechnicalAdmin, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const visibleSectionIds = useMemo(
     () => new Set(getAdminSectionsForUser(isTechnicalAdmin).map((s) => s.id)),
@@ -96,18 +93,31 @@ export function AdminDashboardPage() {
 
   const adminSection = useMemo(() => {
     const fromUrl = searchParams.get('section')
-    // Secțiunile invizibile (ex. un profesor care nimerește ?section=rapoarte) cad pe Curriculum.
-    return visibleSectionIds.has(fromUrl) ? fromUrl : 'curriculum'
+    // Secțiunile invizibile (ex. un profesor care nimerește ?section=rapoarte) și cele cu
+    // pagină dedicată (redirecționate mai jos) cad pe Curriculum.
+    return visibleSectionIds.has(fromUrl) && !getSectionHref(fromUrl) ? fromUrl : 'curriculum'
   }, [searchParams, visibleSectionIds])
 
   useEffect(() => {
     const fromUrl = searchParams.get('section')
-    if (fromUrl && !visibleSectionIds.has(fromUrl)) {
+    if (!fromUrl) return
+    // Linkurile vechi către secțiuni mutate pe pagină dedicată (ex. ?section=roadmaps).
+    const href = getSectionHref(fromUrl)
+    if (href && visibleSectionIds.has(fromUrl)) {
+      navigate(href, { replace: true })
+      return
+    }
+    if (!visibleSectionIds.has(fromUrl)) {
       setSearchParams({}, { replace: true })
     }
-  }, [searchParams, setSearchParams, visibleSectionIds])
+  }, [searchParams, setSearchParams, visibleSectionIds, navigate])
 
   const setAdminSection = (id) => {
+    const href = getSectionHref(id)
+    if (href) {
+      navigate(href)
+      return
+    }
     if (id === 'curriculum') {
       setSearchParams({}, { replace: true })
     } else {

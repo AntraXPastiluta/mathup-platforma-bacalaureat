@@ -3,15 +3,23 @@ import { ArrowLeft, Info, Moon, Sun, X } from 'lucide-react'
 import { useAuth } from '../../../app/providers/AuthProvider'
 import { Button } from '../../../shared/ui/Button'
 
-export function RoadmapWorkspaceShell({
+/**
+ * Cadrul pe tot ecranul al paginilor de roadmap (editor + vizualizare elev): antet cu
+ * titlu, înapoi, acțiuni și (pentru elev) selectorul de roadmap, panoul Info, badge-ul de
+ * progres; corpul afișează încărcarea / starea goală / conținutul.
+ */
+export function RoadmapShell({
   variant = 'student',
+  kicker,
   title,
   subtitle,
   onBack,
+  actions,
   roadmaps = [],
   selectedRoadmapId,
   onSelectRoadmap,
   description,
+  progressSummary,
   loading = false,
   error = null,
   emptyMessage,
@@ -38,7 +46,7 @@ export function RoadmapWorkspaceShell({
 
         <div className="min-w-0 flex-1 leading-none">
           <p className="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-primary/80">
-            {variant === 'student' ? 'Plan de studiu' : 'Roadmap'}
+            {kicker ?? (variant === 'student' ? 'Plan de studiu' : 'Roadmap Studio')}
           </p>
           <h1 className="truncate text-sm font-black leading-tight text-slate-900 dark:text-white sm:text-base">
             {title}
@@ -66,6 +74,15 @@ export function RoadmapWorkspaceShell({
             </div>
           ) : null}
 
+          {progressSummary && progressSummary.total > 0 ? (
+            <span
+              className={`hidden shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest sm:inline-flex ${progressSummary.completed >= progressSummary.total ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-primary/10 text-primary'}`}
+              title="Lecții finalizate din acest roadmap"
+            >
+              {progressSummary.completed}/{progressSummary.total} lecții
+            </span>
+          ) : null}
+
           {description ? (
             <Button
               type="button"
@@ -78,6 +95,8 @@ export function RoadmapWorkspaceShell({
               <span className="hidden sm:inline">Info</span>
             </Button>
           ) : null}
+
+          {actions}
 
           {variant === 'student' ? (
             <Button type="button" size="sm" variant="ghost" onClick={toggleTheme} className="size-8 rounded-xl p-0">

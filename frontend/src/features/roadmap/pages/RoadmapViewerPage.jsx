@@ -6,17 +6,28 @@ import { useAuth } from '../../../app/providers/AuthProvider'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { Button } from '../../../shared/ui/Button'
 import { getProfilesFromMetadata } from '../../../services/profileService'
-import { getRoadmapsForProfile } from '../../../services/roadmapService'
+import { getRoadmapsWithGraphForProfile } from '../../../services/roadmapService'
+import { getUserProgress } from '../../../services/progressService'
 import { getProfileMeta } from '../../lessons/profiles'
-import { RoadmapCanvas } from '../components/RoadmapCanvas'
-import { RoadmapWorkspaceShell } from '../components/RoadmapWorkspaceShell'
-import { normalizeLayout } from '../utils/canvasLayout'
+import { RoadmapShell } from '../components/RoadmapShell'
+import { RoadmapFlowCanvas } from '../components/RoadmapFlowCanvas'
+import { ViewerLegend } from '../components/viewer/ViewerLegend'
+import { toFlowGraph } from '../utils/graphMapping'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
-export function RoadmapWorkspacePage() {
+const EMPTY_LESSONS = new Map()
+
+/**
+ * Vizualizarea elevului de la /roadmap: graful roadmap-ului programului său, doar citire,
+ * cu progresul suprapus (lecțiile finalizate primesc sigiliu verde) și navigare către
+ * lecții printr-un click pe nod. Conținut Premium — fără abonament, pagina afișează doar
+ * cardul de deblocare și nu interoghează deloc baza de date.
+ */
+export function RoadmapViewerPage() {
   const navigate = useNavigate()
   const { user, isPremium, openPremiumModal } = useAuth()
   const [roadmaps, setRoadmaps] = useState([])
+  const [progressRows, setProgressRows] = useState([])
   const [selectedRoadmapId, setSelectedRoadmapId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -38,12 +49,20 @@ export function RoadmapWorkspacePage() {
       setLoading(true)
       setError('')
       try {
-        // Nu mai interogăm deloc baza de date dacă utilizatorul nu e Premium; conținutul
-        // este oricum blocat în UI, iar așa evităm cereri inutile (și un eventual 403).
+        // Nu interogăm deloc baza de date dacă utilizatorul nu e Premium; conținutul este
+        // oricum blocat în UI, iar așa evităm cereri inutile.
         const primaryProfile = activeProfiles[0]
-        const data = isPremium ? await getRoadmapsForProfile(primaryProfile) : []
+        // Progresul colorează nodurile cu lecții finalizate; dacă cererea eșuează, harta
+        // se afișează în continuare, doar fără bife.
+        const [data, progress] = isPremium
+          ? await Promise.all([
+            getRoadmapsWithGraphForProfile(primaryProfile),
+            getUserProgress(user.id).catch(() => []),
+          ])
+          : [[], []]
         if (!mounted) return
         setRoadmaps(data)
+        setProgressRows(progress)
         setSelectedRoadmapId(data[0]?.id ?? null)
       } catch (loadError) {
         if (!mounted) return
@@ -64,10 +83,37 @@ export function RoadmapWorkspacePage() {
     [roadmaps, selectedRoadmapId],
   )
 
-  const canvasLayout = useMemo(
-    () => normalizeLayout(selectedRoadmap?.canvas_layout),
-    [selectedRoadmap],
+  const graph = useMemo(() => toFlowGraph(selectedRoadmap), [selectedRoadmap])
+
+  const completedLessonIds = useMemo(
+    () => new Set(progressRows.filter((row) => row.completed).map((row) => row.lesson_id)),
+    [progressRows],
   )
+
+  const canvasMeta = useMemo(
+    () => ({ lessonsById: EMPTY_LESSONS, completedLessonIds, readOnly: true }),
+    [completedLessonIds],
+  )
+
+  // „X/Y lecții” pentru roadmap-ul curent; lecțiile legate de mai multe noduri se numără o
+  // singură dată. Fără noduri cu lecții → fără indicator.
+  const progressSummary = useMemo(() => {
+    const lessonIds = new Set(
+      graph.nodes.filter((node) => node.data.lessonId).map((node) => node.data.lessonId),
+    )
+    if (lessonIds.size === 0) return null
+    let completed = 0
+    for (const lessonId of lessonIds) {
+      if (completedLessonIds.has(lessonId)) completed += 1
+    }
+    return { completed, total: lessonIds.size }
+  }, [graph, completedLessonIds])
+
+  const handleNodeClick = (event, node) => {
+    if (node?.data?.lessonId) {
+      navigate(`/lessons/${node.data.lessonId}`)
+    }
+  }
 
   if (!isPremium) {
     return (
@@ -99,7 +145,7 @@ export function RoadmapWorkspacePage() {
   const profileLabel = activeProfiles.map((p) => getProfileMeta(p).shortLabel).join(' · ')
 
   return (
-    <RoadmapWorkspaceShell
+    <RoadmapShell
       variant="student"
       title={selectedRoadmap?.title || 'Cartografiere Academică'}
       subtitle={profileLabel ? `Programă ${profileLabel}` : null}
@@ -110,26 +156,28 @@ export function RoadmapWorkspacePage() {
       description={selectedRoadmap?.description || ''}
       loading={loading}
       error={error || null}
+      progressSummary={progressSummary}
       emptyMessage={
         !loading && roadmaps.length === 0
           ? {
-              title: 'Arhivă în curs de publicare',
-              subtitle: 'Revino după ce consultantul academic finalizează schema de studiu.',
-            }
+            title: 'Arhivă în curs de publicare',
+            subtitle: 'Revino după ce consultantul academic finalizează schema de studiu.',
+          }
           : null
       }
     >
       {selectedRoadmap ? (
-        <RoadmapCanvas
-          key={selectedRoadmap.id}
-          layout={canvasLayout}
-          onLayoutChange={() => {}}
+        <RoadmapFlowCanvas
+          flowKey={selectedRoadmap.id}
+          nodes={graph.nodes}
+          edges={graph.edges}
+          meta={canvasMeta}
           readOnly
-          fillHeight
-          persistKey={selectedRoadmap.id}
-          fitOnLoad
-        />
+          onNodeClick={handleNodeClick}
+        >
+          <ViewerLegend />
+        </RoadmapFlowCanvas>
       ) : null}
-    </RoadmapWorkspaceShell>
+    </RoadmapShell>
   )
 }

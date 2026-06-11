@@ -742,6 +742,68 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   }
 }
 
+/* —— Roadmap (React Flow): suprascrieri de stil pe canvasul editorului și al elevului.
+   Tokenii (--background, --border, --primary) comută singuri în dark mode. —— */
+.roadmap-flow .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--background);
+  transition: transform 0.15s ease;
+}
+
+.roadmap-flow .react-flow__handle:hover {
+  transform: scale(1.35);
+}
+
+.roadmap-flow .react-flow__edge {
+  cursor: pointer;
+}
+
+.roadmap-flow .react-flow__attribution {
+  background: transparent;
+  font-size: 9px;
+  opacity: 0.45;
+}
+
+.roadmap-flow .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 24px -14px rgb(2 6 23 / 0.45);
+}
+
+.roadmap-flow .react-flow__controls-button {
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.roadmap-flow .react-flow__controls-button:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--background));
+}
+
+.roadmap-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.roadmap-flow .react-flow__minimap {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 24px -14px rgb(2 6 23 / 0.45);
+}
+
+.roadmap-flow .react-flow__selection {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border: 1px dashed var(--primary);
+  border-radius: 0.5rem;
+}
+
+.roadmap-flow .react-flow__node {
+  /* Selecția e desenată de carduri (umbră + ring în culoarea nodului), nu de bibliotecă. */
+  outline: none !important;
+}
+
 /* Dashboard bento — asymmetric layout (progress + sidebar + calendar) */
 .dashboard-bento {
   display: grid;
