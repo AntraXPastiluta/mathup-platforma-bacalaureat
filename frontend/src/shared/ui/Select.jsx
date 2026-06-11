@@ -11,9 +11,24 @@ export function Select({
   id: idProp,
 }) {
   const [open, setOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const rootRef = useRef(null)
   const generatedId = useId()
   const id = idProp || generatedId
+
+  // max-h-60 (240px) + decalajul de 8px al meniului — folosit la decizia de „flip”.
+  const MENU_SPACE = 248
+
+  const handleToggle = () => {
+    if (!open && rootRef.current) {
+      // Meniul se deschide în sus când nu are loc dedesubt (ex. câmpuri lângă marginea
+      // de jos a ecranului, pe pagini h-screen unde nu se poate derula).
+      const rect = rootRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setDropUp(spaceBelow < MENU_SPACE && rect.top > spaceBelow)
+    }
+    setOpen((current) => !current)
+  }
 
   const selectedOption = options.find((option) => String(option.value) === String(value))
 
@@ -49,7 +64,7 @@ export function Select({
         type="button"
         id={id}
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
+        onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-bold text-slate-800 transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-primary/40"
@@ -67,7 +82,7 @@ export function Select({
         <ul
           role="listbox"
           aria-labelledby={id}
-          className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/50"
+          className={`absolute left-0 right-0 z-50 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/50 ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}
         >
           {options.length === 0 ? (
             <li className="px-4 py-3 text-sm font-medium text-slate-400 dark:text-slate-500">

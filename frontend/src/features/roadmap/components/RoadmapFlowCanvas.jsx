@@ -84,7 +84,8 @@ export function RoadmapFlowCanvas({
             size={1.6}
             color="color-mix(in srgb, var(--primary) 22%, transparent)"
           />
-          <Controls showInteractive={false} position="bottom-right" />
+          {/* Ridicate deasupra bulei de chat Suport (fixed bottom-right, ~5rem înălțime). */}
+          <Controls showInteractive={false} position="bottom-right" className="!mb-[5.5rem]" />
           {readOnly ? null : (
             <MiniMap pannable zoomable position="bottom-left" nodeColor={minimapNodeColor} />
           )}

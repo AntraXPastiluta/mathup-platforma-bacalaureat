@@ -29,7 +29,8 @@ export function StudioSidebar({
       <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-white/10">
         <div className="flex items-center gap-2">
           <Map className="size-5 text-primary" />
-          <h2 className="text-sm font-black uppercase tracking-tight text-slate-800 dark:text-white">Roadmaps</h2>
+          {/* `text-sm!`: regula globală `h2 { font-size: 2.25rem }` ar face titlul uriaș. */}
+          <h2 className="text-sm! font-black uppercase tracking-tight text-slate-800 dark:text-white">Roadmaps</h2>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -82,7 +83,9 @@ export function StudioSidebar({
         )}
       </div>
 
-      <div className="space-y-3 border-t border-slate-200 p-4 dark:border-white/10">
+      {/* overflow-y-auto: pe ecrane scunde formularul derulează în loc să fie tăiat
+          (pagina e h-screen overflow-hidden, nu există scroll de pagină). */}
+      <div className="min-h-0 space-y-3 overflow-y-auto border-t border-slate-200 p-4 dark:border-white/10">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
           {selectedRoadmapId ? 'Detalii roadmap' : 'Roadmap nou'}
         </p>

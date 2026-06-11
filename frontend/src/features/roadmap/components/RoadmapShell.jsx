@@ -48,7 +48,9 @@ export function RoadmapShell({
           <p className="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-primary/80">
             {kicker ?? (variant === 'student' ? 'Plan de studiu' : 'Roadmap Studio')}
           </p>
-          <h1 className="truncate text-sm font-black leading-tight text-slate-900 dark:text-white sm:text-base">
+          {/* `!` pe mărimi: regula globală nelayerată `h1 { font-size: 3rem }` din index.css
+              bate altfel utilitarele Tailwind, iar antetul compact devine uriaș. */}
+          <h1 className="truncate text-sm! font-black leading-tight text-slate-900 dark:text-white sm:text-base!">
             {title}
           </h1>
           {subtitle ? (
