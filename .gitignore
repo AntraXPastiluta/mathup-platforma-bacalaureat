@@ -12,6 +12,9 @@ Lucrare-licenta/
 # Legacy/temporary folders outside project roots
 mathup/
 
+# Supabase migrations — not public
+backend/supabase/migrations/
+
 # Backend — secrets & Supabase CLI cache (see backend/.gitignore)
 backend/.temp/
 backend/supabase/.temp/
