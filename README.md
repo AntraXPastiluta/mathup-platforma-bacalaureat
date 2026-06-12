@@ -22,7 +22,8 @@ Platforma combină:
 | Rol | Descriere |
 |-----|-----------|
 | **Elevi** | Parcurg lecții, rezolvă exerciții și quiz-uri, urmăresc progresul pe dashboard |
-| **Profesori / administratori curriculum** | Publică lecții, quiz-uri, roadmap-uri și variante rezolvate |
+| **Profesori** | Publică lecții, quiz-uri, roadmap-uri și variante rezolvate |
+| **Administratori** | Acces complet: setări platformă, gestionare utilizatori, funcții avansate |
 | **Utilizatori Premium** | Acces extins la roadmap, variante rezolvate și raport de pregătire |
 
 ---
@@ -33,16 +34,16 @@ Platforma combină:
 
 - **Cont personal** — înregistrare, autentificare, profil cu program liceal ales
 - **Dashboard** — progres general, lecții grupate pe subiecte (I, II, III), streak de activitate
-- **Lecții interactive** — conținut pe secțiuni, formule matematice, materiale descărcabile
+- **Lecții interactive** — conținut pe secțiuni, formule matematice (KaTeX), materiale descărcabile
 - **Quiz-uri** — evaluare la final de secțiune sau lecție, cu feedback imediat
-- **Profil** — nume, avatar, program, notă țintă (Premium)
-- **Suport** — formular de contact integrat în platformă
+- **Profil** — nume, avatar, program, notă țintă (Premium), export date GDPR
+- **Suport** — chat în timp real cu echipa platformei
 
 ### MathUP Premium
 
 | Funcție | Descriere |
 |---------|-----------|
-| Roadmaps | Plan vizual al parcursului recomandat, cu priorități pe subiecte |
+| Roadmaps | Plan vizual al parcursului recomandat, cu priorități pe subiecte (editor React Flow) |
 | Variante rezolvate | Acces la documente publicate de profesori, per program |
 | Programe extinse | Lecții din programe diferite față de cel ales la înregistrare |
 | Raport de pregătire | Analiză greșeli quiz, medie, estimare față de nota țintă |
@@ -50,9 +51,11 @@ Platforma combină:
 ### Pentru administratori
 
 - Editor de curriculum (lecții, părți, fișiere, întrebări quiz)
-- Roadmap canvas — noduri, legături, nivel de importanță
+- **Roadmap Studio** — editor vizual React Flow: noduri, legături, nivel de importanță, save atomic via RPC
 - Gestionare variante rezolvate per program
-- Setări platformă (ex.: dată examen BAC, acces utilizatori)
+- Setări platformă (dată examen BAC, mod mentenanță, acces utilizatori)
+- Panou suport — chat cu elevii, tickete revendicate per profesor
+- Roluri granulare pentru administratori (conținut / tehnic / primar)
 
 ---
 
@@ -60,7 +63,7 @@ Platforma combină:
 
 La crearea contului, utilizatorul acceptă explicit:
 - **Termenii și Condițiile** platformei
-- **Politica de Confidențialitate** 
+- **Politica de Confidențialitate**
 
 Documentele sunt accesibile public, iar consimțământul este înregistrat la momentul înregistrării.
 
@@ -85,7 +88,7 @@ Utilizatorii autentificați pot **exporta datele personale** (dreptul la portabi
               ┌────────────┴────────────┐
               ▼                         ▼
      Procesare plăți              Găzduire web
-     (abonament Premium)          (Vercel)
+     (Stripe — abonament Premium) (Vercel)
 ```
 
 ---
@@ -96,17 +99,16 @@ Utilizatorii autentificați pot **exporta datele personale** (dreptul la portabi
 e-learning-licenta/
 ├── frontend/          # Aplicația web React (interfața utilizatorului)
 │   └── src/
-│       ├── features/  # auth, dashboard, lessons, roadmap, admin, legal…
-│       ├── services/  # comunicare cu backend-ul
-│       └── shared/    # componente UI reutilizabile
+│       ├── features/  # auth, dashboard, lessons, roadmap, admin, legal,
+│       │              # variants, support, profile, maintenance
+│       ├── services/  # comunicare cu backend-ul (un modul per domeniu)
+│       └── shared/    # componente UI reutilizabile, utilitare
 │
 └── backend/           # Supabase: migrări DB, funcții serverless
-    ├── migrations/
     └── supabase/
-        ├── migrations/
-        └── functions/   # Edge Functions (deploy din backend/)
+        ├── migrations/ # SQL timestampat, idempotent, RLS pe fiecare tabel
+        └── functions/  # Edge Functions Deno/Hono (deploy din backend/)
 ```
-
 
 ---
 
@@ -115,9 +117,11 @@ e-learning-licenta/
 | Strat | Tehnologie |
 |-------|------------|
 | Frontend | React, Vite, React Router |
-| Stil & animații | Tailwind CSS, Framer Motion |
-| Formule matematice | KaTeX |
-| Backend & autentificare | Supabase |
+| Stil & animații | Tailwind CSS 4, Framer Motion |
+| Formule matematice | KaTeX (apel direct, fără react-katex) |
+| Editor roadmap | React Flow (`@xyflow/react` 12) |
+| Backend & autentificare | Supabase (Postgres + RLS + Auth + Storage + Realtime) |
+| Edge Functions | Deno + Hono |
 | Plăți abonament | Stripe |
 | Deploy frontend | Vercel |
 
@@ -145,11 +149,10 @@ e-learning-licenta/
 | Termeni și Condiții / Confidențialitate | Public |
 | Dashboard, lecții, profil | Autentificat |
 | Roadmap, variante rezolvate | Autentificat (Premium) |
+| Suport (chat) | Autentificat |
 | Panou administrare | Autentificat (admin) |
 
 ---
-
-
 
 ## Status proiect
 
