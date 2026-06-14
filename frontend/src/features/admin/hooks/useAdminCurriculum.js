@@ -51,6 +51,7 @@ export function useAdminCurriculum() {
     text: '',
     options: ['', '', '', ''],
     correct: 0,
+    explanation: '',
     placement: { type: 'end', partId: '' },
   })
   const [files, setFiles] = useState([])
@@ -298,9 +299,10 @@ export function useAdminCurriculum() {
         question_text: newQuestion.text,
         options: { choices: newQuestion.options, placement },
         correct_option_index: newQuestion.correct,
+        explanation: newQuestion.explanation?.trim() || null,
       })
       setQuestions([...questions, q])
-      setNewQuestion({ text: '', options: ['', '', '', ''], correct: 0, placement: { type: 'end', partId: '' } })
+      setNewQuestion({ text: '', options: ['', '', '', ''], correct: 0, explanation: '', placement: { type: 'end', partId: '' } })
       setSuccess('Întrebare adăugată!')
     } catch (err) {
       setError(toUserFacingError(err, USER_MESSAGES.save))

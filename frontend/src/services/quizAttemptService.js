@@ -6,8 +6,9 @@ import { supabase } from '../supabaseClient'
 import { requireSelfUserId } from './sessionGuard'
 
 /**
- * Trimite răspunsul ales la o întrebare și returnează dacă a fost corect.
- * Logica de verificare rulează în baza de date (RPC `submit_quiz_answer`).
+ * Trimite răspunsul ales la o întrebare și returnează corectitudinea împreună cu
+ * explicația (dacă există). Logica de verificare rulează în baza de date
+ * (RPC `submit_quiz_answer`), care întoarce explicația doar la un răspuns corect.
  */
 export async function submitQuizAnswer({ questionId, selectedIndex }) {
   const { data, error } = await supabase.rpc('submit_quiz_answer', {
@@ -16,7 +17,10 @@ export async function submitQuizAnswer({ questionId, selectedIndex }) {
   })
 
   if (error) throw error
-  return Boolean(data?.correct)
+  return {
+    correct: Boolean(data?.correct),
+    explanation: data?.explanation ?? null,
+  }
 }
 
 function countDistinctQuestions(rows) {

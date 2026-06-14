@@ -122,6 +122,7 @@ export function LessonPage() {
   const [currentPartIndex, setCurrentPartIndex] = useState(0)
   const [quizSelections, setQuizSelections] = useState({})
   const [quizResults, setQuizResults] = useState({})
+  const [quizExplanations, setQuizExplanations] = useState({})
   const [quizFeedback, setQuizFeedback] = useState(null)
   const navigate = useNavigate()
 
@@ -142,6 +143,7 @@ export function LessonPage() {
         setCurrentPartIndex(0)
         setQuizSelections({})
         setQuizResults({})
+        setQuizExplanations({})
         setQuizFeedback(null)
       } catch (loadError) {
         if (!mounted) return
@@ -265,15 +267,17 @@ export function LessonPage() {
 
     try {
       // Corectitudinea este evaluată pe server (submitQuizAnswer); clientul nu primește
-      // niciodată indexul răspunsului corect, ca să nu poată fi extras din rețea.
-      const isCorrect = await submitQuizAnswer({
+      // niciodată indexul răspunsului corect și nici explicația înainte de a răspunde
+      // corect, ca să nu poată fi extrase din rețea.
+      const { correct, explanation } = await submitQuizAnswer({
         questionId: question.id,
         selectedIndex: selectedAnswer,
       })
-      setQuizResults((prev) => ({ ...prev, [question.id]: isCorrect }))
+      setQuizResults((prev) => ({ ...prev, [question.id]: correct }))
+      setQuizExplanations((prev) => ({ ...prev, [question.id]: explanation }))
       setQuizFeedback({
-        type: isCorrect ? 'correct' : 'wrong',
-        message: isCorrect ? 'Răspuns corect!' : 'Răspuns greșit',
+        type: correct ? 'correct' : 'wrong',
+        message: correct ? 'Răspuns corect!' : 'Răspuns greșit',
       })
     } catch (submitError) {
       setError(toUserFacingError(submitError, 'Eroare la procesarea răspunsului.'))
@@ -371,6 +375,11 @@ export function LessonPage() {
                             delete next[question.id]
                             return next
                           })
+                          setQuizExplanations((prev) => {
+                            const next = { ...prev }
+                            delete next[question.id]
+                            return next
+                          })
                         }}
                         className={`group flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-all duration-200 ${
                           showCorrect
@@ -414,6 +423,29 @@ export function LessonPage() {
                     </span>
                   )}
                 </div>
+                {/* Explicația apare după ce elevul răspunde — verde la răspuns corect,
+                    chihlimbar la unul greșit (serverul o trimite în ambele cazuri,
+                    dar doar după ce s-a trimis un răspuns). */}
+                {answered && quizExplanations[question.id] ? (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className={`mt-5 overflow-hidden rounded-xl border p-5 ${
+                      isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'
+                    }`}
+                  >
+                    <SectionLabel
+                      lineClass={isCorrect ? 'bg-emerald-500' : 'bg-amber-500'}
+                      textClass={isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}
+                    >
+                      Explicație
+                    </SectionLabel>
+                    <MathContent
+                      content={quizExplanations[question.id]}
+                      className="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300"
+                    />
+                  </motion.div>
+                ) : null}
               </div>
             )
           })}

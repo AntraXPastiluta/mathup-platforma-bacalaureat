@@ -17,6 +17,7 @@ export function LessonQuizTab({
   getQuestionPlacementLabel,
 }) {
   const questionRef = useRef(null)
+  const explanationRef = useRef(null)
   const optionRefs = useRef({})
   // Reținem ultima opțiune focalizată ca să știm în care inserăm simbolurile.
   const [activeOption, setActiveOption] = useState(0)
@@ -141,6 +142,37 @@ export function LessonQuizTab({
             ))}
           </div>
         </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">
+              Explicație <span className="text-slate-400/70 normal-case tracking-normal">(opțional)</span>
+            </label>
+            <MathSymbolToolbar
+              onInsert={(item, block) =>
+                insertMathSnippet(explanationRef.current, item, block, newQuestion.explanation, (value) => setNewQuestion({ ...newQuestion, explanation: value }))
+              }
+            />
+          </div>
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-1">
+            Se afișează elevului după ce răspunde (corect sau greșit).
+          </p>
+          <textarea
+            ref={explanationRef}
+            rows={3}
+            className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-800 dark:text-white shadow-sm resize-y"
+            placeholder="Ex: Derivata lui $x^2$ este $2x$ folosind regula puterii..."
+            value={newQuestion.explanation}
+            onChange={(e) => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+          />
+          {newQuestion.explanation?.trim() ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Previzualizare</p>
+              <MathContent content={newQuestion.explanation} className="text-sm leading-relaxed font-bold text-slate-700 dark:text-slate-200" />
+            </div>
+          ) : null}
+        </div>
+
         <Button onClick={handleAddQuestion} className="w-full rounded-2xl h-12 bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-600/20">
           Adaugă în Chestionar
         </Button>
@@ -172,6 +204,12 @@ export function LessonQuizTab({
                       </div>
                     ))}
                   </div>
+                  {q.explanation ? (
+                    <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-2">Explicație</p>
+                      <MathContent content={q.explanation} className="text-xs font-bold text-slate-600 dark:text-slate-300" />
+                    </div>
+                  ) : null}
                 </div>
                 <button onClick={() => handleDeleteQuestion(q.id)} className="p-2.5 rounded-xl bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive/20 transition-all mt-1 shadow-sm">
                   <Trash2 className="size-4" />
