@@ -331,9 +331,10 @@ export function LessonPage() {
                     Întrebarea {questionIndex + 1}
                   </span>
                 </div>
-                <p className="mt-4 font-heading text-lg font-bold leading-snug text-foreground sm:text-xl">
-                  {question.question_text}
-                </p>
+                <MathContent
+                  content={question.question_text}
+                  className="mt-4 font-heading text-lg font-bold leading-snug text-foreground sm:text-xl"
+                />
                 {question.image_url ? (
                   <div className="mt-5 overflow-hidden rounded-xl border border-border bg-slate-50 dark:bg-slate-950">
                     <img
@@ -385,7 +386,7 @@ export function LessonPage() {
                         >
                           {letter}
                         </span>
-                        <span className="min-w-0 flex-1">{option}</span>
+                        <MathContent content={option} className="min-w-0 flex-1" />
                       </button>
                     )
                   })}
