@@ -531,6 +531,21 @@ export function LessonPage() {
                   <div className="pointer-events-none absolute inset-0 scholar-grid opacity-[0.05] dark:opacity-[0.07]" aria-hidden />
 
                   <div className="relative p-7 sm:p-10 md:p-14">
+                    {/* Conținutul lecției (textul scris în tab-ul „Conținut") apare primul,
+                        ca introducere, înaintea părților. Doar la primul pas. */}
+                    {currentPartIndex === 0 && lesson?.content?.trim() ? (
+                      <div className={hasParts ? 'mb-10' : ''}>
+                        <SectionLabel lineClass={accent.line} textClass={accent.label} className="mb-2.5">
+                          Lecție
+                        </SectionLabel>
+                        <MathContent
+                          content={lesson.content}
+                          style={{ fontFamily: SERIF }}
+                          className="text-[1.075rem] leading-[1.9] text-slate-700 dark:text-slate-300 sm:text-lg"
+                        />
+                        {hasParts ? <div className="mt-8 h-px w-full bg-border" /> : null}
+                      </div>
+                    ) : null}
                     {currentPart ? (
                       <div>
                         <header className="grid grid-cols-[auto_1fr] items-start gap-4 sm:gap-6">
@@ -583,7 +598,7 @@ export function LessonPage() {
                           className="text-[1.075rem] leading-[1.9] text-slate-700 dark:text-slate-300 sm:text-lg"
                         />
                       </div>
-                    ) : (
+                    ) : lesson?.content?.trim() ? null : (
                       <div className="space-y-7 py-16 text-center">
                         <span className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-dashed border-border bg-background">
                           <BookOpen className="size-8 text-muted-foreground" />
