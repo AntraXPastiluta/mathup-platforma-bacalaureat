@@ -140,7 +140,7 @@ export function LessonSidebar({
               ) : (
                 <div className="space-y-1">
                   {programsSidebarList.map((p) => {
-                    const count = lessons.filter((l) => l.profile === p.key).length
+                    const count = lessons.filter((l) => l.profiles?.includes(p.key)).length
                     return (
                       <button
                         key={p.key}
@@ -170,7 +170,7 @@ export function LessonSidebar({
               )
             ) : sidebarLessonsOrdered.length === 0 ? (
               <p className="p-6 text-center text-sm text-slate-400">
-                {lessons.some((l) => l.profile === selectedProgramKey)
+                {lessons.some((l) => l.profiles?.includes(selectedProgramKey))
                   ? 'Nicio lecție nu se potrivește căutării.'
                   : 'Nu există lecții pentru acest program.'}
               </p>

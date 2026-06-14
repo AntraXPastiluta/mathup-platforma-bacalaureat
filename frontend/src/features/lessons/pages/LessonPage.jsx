@@ -21,6 +21,7 @@ import {
   canAccessLessonPart,
   canAccessQuiz,
   canTrackLessonCompletion,
+  getViewProfile,
 } from '../../../services/premiumAccessService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getTrustedStorageUrl, resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
@@ -169,7 +170,8 @@ export function LessonPage() {
   const subjectMeta = lesson
     ? SUBJECT_PARTS.find((subject) => subject.value === lesson.subject_part)
     : null
-  const profileMeta = lesson ? getProfileMeta(lesson.profile) : null
+  // Eticheta de program = programul de vizualizare (același prin care se afișează părțile).
+  const profileMeta = lesson ? getProfileMeta(getViewProfile(lesson, activeProfiles)) : null
   const accent = SUBJECT_ACCENTS[lesson?.subject_part] || DEFAULT_ACCENT
 
   const parts = lesson?.lesson_parts || []

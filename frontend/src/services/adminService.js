@@ -17,7 +17,6 @@ export async function getAllLessonsAdmin() {
   const { data, error } = await supabase
     .from('lessons')
     .select('*')
-    .order('profile', { ascending: true })
     .order('subject_part', { ascending: true })
     .order('order_index', { ascending: true })
 
@@ -60,13 +59,15 @@ export async function updateLesson(lessonId, updates) {
   return data
 }
 
-export async function getQuizQuestions(lessonId) {
+// Quiz-ul e „per program": dacă `profile` e dat, întoarce doar întrebările acelui program.
+export async function getQuizQuestions(lessonId, profile = null) {
   await requireCurriculumAdmin()
-  const { data, error } = await supabase
+  let query = supabase
     .from('quiz_questions')
     .select('*')
     .eq('lesson_id', lessonId)
-    .order('created_at', { ascending: true })
+  if (profile) query = query.eq('profile', profile)
+  const { data, error } = await query.order('created_at', { ascending: true })
 
   if (error) throw error
   return data
@@ -179,13 +180,15 @@ export async function deleteProgramSolvedVariant(id) {
   if (error) throw error
 }
 
-export async function getLessonParts(lessonId) {
+// Părțile sunt „per program": dacă `profile` e dat, întoarce doar secțiunile acelui program.
+export async function getLessonParts(lessonId, profile = null) {
   await requireCurriculumAdmin()
-  const { data, error } = await supabase
+  let query = supabase
     .from('lesson_parts')
     .select('*')
     .eq('lesson_id', lessonId)
-    .order('order_index', { ascending: true })
+  if (profile) query = query.eq('profile', profile)
+  const { data, error } = await query.order('order_index', { ascending: true })
 
   if (error) throw error
   return data

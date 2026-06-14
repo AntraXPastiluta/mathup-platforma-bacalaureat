@@ -79,7 +79,7 @@ export function LessonCreateForm({
           <StepHeader
             index={2}
             title="Specializare"
-            hint="Bifează unul sau mai multe programe — se creează câte o lecție pentru fiecare."
+            hint="Bifează unul sau mai multe programe. Conținutul și fișierele sunt comune; părțile și quiz-ul se adaugă separat per program."
           />
           {selectedProfiles.length > 0 ? (
             <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-primary">

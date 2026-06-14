@@ -66,6 +66,7 @@ export function CurriculumSection() {
           ) : (
             <LessonEditor
               selectedLesson={c.selectedLesson}
+              selectedProgramKey={c.selectedProgramKey}
               error={c.error}
               setError={c.setError}
               success={c.success}

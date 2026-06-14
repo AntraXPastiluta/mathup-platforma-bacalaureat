@@ -10,7 +10,7 @@ import { checkCurrentUserIsAdmin } from './curriculumAdminService'
 import { maskLessonForAccess } from './premiumAccessService'
 
 // Elevii citesc quiz-ul prin view-ul `quiz_questions_student` (fără correct_option_index).
-const LESSON_COLUMNS = 'id,title,content,video_url,difficulty,order_index,profile,subject_part,is_premium,preview_part_count'
+const LESSON_COLUMNS = 'id,title,content,video_url,difficulty,order_index,profiles,subject_part,is_premium,preview_part_count'
 
 /** Returnează lecțiile unui singur program (profil), ordonate pe subiect și index. */
 export async function getLessons(profile = DEFAULT_PROFILE) {
@@ -18,7 +18,7 @@ export async function getLessons(profile = DEFAULT_PROFILE) {
   const { data, error } = await supabase
     .from('lessons')
     .select(`${LESSON_COLUMNS}, lesson_parts(*)`)
-    .eq('profile', safeProfile)
+    .contains('profiles', [safeProfile])
     .order('subject_part', { ascending: true })
     .order('order_index', { ascending: true })
 
@@ -38,11 +38,12 @@ export async function getLessonsForProfiles(profileKeys, options = {}) {
     .order('order_index', { ascending: true })
 
   if (keys.length === 1) {
-    query = query.eq('profile', keys[0])
+    query = query.contains('profiles', [keys[0]])
   } else if (keys.length > 1) {
-    query = query.in('profile', keys)
+    // overlaps: lecția aparține cel puțin unuia dintre programele cerute.
+    query = query.overlaps('profiles', keys)
   } else {
-    query = query.eq('profile', DEFAULT_PROFILE)
+    query = query.contains('profiles', [DEFAULT_PROFILE])
   }
 
   const { data, error } = await query
@@ -57,7 +58,6 @@ export async function getLessonsForProfiles(profileKeys, options = {}) {
     .from('lessons')
     .select(`${LESSON_COLUMNS}, lesson_parts(*)`)
     .eq('subject_part', 3)
-    .order('profile', { ascending: true })
     .order('order_index', { ascending: true })
 
   if (s3Error) throw s3Error

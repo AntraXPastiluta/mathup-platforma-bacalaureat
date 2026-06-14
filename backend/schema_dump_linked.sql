@@ -457,7 +457,9 @@ CREATE TABLE IF NOT EXISTS "public"."lesson_parts" (
     "video_url" "text",
     "order_index" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "image_url" "text"
+    "image_url" "text",
+    "profile" "text" DEFAULT 'mate_info'::"text" NOT NULL,
+    CONSTRAINT "lesson_parts_profile_check" CHECK (("profile" = ANY (ARRAY['mate_info'::"text", 'tehnologic'::"text", 'stiintele_naturii'::"text", 'pedagogic'::"text"])))
 );
 
 
@@ -472,12 +474,15 @@ CREATE TABLE IF NOT EXISTS "public"."lessons" (
     "difficulty" "text" DEFAULT 'mediu'::"text" NOT NULL,
     "order_index" integer DEFAULT 0 NOT NULL,
     "profile" "text" DEFAULT 'mate_info'::"text" NOT NULL,
+    "profiles" "text"[] NOT NULL,
     "subject_part" smallint DEFAULT 1 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
     "is_premium" boolean DEFAULT false NOT NULL,
     "preview_part_count" smallint DEFAULT 1 NOT NULL,
     CONSTRAINT "lessons_difficulty_check" CHECK (("difficulty" = ANY (ARRAY['usor'::"text", 'mediu'::"text", 'greu'::"text"]))),
     CONSTRAINT "lessons_profile_check" CHECK (("profile" = ANY (ARRAY['mate_info'::"text", 'tehnologic'::"text", 'stiintele_naturii'::"text", 'pedagogic'::"text"]))),
+    CONSTRAINT "lessons_profiles_not_empty" CHECK (("cardinality"("profiles") >= 1)),
+    CONSTRAINT "lessons_profiles_valid" CHECK (("profiles" <@ ARRAY['mate_info'::"text", 'tehnologic'::"text", 'stiintele_naturii'::"text", 'pedagogic'::"text"])),
     CONSTRAINT "lessons_subject_part_check" CHECK (("subject_part" = ANY (ARRAY[1, 2, 3])))
 );
 
@@ -567,7 +572,9 @@ CREATE TABLE IF NOT EXISTS "public"."quiz_questions" (
     "options" "jsonb" NOT NULL,
     "correct_option_index" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "image_url" "text"
+    "image_url" "text",
+    "profile" "text" DEFAULT 'mate_info'::"text" NOT NULL,
+    CONSTRAINT "quiz_questions_profile_check" CHECK (("profile" = ANY (ARRAY['mate_info'::"text", 'tehnologic'::"text", 'stiintele_naturii'::"text", 'pedagogic'::"text"])))
 );
 
 
@@ -779,9 +786,13 @@ CREATE INDEX "lesson_files_lesson_idx" ON "public"."lesson_files" USING "btree" 
 
 CREATE INDEX "lesson_parts_lesson_order_idx" ON "public"."lesson_parts" USING "btree" ("lesson_id", "order_index");
 
+CREATE INDEX "lesson_parts_lesson_profile_order_idx" ON "public"."lesson_parts" USING "btree" ("lesson_id", "profile", "order_index");
+
 
 
 CREATE INDEX "lessons_profile_subject_order_idx" ON "public"."lessons" USING "btree" ("profile", "subject_part", "order_index");
+
+CREATE INDEX "lessons_profiles_gin_idx" ON "public"."lessons" USING "gin" ("profiles");
 
 
 
@@ -798,6 +809,8 @@ CREATE INDEX "program_solved_variants_profile_created_idx" ON "public"."program_
 
 
 CREATE INDEX "quiz_questions_lesson_idx" ON "public"."quiz_questions" USING "btree" ("lesson_id", "created_at");
+
+CREATE INDEX "quiz_questions_lesson_profile_idx" ON "public"."quiz_questions" USING "btree" ("lesson_id", "profile");
 
 
 

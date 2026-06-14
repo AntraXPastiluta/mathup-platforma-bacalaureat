@@ -13,8 +13,23 @@ function isSubjectThreeLesson(lesson) {
 }
 
 function isLessonInUserPrograms(lesson, activeProfiles) {
-  if (!lesson?.profile) return false
-  return normalizeProfilesList(activeProfiles).includes(lesson.profile)
+  // O lecție poate aparține mai multor programe; e accesibilă dacă utilizatorul e
+  // înscris la cel puțin unul dintre ele (intersecția listelor de profiluri).
+  if (!Array.isArray(lesson?.profiles) || lesson.profiles.length === 0) return false
+  const registered = new Set(normalizeProfilesList(activeProfiles))
+  return normalizeProfilesList(lesson.profiles).some((key) => registered.has(key))
+}
+
+/**
+ * Programul prin care elevul vede o lecție. Părțile și quiz-ul sunt separate per
+ * program, așa că trebuie ales unul singur: programul la care elevul e înscris (primul
+ * potrivit), iar dacă niciunul nu se potrivește (ex. premium neînscris), primul program
+ * al lecției.
+ */
+export function getViewProfile(lesson, activeProfiles) {
+  const lessonProfiles = normalizeProfilesList(lesson?.profiles)
+  const registered = normalizeProfilesList(activeProfiles)
+  return lessonProfiles.find((key) => registered.includes(key)) ?? lessonProfiles[0]
 }
 
 /** Acces complet: toate părțile, quiz, fișiere (program înregistrat, Premium sau Subiectul III). */
@@ -101,16 +116,27 @@ export function maskLessonForAccess(lesson, { isPremium, activeProfiles }) {
   const fullAccess = hasFullLessonAccess(lesson, isPremium, activeProfiles)
   const previewCount = getPreviewPartCount(lesson)
 
-  if (!fullAccess && Array.isArray(lesson.lesson_parts)) {
-    masked.lesson_parts = lesson.lesson_parts.filter((_, index) => index < previewCount)
+  // Părțile și quiz-ul sunt separate per program: păstrăm doar versiunea programului
+  // de vizualizare al elevului, NU și ale celorlalte programe ale lecției.
+  const viewProfile = getViewProfile(lesson, activeProfiles)
+
+  if (Array.isArray(lesson.lesson_parts)) {
+    let visibleParts = lesson.lesson_parts.filter((part) => part.profile === viewProfile)
+    if (!fullAccess) {
+      visibleParts = visibleParts.filter((_, index) => index < previewCount)
+    }
+    masked.lesson_parts = visibleParts
   }
 
+  if (Array.isArray(lesson.quiz_questions)) {
+    masked.quiz_questions = canAccessQuiz(lesson, isPremium, activeProfiles)
+      ? lesson.quiz_questions.filter((question) => question.profile === viewProfile)
+      : []
+  }
+
+  // Fișierele sunt comune tuturor programelor; se ascund doar dacă nu există acces.
   if (!canAccessLessonFiles(lesson, isPremium, activeProfiles)) {
     masked.lesson_files = []
-  }
-
-  if (!canAccessQuiz(lesson, isPremium, activeProfiles)) {
-    masked.quiz_questions = []
   }
 
   return masked

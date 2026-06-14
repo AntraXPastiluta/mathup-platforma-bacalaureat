@@ -29,6 +29,7 @@ const TAB_ICONS = {
 
 export function LessonEditor({
   selectedLesson,
+  selectedProgramKey,
   error,
   setError,
   success,
@@ -70,7 +71,9 @@ export function LessonEditor({
   handleFileUpload,
   handleDeleteFile,
 }) {
-  const lessonProgram = getProfileMeta(selectedLesson.profile)
+  const lessonPrograms = (selectedLesson.profiles ?? []).map(getProfileMeta)
+  // Părțile și quiz-ul sunt separate per program; arătăm pentru ce program se editează.
+  const editingProgram = getProfileMeta(selectedProgramKey ?? selectedLesson.profiles?.[0])
   // Insigne numerice pe tab-uri, ca administratorul să vadă dintr-o privire ce e completat.
   const TAB_COUNTS = {
     content: 0,
@@ -96,7 +99,9 @@ export function LessonEditor({
             <div className="min-w-0">
               <h2 className="truncate text-xl font-black tracking-tight text-slate-800 sm:text-2xl dark:text-white">{selectedLesson.title}</h2>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="rounded border border-primary/10 bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary">{lessonProgram.shortLabel}</span>
+                {lessonPrograms.map((program) => (
+                  <span key={program.key} className="rounded border border-primary/10 bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary">{program.shortLabel}</span>
+                ))}
                 <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Subiectul {selectedLesson.subject_part}</span>
                 {selectedLesson.difficulty ? (
@@ -180,7 +185,7 @@ export function LessonEditor({
               <div className="space-y-2 md:col-span-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Specializare (programe liceale)</label>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  Primul program din selecția ta devine programul lecției curente; pentru fiecare program suplimentar se creează o copie cu aceleași părți, quiz și fișiere.
+                  Lecția apare în toate programele bifate. Conținutul principal și fișierele sunt comune (le editezi o singură dată). Părțile și quiz-ul se editează separat pentru fiecare program — pe cel selectat în bara laterală.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {PROFILES.map((p) => {
@@ -253,7 +258,11 @@ export function LessonEditor({
               />
             )}
             {activeTab === 'parts' && (
-              <LessonPartsTab
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                  Editezi părțile pentru programul <span className="font-black uppercase">{editingProgram.shortLabel}</span>. Fiecare program are propriile părți — schimbă programul din bara laterală pentru altul.
+                </div>
+                <LessonPartsTab
                 parts={parts}
                 newPart={newPart}
                 setNewPart={setNewPart}
@@ -267,9 +276,14 @@ export function LessonEditor({
                 handleDeletePart={handleDeletePart}
                 updatePartField={updatePartField}
               />
+              </div>
             )}
             {activeTab === 'quiz' && (
-              <LessonQuizTab
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                  Editezi quiz-ul pentru programul <span className="font-black uppercase">{editingProgram.shortLabel}</span>. Fiecare program are propriul quiz — schimbă programul din bara laterală pentru altul.
+                </div>
+                <LessonQuizTab
                 parts={parts}
                 questions={questions}
                 newQuestion={newQuestion}
@@ -279,6 +293,7 @@ export function LessonEditor({
                 getQuestionOptions={getQuestionOptions}
                 getQuestionPlacementLabel={getQuestionPlacementLabel}
               />
+              </div>
             )}
             {activeTab === 'files' && (
               <LessonFilesTab

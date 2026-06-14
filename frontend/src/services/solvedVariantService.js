@@ -27,7 +27,8 @@ function mapLegacyLessonVariant(row) {
     file_url: row.file_url,
     file_type: row.file_type,
     created_at: row.created_at,
-    profile: row.lessons?.profile ?? null,
+    // Lecția poate aparține mai multor programe; pentru eticheta variantei păstrăm primul.
+    profile: row.lessons?.profiles?.[0] ?? null,
     source: 'lesson',
   }
 }
@@ -52,11 +53,11 @@ export async function getSolvedVariantsForProfiles(profileKeys) {
         file_type,
         created_at,
         lessons!inner (
-          profile
+          profiles
         )
       `)
       .eq('is_solved_content', true)
-      .in('lessons.profile', keys)
+      .overlaps('lessons.profiles', keys)
       .order('created_at', { ascending: false }),
   ])
 

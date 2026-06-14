@@ -70,7 +70,7 @@ export function RoadmapStudioPage() {
   }, [dirty])
 
   const lessonsForProfile = useMemo(
-    () => lessons.filter((lesson) => lesson.profile === form.profile),
+    () => lessons.filter((lesson) => lesson.profiles?.includes(form.profile)),
     [lessons, form.profile],
   )
 

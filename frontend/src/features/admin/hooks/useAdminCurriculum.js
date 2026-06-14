@@ -22,7 +22,6 @@ import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
 import { PROFILES } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
 import { ALLOWED_LESSON_FILE_EXTENSIONS } from '../constants'
-import { cloneLessonToProfiles } from '../utils/lessonClone'
 
 // Toggle a program key inside a lesson's profile list. A lesson must always
 // belong to at least one program, so removing the last remaining key is a
@@ -95,7 +94,7 @@ export function useAdminCurriculum() {
   const sidebarLessonsOrdered = useMemo(() => {
     if (!selectedProgramKey) return []
     const q = sidebarQuery.trim().toLowerCase()
-    let list = lessons.filter((l) => l.profile === selectedProgramKey)
+    let list = lessons.filter((l) => l.profiles?.includes(selectedProgramKey))
     if (q) list = list.filter((l) => (l.title || '').toLowerCase().includes(q))
     return [...list].sort((a, b) => {
       const sp = (a.subject_part ?? 1) - (b.subject_part ?? 1)
@@ -127,7 +126,13 @@ export function useAdminCurriculum() {
   }
 
   const handleSelectLesson = (lesson) => {
-    setSelectedProgramKey(lesson.profile)
+    const lessonProfiles = normalizeProfilesList(lesson.profiles)
+    // Părțile/quiz-ul sunt per program: alegem programul de vizualizare = cel curent din
+    // sidebar dacă lecția îl conține, altfel primul program al lecției.
+    const programForView = selectedProgramKey && lessonProfiles.includes(selectedProgramKey)
+      ? selectedProgramKey
+      : lessonProfiles[0]
+    setSelectedProgramKey(programForView)
     setSidebarQuery('')
     setSelectedLesson(lesson)
     setIsCreating(false)
@@ -136,22 +141,24 @@ export function useAdminCurriculum() {
     setVideoUrl(lesson.video_url || '')
     setEditLessonData({
       title: lesson.title,
-      profiles: [lesson.profile],
+      profiles: lessonProfiles,
       subject_part: lesson.subject_part,
       difficulty: lesson.difficulty,
       order_index: lesson.order_index,
       is_premium: Boolean(lesson.is_premium),
       preview_part_count: lesson.preview_part_count ?? 1,
     })
-    loadSubData(lesson.id)
+    loadSubData(lesson.id, programForView)
   }
 
-  async function loadSubData(lessonId) {
+  // Părțile și quiz-ul se încarcă filtrate pe program (sunt separate per program);
+  // fișierele sunt comune, deci nu se filtrează.
+  async function loadSubData(lessonId, profile = null) {
     try {
       const [qData, fData, pData] = await Promise.all([
-        getQuizQuestions(lessonId),
+        getQuizQuestions(lessonId, profile),
         getLessonFiles(lessonId),
-        getLessonParts(lessonId),
+        getLessonParts(lessonId, profile),
       ])
       setQuestions(qData)
       setFiles(fData)
@@ -184,22 +191,19 @@ export function useAdminCurriculum() {
     const profiles = normalizeProfilesList(newLessonData.profiles)
     try {
       setLoading(true)
-      const base = {
+      // O singură lecție, partajată în toate programele bifate (conținut comun).
+      const created = await addLesson({
         title: newLessonData.title.trim(),
+        profiles,
         subject_part: newLessonData.subject_part,
         difficulty: newLessonData.difficulty,
         order_index: newLessonData.order_index,
         is_premium: Boolean(newLessonData.is_premium),
         preview_part_count: Number(newLessonData.preview_part_count) || 1,
         content: '',
-      }
-      const createdList = []
-      for (const profile of profiles) {
-        const created = await addLesson({ ...base, profile })
-        createdList.push(created)
-      }
-      setLessons([...lessons, ...createdList])
-      handleSelectLesson(createdList[createdList.length - 1])
+      })
+      setLessons([...lessons, created])
+      handleSelectLesson(created)
       setIsCreating(false)
       setNewLessonData({
         title: '',
@@ -212,7 +216,7 @@ export function useAdminCurriculum() {
       })
       setSuccess(
         profiles.length > 1
-          ? `Au fost create ${profiles.length} lecții (câte una pentru fiecare program selectat).`
+          ? `Lecție creată în ${profiles.length} programe (conținut partajat).`
           : 'Lecție creată cu succes!',
       )
     } catch (err) {
@@ -227,14 +231,13 @@ export function useAdminCurriculum() {
       setError('Titlul lecției este obligatoriu.')
       return
     }
-    // O lecție aparține unui singur program în baza de date. Dacă adminul selectează mai
-    // multe programe, primul devine programul lecției curente, iar restul (extraProfiles)
-    // primesc copii independente ale lecției (vezi cloneLessonToProfiles mai jos).
+    // O lecție aparține mai multor programe printr-o singură coloană `profiles` (text[]).
+    // Conținutul (părți, quiz, fișiere) e partajat: bifând/debifând programe doar se
+    // schimbă lista, fără a duplica lecția.
     const profiles = normalizeProfilesList(editLessonData.profiles || [])
-    const [primary, ...extraProfiles] = profiles
     const payload = {
       title: editLessonData.title.trim(),
-      profile: primary,
+      profiles,
       subject_part: editLessonData.subject_part,
       difficulty: editLessonData.difficulty,
       order_index: editLessonData.order_index,
@@ -244,22 +247,7 @@ export function useAdminCurriculum() {
     try {
       setLoading(true)
       const updated = await updateLesson(selectedLesson.id, payload)
-      if (extraProfiles.length > 0) {
-        await cloneLessonToProfiles({
-          extraProfiles,
-          editLessonData,
-          lessonContent,
-          videoUrl,
-          parts,
-          questions,
-          files,
-        })
-      }
-      setSuccess(
-        extraProfiles.length > 0
-          ? `Metadate actualizate. Au fost adăugate ${extraProfiles.length} lecții noi cu părți, quiz și fișiere copiate.`
-          : 'Metadatele lecției au fost actualizate!',
-      )
+      setSuccess('Metadatele lecției au fost actualizate!')
       setIsEditingMetadata(false)
       await loadLessons()
       handleSelectLesson(updated)
@@ -306,6 +294,7 @@ export function useAdminCurriculum() {
     try {
       const q = await addQuizQuestion({
         lesson_id: selectedLesson.id,
+        profile: selectedProgramKey,
         question_text: newQuestion.text,
         options: { choices: newQuestion.options, placement },
         correct_option_index: newQuestion.correct,
@@ -398,6 +387,7 @@ export function useAdminCurriculum() {
     try {
       const p = await addLessonPart({
         lesson_id: selectedLesson.id,
+        profile: selectedProgramKey,
         title: newPart.title,
         content: newPart.content,
         video_url: newPart.video_url,
@@ -459,7 +449,7 @@ export function useAdminCurriculum() {
     setIsEditingMetadata(false)
     setActiveTab('content')
     if (profileKey) {
-      const nextIndex = lessons.filter((lesson) => lesson.profile === profileKey).length + 1
+      const nextIndex = lessons.filter((lesson) => lesson.profiles?.includes(profileKey)).length + 1
       setNewLessonData((prev) => ({ ...prev, profiles: [profileKey], order_index: nextIndex }))
     }
   }
