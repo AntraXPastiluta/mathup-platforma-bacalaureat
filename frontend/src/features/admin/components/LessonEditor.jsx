@@ -70,6 +70,7 @@ export function LessonEditor({
   cancelQuestionEdit,
   handleDeleteQuestion,
   getQuestionOptions,
+  getQuestionOptionExplanations,
   getQuestionPlacementLabel,
   regularFiles,
   handleFileUpload,
@@ -299,6 +300,7 @@ export function LessonEditor({
                 cancelQuestionEdit={cancelQuestionEdit}
                 handleDeleteQuestion={handleDeleteQuestion}
                 getQuestionOptions={getQuestionOptions}
+                getQuestionOptionExplanations={getQuestionOptionExplanations}
                 getQuestionPlacementLabel={getQuestionPlacementLabel}
               />
               </div>

@@ -267,8 +267,9 @@ export function LessonPage() {
 
     try {
       // Corectitudinea este evaluată pe server (submitQuizAnswer); clientul nu primește
-      // niciodată indexul răspunsului corect și nici explicația înainte de a răspunde
-      // corect, ca să nu poată fi extrase din rețea.
+      // niciodată indexul răspunsului corect și nici explicațiile înainte de a răspunde,
+      // ca să nu poată fi extrase din rețea. Serverul întoarce doar explicația variantei
+      // alese de elev.
       const { correct, explanation } = await submitQuizAnswer({
         questionId: question.id,
         selectedIndex: selectedAnswer,
@@ -423,9 +424,9 @@ export function LessonPage() {
                     </span>
                   )}
                 </div>
-                {/* Explicația apare după ce elevul răspunde — verde la răspuns corect,
-                    chihlimbar la unul greșit (serverul o trimite în ambele cazuri,
-                    dar doar după ce s-a trimis un răspuns). */}
+                {/* Explicația variantei alese apare după ce elevul răspunde — verde la
+                    răspuns corect, chihlimbar la unul greșit (serverul o trimite în ambele
+                    cazuri, dar doar după ce s-a trimis un răspuns). */}
                 {answered && quizExplanations[question.id] ? (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}

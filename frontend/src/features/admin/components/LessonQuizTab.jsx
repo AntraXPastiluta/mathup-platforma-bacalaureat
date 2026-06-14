@@ -18,12 +18,13 @@ export function LessonQuizTab({
   cancelQuestionEdit,
   handleDeleteQuestion,
   getQuestionOptions,
+  getQuestionOptionExplanations,
   getQuestionPlacementLabel,
 }) {
   const formRef = useRef(null)
   const questionRef = useRef(null)
-  const explanationRef = useRef(null)
   const optionRefs = useRef({})
+  const explanationRefs = useRef({})
   // Reținem ultima opțiune focalizată ca să știm în care inserăm simbolurile.
   const [activeOption, setActiveOption] = useState(0)
   const isEditing = Boolean(editingQuestionId)
@@ -43,6 +44,21 @@ export function LessonQuizTab({
         const next = [...newQuestion.options]
         next[activeOption] = value
         setNewQuestion({ ...newQuestion, options: next })
+      },
+    )
+  }
+
+  // Fiecare explicație are propria bară de simboluri, care inserează direct în slotul ei.
+  const insertIntoExplanation = (idx, item, block) => {
+    insertMathSnippet(
+      explanationRefs.current[idx],
+      item,
+      block,
+      newQuestion.optionExplanations[idx] ?? '',
+      (value) => {
+        const next = [...newQuestion.optionExplanations]
+        next[idx] = value
+        setNewQuestion({ ...newQuestion, optionExplanations: next })
       },
     )
   }
@@ -137,73 +153,76 @@ export function LessonQuizTab({
             <MathSymbolToolbar onInsert={insertIntoOption} />
           </div>
           <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-1">
-            Simbolurile se adaugă în <span className="font-black text-indigo-500 dark:text-indigo-400">Opțiunea {activeOption + 1}</span> (cea selectată).
+            Simbolurile din bara de sus se adaugă în textul <span className="font-black text-indigo-500 dark:text-indigo-400">Opțiunii {activeOption + 1}</span> (cea selectată). Fiecare explicație are propria bară de simboluri.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {newQuestion.options.map((opt, idx) => (
-              <div key={idx} className={`relative rounded-2xl border transition-all ${newQuestion.correct === idx ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 shadow-sm'} ${activeOption === idx ? 'ring-2 ring-indigo-500/40' : ''}`}>
-                <div className="flex items-center gap-3 p-3">
-                  <div className="flex items-center justify-center size-6 rounded-lg bg-slate-100 dark:bg-black/20">
+          <div className="grid grid-cols-1 gap-4">
+            {newQuestion.options.map((opt, idx) => {
+              const explanation = newQuestion.optionExplanations[idx] ?? ''
+              return (
+                <div key={idx} className={`relative rounded-2xl border transition-all ${newQuestion.correct === idx ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 shadow-sm'} ${activeOption === idx ? 'ring-2 ring-indigo-500/40' : ''}`}>
+                  <div className="flex items-center gap-3 p-3">
+                    <div className="flex items-center justify-center size-6 rounded-lg bg-slate-100 dark:bg-black/20">
+                      <input
+                        type="radio"
+                        name="correct"
+                        className="accent-emerald-500"
+                        checked={newQuestion.correct === idx}
+                        onChange={() => setNewQuestion({ ...newQuestion, correct: idx })}
+                      />
+                    </div>
                     <input
-                      type="radio"
-                      name="correct"
-                      className="accent-emerald-500"
-                      checked={newQuestion.correct === idx}
-                      onChange={() => setNewQuestion({ ...newQuestion, correct: idx })}
+                      ref={(el) => { optionRefs.current[idx] = el }}
+                      type="text"
+                      className="flex-1 bg-transparent border-none p-0 text-sm font-bold focus:ring-0 placeholder:text-slate-400 text-slate-700 dark:text-white"
+                      placeholder={`Opțiunea ${idx + 1}`}
+                      value={opt}
+                      onFocus={() => setActiveOption(idx)}
+                      onChange={(e) => {
+                        const next = [...newQuestion.options]
+                        next[idx] = e.target.value
+                        setNewQuestion({ ...newQuestion, options: next })
+                      }}
                     />
+                    {newQuestion.correct === idx ? (
+                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                        Corect
+                      </span>
+                    ) : null}
                   </div>
-                  <input
-                    ref={(el) => { optionRefs.current[idx] = el }}
-                    type="text"
-                    className="flex-1 bg-transparent border-none p-0 text-sm font-bold focus:ring-0 placeholder:text-slate-400 text-slate-700 dark:text-white"
-                    placeholder={`Opțiunea ${idx + 1}`}
-                    value={opt}
-                    onFocus={() => setActiveOption(idx)}
-                    onChange={(e) => {
-                      const next = [...newQuestion.options]
-                      next[idx] = e.target.value
-                      setNewQuestion({ ...newQuestion, options: next })
-                    }}
-                  />
+                  {opt.includes('$') ? (
+                    <div className="border-t border-dashed border-slate-200 dark:border-white/10 px-3 py-2">
+                      <MathContent content={opt} className="text-xs font-bold text-slate-600 dark:text-slate-300" />
+                    </div>
+                  ) : null}
+                  <div className="border-t border-dashed border-slate-200 dark:border-white/10 px-3 py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        Explicație variantă <span className="text-slate-400/70 normal-case tracking-normal">(opțional)</span>
+                      </label>
+                      <MathSymbolToolbar onInsert={(item, block) => insertIntoExplanation(idx, item, block)} />
+                    </div>
+                    <textarea
+                      ref={(el) => { explanationRefs.current[idx] = el }}
+                      rows={2}
+                      className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-700 dark:text-white shadow-sm resize-y"
+                      placeholder="De ce e corectă/greșită această variantă? Se arată elevului dacă o alege."
+                      value={explanation}
+                      onChange={(e) => {
+                        const next = [...newQuestion.optionExplanations]
+                        next[idx] = e.target.value
+                        setNewQuestion({ ...newQuestion, optionExplanations: next })
+                      }}
+                    />
+                    {explanation.includes('$') ? (
+                      <div className="rounded-lg border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 px-3 py-2">
+                        <MathContent content={explanation} className="text-[11px] font-bold text-slate-600 dark:text-slate-300" />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                {opt.includes('$') ? (
-                  <div className="border-t border-dashed border-slate-200 dark:border-white/10 px-3 py-2">
-                    <MathContent content={opt} className="text-xs font-bold text-slate-600 dark:text-slate-300" />
-                  </div>
-                ) : null}
-              </div>
-            ))}
+              )
+            })}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">
-              Explicație <span className="text-slate-400/70 normal-case tracking-normal">(opțional)</span>
-            </label>
-            <MathSymbolToolbar
-              onInsert={(item, block) =>
-                insertMathSnippet(explanationRef.current, item, block, newQuestion.explanation, (value) => setNewQuestion({ ...newQuestion, explanation: value }))
-              }
-            />
-          </div>
-          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-1">
-            Se afișează elevului după ce răspunde (corect sau greșit).
-          </p>
-          <textarea
-            ref={explanationRef}
-            rows={3}
-            className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-slate-800 dark:text-white shadow-sm resize-y"
-            placeholder="Ex: Derivata lui $x^2$ este $2x$ folosind regula puterii..."
-            value={newQuestion.explanation}
-            onChange={(e) => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
-          />
-          {newQuestion.explanation?.trim() ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/60 dark:bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Previzualizare</p>
-              <MathContent content={newQuestion.explanation} className="text-sm leading-relaxed font-bold text-slate-700 dark:text-slate-200" />
-            </div>
-          ) : null}
         </div>
 
         {isEditing ? (
@@ -250,20 +269,25 @@ export function LessonQuizTab({
                   <p className="mb-4 w-fit rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-500 border border-indigo-500/10">
                     {getQuestionPlacementLabel(q)}
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                    {getQuestionOptions(q).map((opt, oIdx) => (
-                      <div key={oIdx} className={`flex items-center gap-2 text-xs font-bold ${oIdx === q.correct_option_index ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
-                        <div className={`size-1.5 shrink-0 rounded-full ${oIdx === q.correct_option_index ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-slate-300 dark:bg-slate-700'}`} />
-                        <MathContent content={opt} className="min-w-0" />
-                      </div>
-                    ))}
+                  <div className="space-y-2.5">
+                    {getQuestionOptions(q).map((opt, oIdx) => {
+                      const isCorrect = oIdx === q.correct_option_index
+                      const explanation = getQuestionOptionExplanations(q)[oIdx]
+                      return (
+                        <div key={oIdx} className="space-y-1">
+                          <div className={`flex items-center gap-2 text-xs font-bold ${isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                            <div className={`size-1.5 shrink-0 rounded-full ${isCorrect ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                            <MathContent content={opt} className="min-w-0" />
+                          </div>
+                          {explanation ? (
+                            <div className="ml-3.5 border-l-2 border-slate-200 dark:border-white/10 pl-3">
+                              <MathContent content={explanation} className="text-[11px] font-medium text-slate-500 dark:text-slate-400" />
+                            </div>
+                          ) : null}
+                        </div>
+                      )
+                    })}
                   </div>
-                  {q.explanation ? (
-                    <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-2">Explicație</p>
-                      <MathContent content={q.explanation} className="text-xs font-bold text-slate-600 dark:text-slate-300" />
-                    </div>
-                  ) : null}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 mt-1">
                   <button

@@ -33,7 +33,8 @@ const emptyQuestion = () => ({
   text: '',
   options: ['', '', '', ''],
   correct: 0,
-  explanation: '',
+  // O explicație opțională pentru fiecare variantă de răspuns (paralelă cu `options`).
+  optionExplanations: ['', '', '', ''],
   placement: { type: 'end', partId: '' },
 })
 
@@ -309,7 +310,7 @@ export function useAdminCurriculum() {
         question_text: newQuestion.text,
         options: { choices: newQuestion.options, placement },
         correct_option_index: newQuestion.correct,
-        explanation: newQuestion.explanation?.trim() || null,
+        option_explanations: newQuestion.optionExplanations.map((e) => e?.trim() || null),
       })
       setQuestions([...questions, q])
       setNewQuestion(emptyQuestion())
@@ -323,15 +324,17 @@ export function useAdminCurriculum() {
   // stocat ({ choices, placement }) în forma plată folosită de formular.
   const startEditingQuestion = (question) => {
     const choices = getQuestionOptions(question)
+    const explanations = getQuestionOptionExplanations(question)
     const placement = Array.isArray(question.options)
       ? { type: 'end', partId: '' }
       : question.options?.placement || { type: 'end', partId: '' }
+    // Garantăm cel puțin 4 sloturi, ca formularul (4 opțiuni) să rămână coerent.
+    const slots = Math.max(4, choices.length)
     setNewQuestion({
       text: question.question_text || '',
-      // Garantăm cel puțin 4 sloturi, ca formularul (4 opțiuni) să rămână coerent.
-      options: Array.from({ length: Math.max(4, choices.length) }, (_, i) => choices[i] ?? ''),
+      options: Array.from({ length: slots }, (_, i) => choices[i] ?? ''),
       correct: question.correct_option_index ?? 0,
-      explanation: question.explanation || '',
+      optionExplanations: Array.from({ length: slots }, (_, i) => explanations[i] ?? ''),
       placement,
     })
     setEditingQuestionId(question.id)
@@ -356,7 +359,7 @@ export function useAdminCurriculum() {
         question_text: newQuestion.text,
         options: { choices: newQuestion.options, placement },
         correct_option_index: newQuestion.correct,
-        explanation: newQuestion.explanation?.trim() || null,
+        option_explanations: newQuestion.optionExplanations.map((e) => e?.trim() || null),
       })
       setQuestions(questions.map((q) => (q.id === editingQuestionId ? updated : q)))
       setNewQuestion(emptyQuestion())
@@ -496,6 +499,12 @@ export function useAdminCurriculum() {
     return Array.isArray(question.options) ? question.options : question.options?.choices || []
   }
 
+  // Explicațiile per opțiune trăiesc într-o coloană separată (`option_explanations`,
+  // array paralel cu opțiunile). Întoarcem [] pentru întrebări vechi, fără explicații.
+  const getQuestionOptionExplanations = (question) => {
+    return Array.isArray(question.option_explanations) ? question.option_explanations : []
+  }
+
   const getQuestionPlacementLabel = (question) => {
     const placement = Array.isArray(question.options) ? null : question.options?.placement
     if (placement?.type === 'after_part') {
@@ -609,6 +618,7 @@ export function useAdminCurriculum() {
     handleDeletePart,
     updatePartField,
     getQuestionOptions,
+    getQuestionOptionExplanations,
     getQuestionPlacementLabel,
     startCreatingLesson,
     startEditingLesson,

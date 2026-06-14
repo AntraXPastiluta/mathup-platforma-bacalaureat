@@ -107,6 +107,7 @@ export function CurriculumSection() {
               cancelQuestionEdit={c.cancelQuestionEdit}
               handleDeleteQuestion={c.handleDeleteQuestion}
               getQuestionOptions={c.getQuestionOptions}
+              getQuestionOptionExplanations={c.getQuestionOptionExplanations}
               getQuestionPlacementLabel={c.getQuestionPlacementLabel}
               regularFiles={c.regularFiles}
               handleFileUpload={c.handleFileUpload}
