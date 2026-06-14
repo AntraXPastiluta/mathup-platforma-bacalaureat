@@ -4,12 +4,11 @@ import { CalendarDays, Layers, Lock, ShieldCheck } from 'lucide-react'
 import { Navbar } from '../../../shared/ui/Navbar'
 import { BrandLogo } from '../../../shared/ui/BrandLogo'
 import { SectionNav } from '../components/SectionNav'
+import { AdminAmbientBackdrop } from '../components/AdminAmbientBackdrop'
+import { Reveal, SectionLabel, SERIF } from '../components/AdminEditorial'
 import { getAdminSectionsForUser, getSectionHref } from '../constants'
 import { useAuth } from '../../../app/providers/AuthProvider'
 
-const CurriculumSection = lazy(() =>
-  import('../components/CurriculumSection').then((m) => ({ default: m.CurriculumSection })),
-)
 const MathGuideSection = lazy(() =>
   import('../components/MathGuideSection').then((m) => ({ default: m.MathGuideSection })),
 )
@@ -26,8 +25,9 @@ const ReportsSection = lazy(() =>
   import('../components/ReportsSection').then((m) => ({ default: m.ReportsSection })),
 )
 
+// Curriculum și Roadmaps au pagini dedicate (vezi `href` în ADMIN_SECTIONS) — nu se randează
+// inline aici, deci nu apar în acest registru de secțiuni inline.
 const SECTION_LOADERS = {
-  curriculum: CurriculumSection,
   'ghid-formule': MathGuideSection,
   variants: SolvedVariantsSection,
   rapoarte: ReportsSection,
@@ -35,40 +35,10 @@ const SECTION_LOADERS = {
   platform: PlatformSection,
 }
 
-// Serif de manuscris pentru accentele editoriale — aceeași voce „document tipărit”
-// ca pe Dashboard / Welcome, fără fonturi externe (CSP-safe).
-const SERIF =
-  '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif'
-
 const MONTHS_RO = [
   'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
   'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
 ]
-
-// Etichetă editorială: linie-accent + micro-text majuscul (ca pe Dashboard).
-function SectionLabel({ children, className = '' }) {
-  return (
-    <span className={`flex items-center gap-2.5 ${className}`}>
-      <span className="h-px w-7 shrink-0 bg-primary" aria-hidden />
-      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">
-        {children}
-      </span>
-    </span>
-  )
-}
-
-// Revelare unică la intrare — folosește animația comună din index.css.
-function Reveal({ delay = 0, as: Tag = 'div', className = '', children, ...rest }) {
-  return (
-    <Tag
-      className={`dashboard-reveal ${className}`}
-      style={delay ? { animationDelay: `${delay}ms` } : undefined}
-      {...rest}
-    >
-      {children}
-    </Tag>
-  )
-}
 
 function SectionFallback() {
   return (
@@ -94,8 +64,8 @@ export function AdminDashboardPage() {
   const adminSection = useMemo(() => {
     const fromUrl = searchParams.get('section')
     // Secțiunile invizibile (ex. un profesor care nimerește ?section=rapoarte) și cele cu
-    // pagină dedicată (redirecționate mai jos) cad pe Curriculum.
-    return visibleSectionIds.has(fromUrl) && !getSectionHref(fromUrl) ? fromUrl : 'curriculum'
+    // pagină dedicată (redirecționate mai jos) nu se randează inline → `null` = doar consola.
+    return visibleSectionIds.has(fromUrl) && !getSectionHref(fromUrl) ? fromUrl : null
   }, [searchParams, visibleSectionIds])
 
   useEffect(() => {
@@ -118,14 +88,10 @@ export function AdminDashboardPage() {
       navigate(href)
       return
     }
-    if (id === 'curriculum') {
-      setSearchParams({}, { replace: true })
-    } else {
-      setSearchParams({ section: id }, { replace: true })
-    }
+    setSearchParams({ section: id }, { replace: true })
   }
 
-  const ActiveSection = SECTION_LOADERS[adminSection] ?? CurriculumSection
+  const ActiveSection = adminSection ? SECTION_LOADERS[adminSection] : null
 
   const roleLabel = isPrimaryAdmin
     ? 'Administrator principal'
@@ -145,20 +111,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="relative min-h-screen text-foreground selection:bg-primary/30 transition-colors duration-500">
-      {/* Fundal ambiental fix — aceeași „atmosferă” indigo ca pe tabloul de bord. */}
-      <div
-        className="ambient-backdrop-fixed pointer-events-none fixed inset-0 z-0 overflow-hidden"
-        aria-hidden
-      >
-        <div className="dashboard-aurora absolute inset-0" />
-        <div className="dashboard-mesh absolute inset-0 opacity-70 dark:opacity-50" />
-        <span className="dashboard-particle dashboard-particle--a" />
-        <span className="dashboard-particle dashboard-particle--b" />
-        <span className="dashboard-particle dashboard-particle--c" />
-        <span className="dashboard-particle dashboard-particle--d" />
-        <span className="dashboard-particle dashboard-particle--e" />
-        <div className="absolute inset-0 scholar-grid opacity-[0.04] dark:opacity-[0.06]" />
-      </div>
+      <AdminAmbientBackdrop />
 
       <Navbar />
 
@@ -285,13 +238,32 @@ export function AdminDashboardPage() {
           <SectionNav activeSection={adminSection} onSelectSection={setAdminSection} />
         </Reveal>
 
-        {/* ── Secțiunea activă ────────────────────────────────────── */}
-        <Suspense fallback={<SectionFallback />}>
-          {/* key=adminSection => revelarea se reia la fiecare schimbare de secțiune */}
-          <div key={adminSection} className="dashboard-reveal relative">
-            <ActiveSection />
+        {/* ── Secțiunea activă (sau invitația de a alege una) ─────── */}
+        {ActiveSection ? (
+          <Suspense fallback={<SectionFallback />}>
+            {/* key=adminSection => revelarea se reia la fiecare schimbare de secțiune */}
+            <div key={adminSection} className="dashboard-reveal relative">
+              <ActiveSection />
+            </div>
+          </Suspense>
+        ) : (
+          <div
+            key="hub"
+            className="dashboard-reveal mt-2 flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-border bg-white/60 px-6 py-16 text-center shadow-inner dark:bg-slate-900/40"
+          >
+            <span className="flex size-14 items-center justify-center rounded-2xl border border-primary/10 bg-primary/10 text-primary">
+              <Layers className="size-6" aria-hidden />
+            </span>
+            <div className="space-y-1.5">
+              <p className="font-heading text-lg font-black uppercase tracking-tight text-foreground">
+                Alege o secțiune
+              </p>
+              <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-muted-foreground">
+                Selectează un modul din registrul de mai sus pentru a începe administrarea.
+              </p>
+            </div>
           </div>
-        </Suspense>
+        )}
       </main>
 
       {/* ── Colofon ─────────────────────────────────────────────── */}

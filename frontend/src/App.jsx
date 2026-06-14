@@ -21,6 +21,7 @@ import { DashboardPage } from './features/dashboard/pages/DashboardPage'
 import { ProfilePage } from './features/profile/pages/ProfilePage'
 import { LessonPage } from './features/lessons/pages/LessonPage'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
+import { CurriculumStudioPage } from './features/admin/pages/CurriculumStudioPage'
 import { RoadmapViewerPage } from './features/roadmap/pages/RoadmapViewerPage'
 import { RoadmapStudioPage } from './features/roadmap/pages/RoadmapStudioPage'
 import { SolvedVariantsPage } from './features/variants/pages/SolvedVariantsPage'
@@ -56,6 +57,14 @@ function MaintenanceRoutes() {
         element={(
           <AdminRoute>
             <AdminDashboardPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/curriculum"
+        element={(
+          <AdminRoute>
+            <CurriculumStudioPage />
           </AdminRoute>
         )}
       />
@@ -200,6 +209,14 @@ function NormalRoutes() {
               element={(
                 <AdminRoute>
                   <AdminDashboardPage />
+                </AdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/curriculum"
+              element={(
+                <AdminRoute>
+                  <CurriculumStudioPage />
                 </AdminRoute>
               )}
             />

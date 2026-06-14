@@ -12,9 +12,9 @@ export const ALLOWED_LESSON_FILE_EXTENSIONS = new Set([
 ])
 
 export const ADMIN_SECTIONS = [
-  { id: 'curriculum', label: 'Curriculum', icon: BookOpen, description: 'Lecții și materie' },
-  { id: 'ghid-formule', label: 'Ghid formule', icon: Sigma, description: 'Simboluri matematice' },
   // Secțiunile cu `href` au pagină dedicată (pe tot ecranul), nu se randează inline în consolă.
+  { id: 'curriculum', label: 'Curriculum', icon: BookOpen, description: 'Lecții și materie', href: '/admin/curriculum' },
+  { id: 'ghid-formule', label: 'Ghid formule', icon: Sigma, description: 'Simboluri matematice' },
   { id: 'roadmaps', label: 'Roadmaps', icon: Map, description: 'Trasee de studiu', href: '/admin/roadmaps' },
   { id: 'variants', label: 'Variante', icon: FileText, description: 'Arhivă rezolvări' },
   { id: 'rapoarte', label: 'Rapoarte', icon: BarChart3, description: 'Statistici platformă', technicalOnly: true },

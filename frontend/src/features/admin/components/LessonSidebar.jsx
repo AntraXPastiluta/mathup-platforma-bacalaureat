@@ -1,12 +1,29 @@
 import {
-  LayoutDashboard,
   PlusCircle,
   Trash2,
   Edit3,
   ChevronRight,
   ChevronLeft,
+  Search,
+  Layers,
+  FolderOpen,
 } from 'lucide-react'
 import { getProfileMeta } from '../../lessons/profiles'
+
+// Grupează lista (deja sortată subject_part → order_index în hook) pe subiecte, pentru
+// subtitluri „Subiectul I/II/III" în registru. Randare pură, fără date noi.
+function groupLessonsBySubject(lessons) {
+  const groups = []
+  let current = null
+  for (const lesson of lessons) {
+    if (!current || current.part !== lesson.subject_part) {
+      current = { part: lesson.subject_part, items: [] }
+      groups.push(current)
+    }
+    current.items.push(lesson)
+  }
+  return groups
+}
 
 export function LessonSidebar({
   lessons,
@@ -25,198 +42,204 @@ export function LessonSidebar({
   handleSelectLesson,
   handleDeleteLesson,
 }) {
+  const programMeta = selectedProgramKey ? getProfileMeta(selectedProgramKey) : null
+  const lessonGroups = groupLessonsBySubject(sidebarLessonsOrdered)
+
   return (
-    <div className="lg:col-span-4 space-y-6">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-2">
-          <LayoutDashboard className="size-5 text-primary" />
-          <h2 className="text-xl font-black tracking-tight text-slate-800 dark:text-white">Curriculum</h2>
-        </div>
+    <aside className="space-y-4 lg:col-span-4 lg:sticky lg:top-6 lg:self-start">
+      {/* Breadcrumb + acțiune principală */}
+      <div className="flex items-center justify-between gap-3 px-1">
+        <nav className="flex min-w-0 items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.14em]" aria-label="Navigare curriculum">
+          <button
+            type="button"
+            onClick={clearProgramSelection}
+            disabled={!selectedProgramKey}
+            className={`shrink-0 transition-colors ${selectedProgramKey ? 'text-muted-foreground hover:text-primary' : 'text-primary'}`}
+          >
+            Programe
+          </button>
+          {programMeta ? (
+            <>
+              <ChevronRight className="size-3.5 shrink-0 text-slate-400" strokeWidth={3} />
+              <span className="truncate text-primary" title={programMeta.label}>{programMeta.shortLabel}</span>
+            </>
+          ) : null}
+        </nav>
         <button
           type="button"
-          onClick={() => startCreatingLesson()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary text-white hover:bg-primary/90 transition-all text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/25 active:scale-95"
+          onClick={() => startCreatingLesson(selectedProgramKey || undefined)}
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-95"
         >
-          <PlusCircle className="size-4" />
-          Lecție Nouă
+          <PlusCircle className="size-3.5" />
+          Lecție nouă
         </button>
       </div>
 
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-b from-primary/20 to-transparent rounded-3xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
-        <div className="relative bg-white dark:bg-[#0a0f1c] border border-slate-300/50 dark:border-white/10 rounded-3xl overflow-hidden max-h-[75vh] flex flex-col shadow-md dark:shadow-none">
-          <div className="p-4 border-b border-slate-300/50 dark:border-white/5 bg-slate-50 dark:bg-white/5 space-y-3">
+      <div className="relative">
+        <div className="relative flex max-h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-3xl border border-slate-300/60 bg-white shadow-md dark:border-white/10 dark:bg-[#0a0f1c] dark:shadow-none">
+          {/* Bară de căutare + sumar program */}
+          <div className="space-y-3 border-b border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-white/5 dark:bg-white/5">
             {selectedProgramKey ? (
               <button
                 type="button"
                 onClick={clearProgramSelection}
-                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-primary hover:translate-x-[-2px] transition-all bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit"
+                className="flex w-fit items-center gap-1.5 rounded-lg border border-primary/10 bg-primary/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-primary transition-all hover:-translate-x-0.5"
               >
-                <ChevronLeft className="size-4" strokeWidth={3} />
-                Înapoi la Programe
+                <ChevronLeft className="size-3.5" strokeWidth={3} />
+                Toate programele
               </button>
             ) : null}
             <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={sidebarQuery}
                 onChange={(e) => setSidebarQuery(e.target.value)}
                 placeholder={selectedProgramKey ? 'Caută lecție...' : 'Caută program...'}
-                className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm text-slate-800 dark:text-white placeholder:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm transition-all placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 dark:border-white/10 dark:bg-white/5 dark:text-white"
               />
             </div>
-            {selectedProgramKey ? (
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">
-                {getProfileMeta(selectedProgramKey).label}
-                <span className="ml-2 font-black text-primary">{sidebarLessonsOrdered.length} lecții</span>
+            {programMeta ? (
+              <p className="flex items-center justify-between gap-2 px-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                <span className="truncate" title={programMeta.label}>{programMeta.label}</span>
+                <span className="shrink-0 font-black text-primary">{sidebarLessonsOrdered.length} lecții</span>
               </p>
             ) : null}
-            {selectedProgramKey ? (
-              <div className="grid grid-cols-3 gap-2 px-1">
+            {selectedProgramKey && selectedLesson ? (
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => startCreatingLesson(selectedProgramKey)}
-                  className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-primary/30 bg-primary/10 px-1 py-3 text-[10px] font-bold leading-tight text-primary transition-all hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
+                  onClick={() => startEditingLesson(selectedLesson)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:border-primary/30 hover:text-primary active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-white"
                 >
-                  <div className="size-7 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <PlusCircle className="size-4" />
-                  </div>
-                  Adaugă
+                  <Edit3 className="size-3.5" />
+                  Metadate
                 </button>
                 <button
                   type="button"
-                  disabled={!selectedLesson}
-                  onClick={() => selectedLesson && startEditingLesson(selectedLesson)}
-                  className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-300 bg-white px-1 py-3 text-[10px] font-bold leading-tight text-slate-700 transition-all hover:border-primary/30 hover:text-primary hover:shadow-lg hover:shadow-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white active:scale-95"
+                  onClick={() => handleDeleteLesson(selectedLesson.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/10 px-2 py-2 text-[10px] font-black uppercase tracking-widest text-destructive transition-all hover:bg-destructive/15 active:scale-95"
                 >
-                  <div className="size-7 rounded-xl bg-slate-200/50 dark:bg-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    <Edit3 className="size-4" />
-                  </div>
-                  Editează
-                </button>
-                <button
-                  type="button"
-                  disabled={!selectedLesson}
-                  onClick={() => selectedLesson && handleDeleteLesson(selectedLesson.id)}
-                  className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-destructive/20 bg-destructive/10 px-1 py-3 text-[10px] font-bold leading-tight text-destructive transition-all hover:bg-destructive/15 hover:shadow-lg hover:shadow-destructive/5 disabled:cursor-not-allowed disabled:opacity-40 active:scale-95"
-                >
-                  <div className="size-7 rounded-xl bg-destructive/15 flex items-center justify-center">
-                    <Trash2 className="size-4" />
-                  </div>
+                  <Trash2 className="size-3.5" />
                   Șterge
                 </button>
               </div>
             ) : null}
           </div>
 
-          <div className="overflow-y-auto custom-scrollbar flex-1">
+          {/* Listă: programe → lecții grupate pe subiect */}
+          <div className="custom-scrollbar flex-1 overflow-y-auto p-2">
             {loading && lessons.length === 0 ? (
-              <div className="p-10 text-center space-y-4">
-                <div className="size-8 border-2 border-primary/30 border-t-primary animate-spin rounded-full mx-auto" />
-                <p className="text-sm text-slate-400 font-medium italic">Se încarcă materia...</p>
+              <div className="space-y-4 p-10 text-center">
+                <div className="mx-auto size-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                <p className="text-sm font-medium italic text-slate-400">Se încarcă materia...</p>
               </div>
             ) : !selectedProgramKey ? (
-              <div className="p-2 space-y-1">
-                {programsSidebarList.length === 0 ? (
-                  <p className="p-6 text-center text-sm text-slate-400">Niciun program nu se potrivește căutării.</p>
-                ) : (
-                  programsSidebarList.map((p) => {
+              programsSidebarList.length === 0 ? (
+                <p className="p-6 text-center text-sm text-slate-400">Niciun program nu se potrivește căutării.</p>
+              ) : (
+                <div className="space-y-1">
+                  {programsSidebarList.map((p) => {
                     const count = lessons.filter((l) => l.profile === p.key).length
                     return (
                       <button
                         key={p.key}
                         type="button"
-                        className="w-full text-left p-4 rounded-2xl transition-all group/item border border-transparent hover:bg-slate-50 dark:hover:bg-white/5 hover:border-slate-300/80 dark:hover:border-white/10"
+                        className="group/item flex w-full items-center gap-3 rounded-2xl border border-transparent p-3 text-left transition-all hover:border-slate-200 hover:bg-slate-50 dark:hover:border-white/10 dark:hover:bg-white/5"
                         onClick={() => selectProgram(p.key)}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[9px] font-black text-primary uppercase tracking-tighter border border-primary/20">
-                                {p.shortLabel}
-                              </span>
-                              <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
-                                {count} lecții
-                              </span>
-                            </div>
-                            <div className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover/item:text-primary dark:group-hover/item:text-white transition-colors">
-                              {p.label}
-                            </div>
-                          </div>
-                          <ChevronRight className="size-4 mt-1 text-slate-400 opacity-0 transition-all group-hover/item:opacity-100 group-hover/item:translate-x-1" />
-                        </div>
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/5 text-primary transition-colors group-hover/item:bg-primary/10">
+                          <FolderOpen className="size-5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="mb-0.5 flex items-center gap-2">
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter text-primary">
+                              {p.shortLabel}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{count} lecții</span>
+                          </span>
+                          <span className="block truncate text-sm font-bold text-slate-700 transition-colors group-hover/item:text-primary dark:text-slate-200 dark:group-hover/item:text-white">
+                            {p.label}
+                          </span>
+                        </span>
+                        <ChevronRight className="size-4 shrink-0 text-slate-400 opacity-0 transition-all group-hover/item:translate-x-1 group-hover/item:opacity-100" />
                       </button>
                     )
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )
+            ) : sidebarLessonsOrdered.length === 0 ? (
+              <p className="p-6 text-center text-sm text-slate-400">
+                {lessons.some((l) => l.profile === selectedProgramKey)
+                  ? 'Nicio lecție nu se potrivește căutării.'
+                  : 'Nu există lecții pentru acest program.'}
+              </p>
             ) : (
-              <div className="p-2 space-y-1">
-                {sidebarLessonsOrdered.length === 0 ? (
-                  <p className="p-6 text-center text-sm text-slate-400">
-                    {lessons.some((l) => l.profile === selectedProgramKey)
-                      ? 'Nicio lecție nu se potrivește căutării.'
-                      : 'Nu există lecții pentru acest program.'}
-                  </p>
-                ) : (
-                  sidebarLessonsOrdered.map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className={`w-full text-left p-4 rounded-2xl transition-all group/item ${selectedLesson?.id === lesson.id ? 'bg-primary/10 border border-primary/40 shadow-md ring-1 ring-primary/10' : 'hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent'}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <button
-                          type="button"
-                          className="flex-1 min-w-0 text-left"
-                          onClick={() => handleSelectLesson(lesson)}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
-                              Subiect {lesson.subject_part}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-500 tabular-nums dark:text-slate-400">
-                              #{lesson.order_index ?? 0}
-                            </span>
-                          </div>
-                          <div className={`text-sm font-bold truncate transition-colors ${selectedLesson?.id === lesson.id ? 'text-primary dark:text-white' : 'text-slate-700 dark:text-slate-300 group-hover/item:text-primary dark:group-hover/item:text-white'}`}>
-                            {lesson.title}
-                          </div>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <button
-                            type="button"
-                            title="Adaugă parte"
-                            onClick={() => startAddingPart(lesson)}
-                            className="rounded-lg border border-primary/15 bg-primary/10 p-2 text-primary opacity-80 transition-all hover:bg-primary/20 hover:opacity-100"
-                          >
-                            <PlusCircle className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            title="Editează lecția"
-                            onClick={() => startEditingLesson(lesson)}
-                            className="rounded-lg border border-slate-300 bg-white/70 p-2 text-slate-500 opacity-80 transition-all hover:text-primary hover:opacity-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white"
-                          >
-                            <Edit3 className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            title="Șterge lecția"
-                            onClick={() => handleDeleteLesson(lesson.id)}
-                            className="rounded-lg border border-destructive/10 bg-destructive/10 p-2 text-destructive opacity-80 transition-all hover:bg-destructive/20 hover:opacity-100"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
+              <div className="space-y-3">
+                {lessonGroups.map((group) => (
+                  <div key={group.part} className="space-y-1">
+                    <div className="flex items-center gap-2 px-2 pt-1">
+                      <Layers className="size-3 text-slate-400" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                        Subiectul {group.part}
+                      </span>
+                      <span className="h-px flex-1 bg-slate-200/70 dark:bg-white/5" />
                     </div>
-                  ))
-                )}
+                    {group.items.map((lesson) => {
+                      const active = selectedLesson?.id === lesson.id
+                      return (
+                        <div
+                          key={lesson.id}
+                          className={`group/item flex items-center gap-2 rounded-2xl border p-2.5 transition-all ${active ? 'border-primary/40 bg-primary/10 shadow-sm ring-1 ring-primary/10' : 'border-transparent hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                        >
+                          <button
+                            type="button"
+                            className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                            onClick={() => handleSelectLesson(lesson)}
+                          >
+                            <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-black tabular-nums ${active ? 'bg-primary text-white' : 'bg-slate-200/70 text-slate-500 dark:bg-white/10 dark:text-slate-400'}`}>
+                              {lesson.order_index ?? 0}
+                            </span>
+                            <span className={`block truncate text-sm font-bold transition-colors ${active ? 'text-primary dark:text-white' : 'text-slate-700 group-hover/item:text-primary dark:text-slate-300 dark:group-hover/item:text-white'}`}>
+                              {lesson.title}
+                            </span>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1 opacity-60 transition-opacity group-hover/item:opacity-100">
+                            <button
+                              type="button"
+                              title="Adaugă parte"
+                              onClick={() => startAddingPart(lesson)}
+                              className="rounded-lg border border-primary/15 bg-primary/10 p-1.5 text-primary transition-all hover:bg-primary/20"
+                            >
+                              <PlusCircle className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Editează lecția"
+                              onClick={() => startEditingLesson(lesson)}
+                              className="rounded-lg border border-slate-300 bg-white/70 p-1.5 text-slate-500 transition-all hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white"
+                            >
+                              <Edit3 className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Șterge lecția"
+                              onClick={() => handleDeleteLesson(lesson.id)}
+                              className="rounded-lg border border-destructive/10 bg-destructive/10 p-1.5 text-destructive transition-all hover:bg-destructive/20"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   )
 }
