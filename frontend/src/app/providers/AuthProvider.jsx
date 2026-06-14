@@ -348,7 +348,7 @@ export function AuthProvider({ children }) {
   ])
 
   // Resetează seria (streak) la 0 când trece o zi calendaristică UTC completă fără
-  // autentificare și fără activitate la lecții.
+  // nicio lecție finalizată.
   useEffect(() => {
     if (!user?.id || authLoading) return
     const decay = streakDecayPatch(user.user_metadata || {})

@@ -1,8 +1,8 @@
 /**
  * Seria zilnică („streak”), calculată în zile calendaristice UTC.
- * O zi contează dacă utilizatorul se autentifică SAU finalizează o lecție în ziua
- * respectivă. Ratarea unei zile calendaristice întregi (fără login și fără
- * activitate de lecție) resetează seria la 0.
+ * O zi contează DOAR dacă utilizatorul finalizează o lecție în ziua respectivă.
+ * Simpla autentificare nu mai avansează seria. Ratarea unei zile calendaristice
+ * întregi fără nicio lecție finalizată resetează seria la 0.
  *
  * Folosim UTC pentru a avea un calcul consistent al zilelor indiferent de fusul orar.
  */
@@ -42,6 +42,9 @@ export function streakDecayPatch(metadata) {
  * Aplică o activitate care contează pentru serie (după ce decay-ul a fost deja
  * integrat în metadate).
  *
+ * Seria avansează EXCLUSIV la finalizarea unei lecții. Login-ul doar marchează
+ * ultima autentificare, fără să atingă seria sau ziua de activitate.
+ *
  * @param {object} metadata - Metadatele curente ale utilizatorului.
  * @param {'login' | 'lesson'} activity - Tipul activității care declanșează actualizarea.
  */
@@ -52,19 +55,17 @@ export function streakActivityPatch(metadata, activity) {
   if (!Number.isFinite(streak)) streak = 0
   const last = m.last_streak_activity_date
 
-  const patch = {}
-  if (activity === 'lesson') {
-    patch.last_lesson_activity_date = today
+  // Login-ul nu mai contează pentru serie: marcăm doar ultima autentificare.
+  if (activity === 'login') {
+    return { last_login_at: new Date().toISOString() }
   }
+
+  // activity === 'lesson'
+  const patch = { last_lesson_activity_date: today }
 
   if (last === today) {
-    // Seria a fost deja contorizată azi; nu rescriem timestamp-ul de login ca să evităm
-    // actualizări inutile ale metadatelor la fiecare încărcare de pagină.
-    return activity === 'lesson' ? patch : {}
-  }
-
-  if (activity === 'login') {
-    patch.last_login_at = new Date().toISOString()
+    // Seria a fost deja contorizată azi (o lecție anterioară).
+    return patch
   }
 
   if (!last) {

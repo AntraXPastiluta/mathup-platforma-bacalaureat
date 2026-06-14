@@ -533,6 +533,7 @@ export function DashboardPage() {
   )
   const streak = Number(user?.user_metadata?.streak) || 0
   const lastActivityKey = user?.user_metadata?.last_streak_activity_date || null
+  const lastLessonKey = user?.user_metadata?.last_lesson_activity_date || null
 
   const profileCodes = useMemo(() => {
     const labels = activeProfiles.map((k) => getProfileMeta(k).shortLabel)
@@ -673,11 +674,11 @@ export function DashboardPage() {
 
   const dailyGoal = useMemo(() => {
     const todayKey = toDateKey(new Date())
-    const studiedToday = lastActivityKey === todayKey
+    const studiedToday = lastLessonKey === todayKey
     const goalTotal = 1
     const goalDone = studiedToday ? 1 : 0
     return { goalDone, goalTotal, studiedToday }
-  }, [lastActivityKey])
+  }, [lastLessonKey])
 
   const dashboardTitle = useMemo(() => {
     if (activeProfiles.length === 1) {
@@ -888,11 +889,20 @@ export function DashboardPage() {
                               </div>
                               <div className="leading-tight">
                                 <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
-                                <p className="mt-0.5 flex items-center gap-1.5">
-                                  <span style={{ fontFamily: SERIF }} className="text-xl font-bold italic tabular-nums text-foreground">
+                                <p
+                                  className="mt-0.5 flex items-center gap-1.5"
+                                  title={dailyGoal.studiedToday ? undefined : 'Finalizează o lecție azi pentru a-ți menține seria'}
+                                >
+                                  <span
+                                    style={{ fontFamily: SERIF }}
+                                    className={`text-xl font-bold italic tabular-nums ${dailyGoal.studiedToday ? 'text-foreground' : 'text-muted-foreground'}`}
+                                  >
                                     {streak}
                                   </span>
-                                  <Flame className="size-4 text-orange-500" aria-hidden />
+                                  <Flame
+                                    className={`size-4 ${dailyGoal.studiedToday ? 'text-orange-500' : 'text-muted-foreground/60'}`}
+                                    aria-hidden
+                                  />
                                 </p>
                               </div>
                             </div>
@@ -954,8 +964,8 @@ export function DashboardPage() {
                         label="Streak"
                         value={String(streak)}
                         sublabel={streak === 1 ? 'zi consecutivă' : 'zile consecutive'}
-                        iconClass="text-orange-500"
-                        accentBg="bg-orange-500/10"
+                        iconClass={dailyGoal.studiedToday ? 'text-orange-500' : 'text-muted-foreground/60'}
+                        accentBg={dailyGoal.studiedToday ? 'bg-orange-500/10' : 'bg-muted-foreground/10'}
                       />
                       <StatCard
                         delay={130}
