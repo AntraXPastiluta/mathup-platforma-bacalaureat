@@ -63,7 +63,11 @@ export function LessonEditor({
   questions,
   newQuestion,
   setNewQuestion,
+  editingQuestionId,
   handleAddQuestion,
+  startEditingQuestion,
+  handleUpdateQuestion,
+  cancelQuestionEdit,
   handleDeleteQuestion,
   getQuestionOptions,
   getQuestionPlacementLabel,
@@ -288,7 +292,11 @@ export function LessonEditor({
                 questions={questions}
                 newQuestion={newQuestion}
                 setNewQuestion={setNewQuestion}
+                editingQuestionId={editingQuestionId}
                 handleAddQuestion={handleAddQuestion}
+                startEditingQuestion={startEditingQuestion}
+                handleUpdateQuestion={handleUpdateQuestion}
+                cancelQuestionEdit={cancelQuestionEdit}
                 handleDeleteQuestion={handleDeleteQuestion}
                 getQuestionOptions={getQuestionOptions}
                 getQuestionPlacementLabel={getQuestionPlacementLabel}

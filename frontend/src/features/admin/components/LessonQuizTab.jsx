@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { HelpCircle, Trash2 } from 'lucide-react'
+import { HelpCircle, Pencil, Trash2, X } from 'lucide-react'
 import { Button } from '../../../shared/ui/Button'
 import { MathSymbolToolbar } from '../../../shared/ui/MathSymbolToolbar'
 import { MathContent } from '../../../shared/ui/MathContent'
@@ -11,16 +11,27 @@ export function LessonQuizTab({
   questions,
   newQuestion,
   setNewQuestion,
+  editingQuestionId,
   handleAddQuestion,
+  startEditingQuestion,
+  handleUpdateQuestion,
+  cancelQuestionEdit,
   handleDeleteQuestion,
   getQuestionOptions,
   getQuestionPlacementLabel,
 }) {
+  const formRef = useRef(null)
   const questionRef = useRef(null)
   const explanationRef = useRef(null)
   const optionRefs = useRef({})
   // Reținem ultima opțiune focalizată ca să știm în care inserăm simbolurile.
   const [activeOption, setActiveOption] = useState(0)
+  const isEditing = Boolean(editingQuestionId)
+
+  // La intrarea în editare, aducem formularul în câmpul vizual (lista poate fi lungă).
+  useEffect(() => {
+    if (isEditing) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [editingQuestionId, isEditing])
 
   const insertIntoOption = (item, block) => {
     insertMathSnippet(
@@ -38,10 +49,32 @@ export function LessonQuizTab({
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-      <div className="bg-indigo-600/5 border border-indigo-600/10 dark:border-indigo-600/20 rounded-3xl p-8 space-y-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <HelpCircle className="size-5 text-indigo-500 dark:text-indigo-400" />
-          <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">Creează Întrebare</h3>
+      <div
+        ref={formRef}
+        className={`bg-indigo-600/5 border rounded-3xl p-8 space-y-6 shadow-sm transition-colors ${
+          isEditing ? 'border-amber-500/40 ring-2 ring-amber-500/20' : 'border-indigo-600/10 dark:border-indigo-600/20'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {isEditing ? (
+              <Pencil className="size-5 text-amber-500 dark:text-amber-400" />
+            ) : (
+              <HelpCircle className="size-5 text-indigo-500 dark:text-indigo-400" />
+            )}
+            <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">
+              {isEditing ? 'Editează Întrebarea' : 'Creează Întrebare'}
+            </h3>
+          </div>
+          {isEditing && (
+            <button
+              onClick={cancelQuestionEdit}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all shadow-sm"
+            >
+              <X className="size-3.5" />
+              Renunță
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -173,9 +206,20 @@ export function LessonQuizTab({
           ) : null}
         </div>
 
-        <Button onClick={handleAddQuestion} className="w-full rounded-2xl h-12 bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-600/20">
-          Adaugă în Chestionar
-        </Button>
+        {isEditing ? (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button onClick={handleUpdateQuestion} className="flex-1 rounded-2xl h-12 bg-amber-500 text-white hover:bg-amber-600 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-amber-500/20">
+              Salvează modificările
+            </Button>
+            <Button onClick={cancelQuestionEdit} variant="outline" className="rounded-2xl h-12 px-6 font-black uppercase tracking-widest text-[10px]">
+              Renunță
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={handleAddQuestion} className="w-full rounded-2xl h-12 bg-indigo-600 text-white hover:bg-indigo-700 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-600/20">
+            Adaugă în Chestionar
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -187,10 +231,20 @@ export function LessonQuizTab({
         ) : (
           <ul className="space-y-4">
             {questions.map((q, idx) => (
-              <li key={q.id} className="bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-3xl p-6 flex justify-between items-start gap-4 shadow-sm">
+              <li
+                key={q.id}
+                className={`bg-white dark:bg-white/5 border rounded-3xl p-6 flex justify-between items-start gap-4 shadow-sm transition-colors ${
+                  editingQuestionId === q.id ? 'border-amber-500/50 ring-2 ring-amber-500/20' : 'border-slate-300 dark:border-white/10'
+                }`}
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Întrebarea {idx + 1}</span>
+                    {editingQuestionId === q.id && (
+                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        În editare
+                      </span>
+                    )}
                   </div>
                   <MathContent content={q.question_text} className="font-bold text-slate-800 dark:text-slate-100 text-base mb-4 leading-snug" />
                   <p className="mb-4 w-fit rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-500 border border-indigo-500/10">
@@ -211,9 +265,22 @@ export function LessonQuizTab({
                     </div>
                   ) : null}
                 </div>
-                <button onClick={() => handleDeleteQuestion(q.id)} className="p-2.5 rounded-xl bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive/20 transition-all mt-1 shadow-sm">
-                  <Trash2 className="size-4" />
-                </button>
+                <div className="flex shrink-0 flex-col gap-2 mt-1">
+                  <button
+                    onClick={() => startEditingQuestion(q)}
+                    aria-label="Editează întrebarea"
+                    className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/10 hover:bg-amber-500/20 transition-all shadow-sm"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteQuestion(q.id)}
+                    aria-label="Șterge întrebarea"
+                    className="p-2.5 rounded-xl bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive/20 transition-all shadow-sm"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

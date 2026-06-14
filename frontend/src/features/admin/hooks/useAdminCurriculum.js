@@ -7,6 +7,7 @@ import {
   updateLesson,
   getQuizQuestions,
   addQuizQuestion,
+  updateQuizQuestion,
   deleteQuizQuestion,
   getLessonFiles,
   addLessonFile,
@@ -26,6 +27,16 @@ import { ALLOWED_LESSON_FILE_EXTENSIONS } from '../constants'
 // Toggle a program key inside a lesson's profile list. A lesson must always
 // belong to at least one program, so removing the last remaining key is a
 // no-op signalled by returning null (callers keep the previous state).
+// Forma „goală" a formularului de întrebare; factory ca să întoarcem mereu un
+// obiect nou (evităm referințe partajate la resetare/editare).
+const emptyQuestion = () => ({
+  text: '',
+  options: ['', '', '', ''],
+  correct: 0,
+  explanation: '',
+  placement: { type: 'end', partId: '' },
+})
+
 function toggleProfileInList(currentProfiles, key) {
   const list = normalizeProfilesList(currentProfiles?.length ? currentProfiles : ['mate_info'])
   const isSelected = list.includes(key)
@@ -47,13 +58,9 @@ export function useAdminCurriculum() {
   const [lessonContent, setLessonContent] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [questions, setQuestions] = useState([])
-  const [newQuestion, setNewQuestion] = useState({
-    text: '',
-    options: ['', '', '', ''],
-    correct: 0,
-    explanation: '',
-    placement: { type: 'end', partId: '' },
-  })
+  const [newQuestion, setNewQuestion] = useState(emptyQuestion())
+  // null = modul „creare"; un id = edităm întrebarea existentă cu acel id.
+  const [editingQuestionId, setEditingQuestionId] = useState(null)
   const [files, setFiles] = useState([])
   const regularFiles = useMemo(
     () => files.filter((file) => !file.is_solved_content),
@@ -138,6 +145,9 @@ export function useAdminCurriculum() {
     setSelectedLesson(lesson)
     setIsCreating(false)
     setIsEditingMetadata(false)
+    // Resetăm formularul de quiz ca să nu purtăm o editare în curs spre altă lecție.
+    setNewQuestion(emptyQuestion())
+    setEditingQuestionId(null)
     setLessonContent(lesson.content || '')
     setVideoUrl(lesson.video_url || '')
     setEditLessonData({
@@ -302,8 +312,56 @@ export function useAdminCurriculum() {
         explanation: newQuestion.explanation?.trim() || null,
       })
       setQuestions([...questions, q])
-      setNewQuestion({ text: '', options: ['', '', '', ''], correct: 0, explanation: '', placement: { type: 'end', partId: '' } })
+      setNewQuestion(emptyQuestion())
       setSuccess('Întrebare adăugată!')
+    } catch (err) {
+      setError(toUserFacingError(err, USER_MESSAGES.save))
+    }
+  }
+
+  // Încarcă o întrebare existentă în formular pentru editare. Convertim din formatul
+  // stocat ({ choices, placement }) în forma plată folosită de formular.
+  const startEditingQuestion = (question) => {
+    const choices = getQuestionOptions(question)
+    const placement = Array.isArray(question.options)
+      ? { type: 'end', partId: '' }
+      : question.options?.placement || { type: 'end', partId: '' }
+    setNewQuestion({
+      text: question.question_text || '',
+      // Garantăm cel puțin 4 sloturi, ca formularul (4 opțiuni) să rămână coerent.
+      options: Array.from({ length: Math.max(4, choices.length) }, (_, i) => choices[i] ?? ''),
+      correct: question.correct_option_index ?? 0,
+      explanation: question.explanation || '',
+      placement,
+    })
+    setEditingQuestionId(question.id)
+  }
+
+  const cancelQuestionEdit = () => {
+    setNewQuestion(emptyQuestion())
+    setEditingQuestionId(null)
+  }
+
+  const handleUpdateQuestion = async () => {
+    if (!editingQuestionId) return
+    if (!newQuestion.text || newQuestion.options.some((o) => !o)) {
+      setError('Toate câmpurile întrebării sunt obligatorii.')
+      return
+    }
+    const placement = newQuestion.placement.type === 'after_part' && newQuestion.placement.partId
+      ? newQuestion.placement
+      : { type: 'end', partId: '' }
+    try {
+      const updated = await updateQuizQuestion(editingQuestionId, {
+        question_text: newQuestion.text,
+        options: { choices: newQuestion.options, placement },
+        correct_option_index: newQuestion.correct,
+        explanation: newQuestion.explanation?.trim() || null,
+      })
+      setQuestions(questions.map((q) => (q.id === editingQuestionId ? updated : q)))
+      setNewQuestion(emptyQuestion())
+      setEditingQuestionId(null)
+      setSuccess('Întrebare actualizată!')
     } catch (err) {
       setError(toUserFacingError(err, USER_MESSAGES.save))
     }
@@ -313,6 +371,8 @@ export function useAdminCurriculum() {
     try {
       await deleteQuizQuestion(id)
       setQuestions(questions.filter((q) => q.id !== id))
+      // Dacă tocmai ștergem întrebarea aflată în editare, golim formularul.
+      if (editingQuestionId === id) cancelQuestionEdit()
     } catch (err) {
       setError(toUserFacingError(err, USER_MESSAGES.save))
     }
@@ -504,6 +564,7 @@ export function useAdminCurriculum() {
     setQuestions,
     newQuestion,
     setNewQuestion,
+    editingQuestionId,
     files,
     setFiles,
     regularFiles,
@@ -536,6 +597,9 @@ export function useAdminCurriculum() {
     handleDeleteLesson,
     handleUpdateLesson,
     handleAddQuestion,
+    startEditingQuestion,
+    handleUpdateQuestion,
+    cancelQuestionEdit,
     handleDeleteQuestion,
     handleFileUpload,
     handleDeleteFile,

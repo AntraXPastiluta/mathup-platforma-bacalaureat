@@ -100,7 +100,11 @@ export function CurriculumSection() {
               questions={c.questions}
               newQuestion={c.newQuestion}
               setNewQuestion={c.setNewQuestion}
+              editingQuestionId={c.editingQuestionId}
               handleAddQuestion={c.handleAddQuestion}
+              startEditingQuestion={c.startEditingQuestion}
+              handleUpdateQuestion={c.handleUpdateQuestion}
+              cancelQuestionEdit={c.cancelQuestionEdit}
               handleDeleteQuestion={c.handleDeleteQuestion}
               getQuestionOptions={c.getQuestionOptions}
               getQuestionPlacementLabel={c.getQuestionPlacementLabel}
