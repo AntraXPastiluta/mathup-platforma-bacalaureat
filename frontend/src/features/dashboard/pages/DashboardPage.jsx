@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
-  Flame,
   GraduationCap,
   LayoutDashboard,
   Map,
@@ -871,29 +870,11 @@ export function DashboardPage() {
                               </span>
                             </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3.5">
+                            <div className="mt-4 grid grid-cols-1 border-t border-border/60 pt-3.5">
                               <div className="leading-tight">
                                 <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Progres</p>
                                 <p style={{ fontFamily: SERIF }} className="mt-0.5 text-xl font-bold italic tabular-nums text-primary">
                                   {progressPct}%
-                                </p>
-                              </div>
-                              <div className="leading-tight">
-                                <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${mutedText}`}>Streak</p>
-                                <p
-                                  className="mt-0.5 flex items-center gap-1.5"
-                                  title={dailyGoal.studiedToday ? undefined : 'Finalizează o lecție azi pentru a-ți menține seria'}
-                                >
-                                  <span
-                                    style={{ fontFamily: SERIF }}
-                                    className={`text-xl font-bold italic tabular-nums ${dailyGoal.studiedToday ? 'text-foreground' : 'text-muted-foreground'}`}
-                                  >
-                                    {streak}
-                                  </span>
-                                  <Flame
-                                    className={`size-4 ${dailyGoal.studiedToday ? 'text-orange-500' : 'text-muted-foreground/60'}`}
-                                    aria-hidden
-                                  />
                                 </p>
                               </div>
                             </div>
@@ -932,7 +913,7 @@ export function DashboardPage() {
 
                   {/* Grila de statistici */}
                   <section aria-label="Statistici cheie">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                       <StatCard
                         delay={70}
                         icon={GraduationCap}
@@ -951,15 +932,6 @@ export function DashboardPage() {
                       />
                       <StatCard
                         delay={110}
-                        icon={Flame}
-                        label="Streak"
-                        value={String(streak)}
-                        sublabel={streak === 1 ? 'zi consecutivă' : 'zile consecutive'}
-                        iconClass={dailyGoal.studiedToday ? 'text-orange-500' : 'text-muted-foreground/60'}
-                        accentBg={dailyGoal.studiedToday ? 'bg-orange-500/10' : 'bg-muted-foreground/10'}
-                      />
-                      <StatCard
-                        delay={130}
                         icon={Target}
                         label="Notă țintă"
                         value={targetScoreLabel}

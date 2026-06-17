@@ -9,6 +9,7 @@ import {
   Crown,
 } from 'lucide-react'
 import { useAuth } from '../../app/providers/AuthProvider'
+import { utcCalendarDateString } from '../../services/streakService'
 import { Button } from './Button'
 import { UserAvatar } from './UserAvatar'
 import { BrandLogo } from './BrandLogo'
@@ -19,6 +20,10 @@ export function Navbar() {
   const reduceMotion = useReducedMotion()
 
   const streak = (user?.user_metadata?.streak == null ? 0 : Number(user.user_metadata.streak)) || 0
+  // Seria se menține DOAR finalizând o lecție azi (vezi streakService). Dacă elevul
+  // n-a îndeplinit cerința azi, flacăra rămâne gri („în pericol”) până când
+  // studiază din nou (devine portocalie) sau seria se resetează la 0.
+  const streakActiveToday = user?.user_metadata?.last_lesson_activity_date === utcCalendarDateString()
 
   const cluster = {
     hidden: { opacity: 0 },
@@ -70,14 +75,34 @@ export function Navbar() {
             <motion.div
               variants={item}
               whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-              className="navbar-streak hidden items-center gap-2 rounded-full px-3.5 py-1.5 sm:flex"
-              title={`Serie de studiu: ${streak} ${streak === 1 ? 'zi' : 'zile'}`}
+              className={`hidden items-center gap-2 rounded-full px-3.5 py-1.5 sm:flex ${
+                streakActiveToday ? 'navbar-streak' : 'border border-border bg-muted/40'
+              }`}
+              title={
+                streakActiveToday
+                  ? `Serie de studiu: ${streak} ${streak === 1 ? 'zi' : 'zile'}`
+                  : `Serie de studiu: ${streak} ${streak === 1 ? 'zi' : 'zile'} — finalizează o lecție azi ca să o menții`
+              }
             >
-              <Flame className="size-4 fill-orange-500 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.55)]" />
-              <span className="font-heading text-sm font-extrabold leading-none tabular-nums text-orange-600 dark:text-orange-400">
+              <Flame
+                className={`size-4 ${
+                  streakActiveToday
+                    ? 'fill-orange-500 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.55)]'
+                    : 'text-muted-foreground'
+                }`}
+              />
+              <span
+                className={`font-heading text-sm font-extrabold leading-none tabular-nums ${
+                  streakActiveToday ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'
+                }`}
+              >
                 {streak}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600/70 dark:text-orange-400/70">
+              <span
+                className={`text-[10px] font-bold uppercase tracking-widest ${
+                  streakActiveToday ? 'text-orange-600/70 dark:text-orange-400/70' : 'text-muted-foreground/70'
+                }`}
+              >
                 Zile
               </span>
             </motion.div>
