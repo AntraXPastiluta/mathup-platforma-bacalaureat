@@ -25,9 +25,7 @@ import { useAuth } from '../../../app/providers/AuthProvider'
 import { getLessonsForProfiles } from '../../../services/lessonService'
 import { getUserProgress } from '../../../services/progressService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
-import { getRoadmapsForProfile } from '../../../services/roadmapService'
 import { canAccessLessonForUser } from '../../../services/premiumAccessService'
-import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
 import { getQuizCorrectCount, getQuizMistakeCount } from '../../../services/quizAttemptService'
 import { buildTargetGradeReport } from '../../../services/targetGradeReportService'
 import { fetchBacExamDate } from '../../../services/platformSettingsService'
@@ -511,8 +509,6 @@ export function DashboardPage() {
   const [lessons, setLessons] = useState([])
   const [progressRows, setProgressRows] = useState([])
   const [loadingData, setLoadingData] = useState(true)
-  const [roadmaps, setRoadmaps] = useState([])
-  const [solvedVariants, setSolvedVariants] = useState([])
   const [quizMistakeCount, setQuizMistakeCount] = useState(0)
   const [quizCorrectCount, setQuizCorrectCount] = useState(0)
   const [error, setError] = useState('')
@@ -552,12 +548,9 @@ export function DashboardPage() {
       setLoadingData(true)
       setError('')
       try {
-        const primaryProfile = activeProfiles[0]
-        const [lessonsData, progressData, roadmapData, solvedVariantsData, mistakeCount, correctCount, examDate] = await Promise.all([
+        const [lessonsData, progressData, mistakeCount, correctCount, examDate] = await Promise.all([
           getLessonsForProfiles(activeProfiles, { includeSubjectThreeForAllProfiles: !isPremium }),
           getUserProgress(user.id),
-          isPremium ? getRoadmapsForProfile(primaryProfile) : Promise.resolve([]),
-          isPremium ? getSolvedVariantsForProfiles(activeProfiles) : Promise.resolve([]),
           isPremium ? getQuizMistakeCount(user.id) : Promise.resolve(0),
           isPremium ? getQuizCorrectCount(user.id) : Promise.resolve(0),
           fetchBacExamDate(),
@@ -565,8 +558,6 @@ export function DashboardPage() {
         if (!mounted) return
         setLessons(lessonsData)
         setProgressRows(progressData)
-        setRoadmaps(roadmapData)
-        setSolvedVariants(solvedVariantsData)
         setQuizMistakeCount(mistakeCount)
         setQuizCorrectCount(correctCount)
         setBacExamDate(examDate)
@@ -774,10 +765,10 @@ export function DashboardPage() {
 
                 <SectionLabel tone="muted" className="mb-2 mt-4 px-1">Scurtături</SectionLabel>
                 <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
-                  {isPremium && roadmaps.length > 0 && (
+                  {isPremium && (
                     <SidebarNavButton icon={Map} label="Plan de studiu" onClick={() => navigate('/roadmap')} />
                   )}
-                  {isPremium && solvedVariants.length > 0 && (
+                  {isPremium && (
                     <SidebarNavButton icon={NotebookPen} label="Variante" onClick={() => navigate('/variante-rezolvate')} />
                   )}
                   <SidebarNavButton icon={User} label="Profil" onClick={() => navigate('/profile')} />

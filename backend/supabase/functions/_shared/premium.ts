@@ -31,8 +31,26 @@ export function entitlementStatusFromSubscription(subscription: Stripe.Subscript
     : ('refunded' as const)
 }
 
+// Stripe API versions >= 2025-03-31.basil moved `current_period_end` off the
+// Subscription object and onto each subscription item. Webhook event payloads are
+// serialized with the endpoint's API version (not our pinned client version), so a
+// `customer.subscription.deleted/updated` payload can arrive without the top-level
+// field. Read it where it exists — top level first (older payloads / pinned acacia
+// retrieves), then the latest item-level value — so the sync never throws and silently
+// fails to revoke access.
+function resolveCurrentPeriodEnd(subscription: Stripe.Subscription): number | null {
+  const topLevel = (subscription as { current_period_end?: number | null }).current_period_end
+  if (typeof topLevel === 'number') return topLevel
+
+  const itemEnds = (subscription.items?.data ?? [])
+    .map((item) => (item as { current_period_end?: number | null }).current_period_end)
+    .filter((value): value is number => typeof value === 'number')
+
+  return itemEnds.length > 0 ? Math.max(...itemEnds) : null
+}
+
 export function subscriptionPeriodEndIso(subscription: Stripe.Subscription, envSource?: EnvSource) {
-  const periodEnd = subscription.current_period_end
+  const periodEnd = resolveCurrentPeriodEnd(subscription)
   if (!periodEnd) {
     throw new Error('Subscription missing current period end.')
   }

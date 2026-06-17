@@ -494,6 +494,61 @@ Deno.test('stripe-webhook accepts raw bodies and returns ok', async () => {
   assert.equal(state.signature, 'sig_123')
 })
 
+Deno.test('stripe-webhook revokes access on subscription.deleted with item-level period end', async () => {
+  // Stripe API >= 2025-03-31.basil delivers the subscription without a top-level
+  // current_period_end; the field lives on the subscription item. The handler must
+  // still upsert a non-active entitlement instead of throwing and skipping the revoke.
+  class FakeStripe {
+    webhooks = {
+      constructEventAsync: () => Promise.resolve({
+        type: 'customer.subscription.deleted',
+        data: {
+          object: {
+            id: 'sub_123',
+            status: 'canceled',
+            cancel_at_period_end: false,
+            currency: 'ron',
+            customer: 'cus_123',
+            metadata: { user_id: 'user_123' },
+            items: { data: [{ price: { id: 'price_test_123' }, current_period_end: 1_900_000_000 }] },
+          },
+        },
+      }),
+    }
+    subscriptions = { retrieve: () => Promise.resolve({}) }
+    constructor(public secret: string, public options: unknown) {}
+  }
+
+  const upserts: Record<string, unknown>[] = []
+  const app = createStripeWebhookApp({
+    stripe: asStripeConstructor(FakeStripe),
+    env: testEnv,
+    createClient: () => asSupabaseClient({
+      from: () => ({
+        upsert: (payload: Record<string, unknown>) => {
+          upserts.push(payload)
+          return Promise.resolve({ error: null })
+        },
+      }),
+    }),
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      'stripe-signature': 'sig_123',
+      'Content-Type': 'application/json',
+    },
+    body: '{"id":"evt_del","object":"event"}',
+  }))
+
+  assert.equal(response.status, 200)
+  assert.equal(upserts.length, 1)
+  assert.equal(upserts[0].user_id, 'user_123')
+  assert.equal(upserts[0].status, 'refunded')
+})
+
 Deno.test('generateSixDigitCode returns a six-digit string from secure RNG', () => {
   const code = generateSixDigitCode()
   assert.match(code, /^\d{6}$/)
