@@ -1,5 +1,6 @@
 import { User } from 'lucide-react'
 import { getAvatarPhotoUrl, getAvatarPreset } from '../../features/profile/avatarPresets'
+import { useSignedStorageUrl } from '../hooks/useSignedStorageUrl'
 
 const SIZE_CLASSES = {
   xs: 'size-7',
@@ -23,7 +24,9 @@ export function UserAvatar({
   imageClassName = '',
   fallbackClassName = '',
 }) {
-  const photoUrl = getAvatarPhotoUrl(metadata)
+  // Bucket-ul `materials` este privat: semnăm calea fotografiei la randare. Cât timp
+  // se semnează (sau dacă eșuează), afișăm preset-ul ca fallback.
+  const photoUrl = useSignedStorageUrl(getAvatarPhotoUrl(metadata))
   const preset = getAvatarPreset(avatarId || metadata?.avatar_id)
   const Icon = preset.icon || User
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md

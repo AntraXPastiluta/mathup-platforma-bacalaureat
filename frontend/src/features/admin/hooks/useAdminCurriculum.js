@@ -19,7 +19,7 @@ import {
   uploadFileToStorage,
 } from '../../../services/adminService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
-import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
+import { useSignedStorageUrl } from '../../../shared/hooks/useSignedStorageUrl'
 import { PROFILES } from '../../lessons/profiles'
 import { normalizeProfilesList } from '../../../services/profileService'
 import { ALLOWED_LESSON_FILE_EXTENSIONS } from '../constants'
@@ -112,10 +112,8 @@ export function useAdminCurriculum() {
     })
   }, [lessons, selectedProgramKey, sidebarQuery])
 
-  const newPartPreviewSrc = useMemo(
-    () => getTrustedStorageUrl(newPart.image_url),
-    [newPart.image_url],
-  )
+  // Bucket privat: semnăm calea imaginii pentru previzualizare.
+  const newPartPreviewSrc = useSignedStorageUrl(newPart.image_url)
 
   useEffect(() => {
     if (authLoading || !session?.access_token) return

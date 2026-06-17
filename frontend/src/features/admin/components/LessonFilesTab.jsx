@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { FileText, Trash2, UploadCloud, ExternalLink } from 'lucide-react'
-import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
+import { SignedFileLink } from '../../../shared/ui/SignedFileLink'
 
 export function LessonFilesTab({
   regularFiles,
@@ -67,7 +67,6 @@ export function LessonFilesTab({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                 {regularFiles.map((file) => {
-                  const fileHref = getTrustedStorageUrl(file.file_url)
                   return (
                     <tr key={file.id} className="group/row hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
                       <td className="px-6 py-5">
@@ -85,11 +84,9 @@ export function LessonFilesTab({
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex justify-end gap-2">
-                          {fileHref ? (
-                            <a href={fileHref} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white dark:bg-white/5 text-slate-400 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white transition-all shadow-sm">
-                              <ExternalLink className="size-4" />
-                            </a>
-                          ) : null}
+                          <SignedFileLink value={file.file_url} className="p-2 rounded-lg bg-white dark:bg-white/5 text-slate-400 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-primary dark:hover:text-white transition-all shadow-sm">
+                            <ExternalLink className="size-4" />
+                          </SignedFileLink>
                           <button onClick={() => handleDeleteFile(file.id)} className="p-2 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all shadow-sm">
                             <Trash2 className="size-4" />
                           </button>

@@ -8,7 +8,7 @@ import {
   uploadFileToStorage,
 } from '../../../services/adminService'
 import { PROFILES, getProfileMeta } from '../../lessons/profiles'
-import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
+import { SignedFileLink } from '../../../shared/ui/SignedFileLink'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
 export function SolvedVariantsSection() {
@@ -223,7 +223,6 @@ export function SolvedVariantsSection() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                   {variants.map((variant, index) => {
-                    const variantHref = getTrustedStorageUrl(variant.file_url)
                     return (
                       <tr
                         key={variant.id}
@@ -251,17 +250,13 @@ export function SolvedVariantsSection() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            {variantHref ? (
-                              <a
-                                href={variantHref}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Deschide într-un tab nou"
-                                className="rounded-lg border border-slate-300 bg-white p-2 text-slate-400 shadow-sm transition-all hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:hover:text-white"
-                              >
-                                <ExternalLink className="size-4" />
-                              </a>
-                            ) : null}
+                            <SignedFileLink
+                              value={variant.file_url}
+                              title="Deschide într-un tab nou"
+                              className="rounded-lg border border-slate-300 bg-white p-2 text-slate-400 shadow-sm transition-all hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:hover:text-white"
+                            >
+                              <ExternalLink className="size-4" />
+                            </SignedFileLink>
                             <button
                               type="button"
                               onClick={() => handleDelete(variant.id)}

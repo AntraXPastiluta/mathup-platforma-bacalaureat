@@ -9,6 +9,7 @@ import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { getProfilesFromMetadata } from '../../../services/profileService'
 import { getSolvedVariantsForProfiles } from '../../../services/solvedVariantService'
 import { downloadRemoteFile } from '../../../shared/utils/downloadRemoteFile'
+import { getSignedMaterialsUrl, SIGNED_URL_TTL_DOWNLOAD } from '../../../services/storageUrlService'
 import { getProfileMeta } from '../../lessons/profiles'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 
@@ -82,7 +83,11 @@ export function SolvedVariantsPage() {
     setDownloadingVariantId(variant.id)
     setError('')
     try {
-      await downloadRemoteFile(variant.file_url, variant.file_name)
+      const signedUrl = await getSignedMaterialsUrl(variant.file_url, {
+        expiresIn: SIGNED_URL_TTL_DOWNLOAD,
+      })
+      if (!signedUrl) throw new Error('Fișierul nu este disponibil pentru descărcare.')
+      await downloadRemoteFile(signedUrl, variant.file_name)
     } catch (downloadError) {
       setError(toUserFacingError(downloadError, USER_MESSAGES.download))
     } finally {

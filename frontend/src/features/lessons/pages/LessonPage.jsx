@@ -24,7 +24,10 @@ import {
   getViewProfile,
 } from '../../../services/premiumAccessService'
 import { getProfilesFromMetadata } from '../../../services/profileService'
-import { getTrustedStorageUrl, resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
+import { resolveLessonVideoEmbedSrc } from '../../../shared/utils/safeUrl'
+import { useSignedStorageUrl } from '../../../shared/hooks/useSignedStorageUrl'
+import { SignedStorageImage } from '../../../shared/ui/SignedStorageImage'
+import { SIGNED_URL_TTL_DOWNLOAD } from '../../../services/storageUrlService'
 import { toUserFacingError, USER_MESSAGES } from '../../../shared/utils/userFacingError'
 import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
@@ -105,6 +108,48 @@ function StudyNote({ subjectIsFree }) {
         </p>
       )}
     </div>
+  )
+}
+
+// Card material suport: semnează URL-ul fișierului (bucket privat) la randare.
+function SupplementaryFileCard({ file, accent }) {
+  const fileHref = useSignedStorageUrl(file.file_url, { expiresIn: SIGNED_URL_TTL_DOWNLOAD })
+  if (!file.file_url) return null
+  const isImage = file.file_type?.startsWith('image/')
+
+  return (
+    <a
+      href={fileHref || undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-disabled={!fileHref}
+      className={`group block rounded-xl border border-border bg-white/70 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md hover:shadow-primary/5 dark:bg-white/5 ${
+        fileHref ? '' : 'pointer-events-none opacity-60'
+      }`}
+    >
+      {isImage ? (
+        <div className="mb-3 aspect-video overflow-hidden rounded-lg border border-border bg-slate-50 dark:bg-slate-950">
+          {fileHref ? (
+            <img
+              src={fileHref}
+              alt={file.file_name}
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : null}
+        </div>
+      ) : (
+        <div className={`mb-3 flex size-10 items-center justify-center rounded-lg border ${accent.soft}`}>
+          <FileText className="size-5" />
+        </div>
+      )}
+      <p className="truncate text-sm font-bold text-foreground">{file.file_name}</p>
+      <div className="mt-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          {isImage ? 'Vizualizează' : 'Descarcă PDF'}
+        </span>
+        <ExternalLink className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
+      </div>
+    </a>
   )
 }
 
@@ -618,8 +663,8 @@ export function LessonPage() {
                         )}
 
                         {currentPart.image_url ? (
-                          <img
-                            src={currentPart.image_url}
+                          <SignedStorageImage
+                            value={currentPart.image_url}
                             alt={currentPart.title}
                             className="mb-8 w-full rounded-2xl border border-border object-cover shadow-sm"
                           />
@@ -735,42 +780,9 @@ export function LessonPage() {
                       </div>
 
                       <div className="grid gap-3">
-                        {supplementaryFiles.map((file) => {
-                          const fileHref = getTrustedStorageUrl(file.file_url)
-                          if (!fileHref) return null
-                          const isImage = file.file_type?.startsWith('image/')
-
-                          return (
-                            <a
-                              key={file.id}
-                              href={fileHref}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group block rounded-xl border border-border bg-white/70 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md hover:shadow-primary/5 dark:bg-white/5"
-                            >
-                              {isImage ? (
-                                <div className="mb-3 aspect-video overflow-hidden rounded-lg border border-border bg-slate-50 dark:bg-slate-950">
-                                  <img
-                                    src={fileHref}
-                                    alt={file.file_name}
-                                    className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                  />
-                                </div>
-                              ) : (
-                                <div className={`mb-3 flex size-10 items-center justify-center rounded-lg border ${accent.soft}`}>
-                                  <FileText className="size-5" />
-                                </div>
-                              )}
-                              <p className="truncate text-sm font-bold text-foreground">{file.file_name}</p>
-                              <div className="mt-1.5 flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                  {isImage ? 'Vizualizează' : 'Descarcă PDF'}
-                                </span>
-                                <ExternalLink className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
-                              </div>
-                            </a>
-                          )
-                        })}
+                        {supplementaryFiles.map((file) => (
+                          <SupplementaryFileCard key={file.id} file={file} accent={accent} />
+                        ))}
                       </div>
                     </div>
                   </div>

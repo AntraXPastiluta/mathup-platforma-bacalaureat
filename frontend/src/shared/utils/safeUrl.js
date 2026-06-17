@@ -59,16 +59,19 @@ export function assertTrustedDownloadUrl(url) {
   }
 
   // Triplă verificare anti-SSRF/phishing: forțăm HTTPS, același origin ca Supabase și
-  // calea publică de storage. Astfel butoanele de descărcare nu pot fi deturnate spre
-  // adrese externe controlate de atacator.
+  // calea de storage (publică sau semnată). Astfel butoanele de descărcare nu pot fi
+  // deturnate spre adrese externe controlate de atacator.
   if (target.protocol !== 'https:') {
     throw new Error('Descărcarea este permisă doar prin HTTPS.')
   }
   if (target.origin !== origin.origin) {
     throw new Error('Descărcarea este permisă doar din spațiul de stocare al platformei.')
   }
-  if (!target.pathname.includes('/storage/v1/object/public/')) {
-    throw new Error('Descărcarea este permisă doar pentru fișiere publice din stocare.')
+  if (
+    !target.pathname.includes('/storage/v1/object/public/') &&
+    !target.pathname.includes('/storage/v1/object/sign/')
+  ) {
+    throw new Error('Descărcarea este permisă doar pentru fișiere din spațiul de stocare.')
   }
 
   return target.toString()

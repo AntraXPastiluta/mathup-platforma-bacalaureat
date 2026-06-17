@@ -13,7 +13,7 @@ import { Button } from '../../../shared/ui/Button'
 import { AlertMessage } from '../../../shared/ui/AlertMessage'
 import { MathSymbolToolbar } from '../../../shared/ui/MathSymbolToolbar'
 import { MathContent } from '../../../shared/ui/MathContent'
-import { getTrustedStorageUrl } from '../../../shared/utils/safeUrl'
+import { SignedStorageImage } from '../../../shared/ui/SignedStorageImage'
 import { insertMathSnippet } from '../../../shared/utils/mathInsert'
 
 export function LessonPartsTab({
@@ -110,7 +110,6 @@ export function LessonPartsTab({
         ) : (
           <ul className="space-y-4">
             {parts.map((part, idx) => {
-              const partImageSrc = getTrustedStorageUrl(part.image_url)
               return (
                 <li key={part.id} className="relative group/part">
                   <div className="bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-3xl p-6 transition-all group-hover/part:border-primary/30 group-hover/part:bg-white dark:group-hover/part:bg-white/[0.07] overflow-hidden shadow-sm hover:shadow-md">
@@ -173,9 +172,7 @@ export function LessonPartsTab({
                         />
                         <div className="space-y-3 rounded-xl border border-dashed border-slate-300 p-4 dark:border-white/10">
                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Imagine secțiune</p>
-                          {partImageSrc ? (
-                            <img src={partImageSrc} alt={part.title} className="max-h-40 w-full rounded-xl object-cover" />
-                          ) : null}
+                          <SignedStorageImage value={part.image_url} alt={part.title} className="max-h-40 w-full rounded-xl object-cover" />
                           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:border-white/10 dark:text-slate-300">
                             <UploadCloud className="size-3.5" />
                             Încarcă imagine
