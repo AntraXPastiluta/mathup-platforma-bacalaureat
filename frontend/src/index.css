@@ -335,7 +335,14 @@ p {
     radial-gradient(ellipse 52% 42% at 18% 12%, rgba(99, 102, 241, 0.12), transparent 60%),
     radial-gradient(ellipse 46% 40% at 84% 78%, rgba(168, 85, 247, 0.09), transparent 60%),
     radial-gradient(ellipse 42% 32% at 60% 48%, rgba(56, 189, 248, 0.07), transparent 60%);
-  animation: math-aurora-drift 28s ease-in-out infinite alternate;
+  /* Pin to its own GPU layer up-front: fără asta, layerul e promovat/demovat la
+     fiecare start de animație, ceea ce produce pâlpâirea fundalului. */
+  transform: translateZ(0);
+  opacity: 0.9;
+  /* Fără drift: mai multe straturi de gradient care se mișcau cu viteze diferite
+     (28s / 28s / 38s) se suprapuneau în fază variabilă, iar zonele de suprapunere
+     se luminau/întunecau — o „pulsație" de luminozitate pe tot fundalul (pâlpâirea).
+     Le lăsăm statice; particulele mici păstrează senzația de viață. */
 }
 
 .dark .math-aurora {
@@ -348,11 +355,9 @@ p {
 @keyframes math-aurora-drift {
   from {
     transform: translate3d(-2%, -1%, 0) scale(1.02);
-    opacity: 0.75;
   }
   to {
     transform: translate3d(2%, 2%, 0) scale(1.08);
-    opacity: 1;
   }
 }
 
@@ -399,6 +404,7 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
 
   .math-aurora {
     animation: none;
+    will-change: auto;
   }
 }
 
@@ -410,7 +416,7 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
     radial-gradient(ellipse 70% 45% at 50% -10%, rgba(99, 102, 241, 0.14), transparent 55%),
     radial-gradient(ellipse 55% 38% at 100% 40%, rgba(129, 140, 248, 0.08), transparent 50%),
     radial-gradient(ellipse 50% 35% at 0% 80%, rgba(79, 70, 229, 0.1), transparent 45%);
-  animation: dashboard-mesh-drift 38s ease-in-out infinite alternate;
+  /* Static — vezi nota de la .math-aurora (driftul suprapus producea pulsația). */
 }
 
 .dark .dashboard-mesh {
@@ -426,7 +432,7 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
     radial-gradient(circle at 88% 28%, rgba(129, 140, 248, 0.18), transparent 36%),
     radial-gradient(circle at 28% 92%, rgba(244, 114, 182, 0.10), transparent 40%),
     radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.12), transparent 38%);
-  animation: dashboard-aurora-drift 28s ease-in-out infinite alternate;
+  /* Static — vezi nota de la .math-aurora (driftul suprapus producea pulsația). */
 }
 
 .dark .dashboard-aurora {
@@ -453,6 +459,9 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   border-radius: 9999px;
   pointer-events: none;
   background: radial-gradient(circle, rgba(165, 180, 252, 0.55), rgba(165, 180, 252, 0) 70%);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .dark .dashboard-particle {
@@ -491,6 +500,7 @@ html[data-ambient-page] nav[class*='backdrop-blur'] {
   .dashboard-aurora,
   .dashboard-particle {
     animation: none;
+    will-change: auto;
   }
 }
 
