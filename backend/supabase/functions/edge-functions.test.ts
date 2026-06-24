@@ -10,6 +10,7 @@ import { createExportUserDataApp } from './export-user-data/index.ts'
 import { createRequestAccountDeletionApp, generateSixDigitCode } from './request-account-deletion/index.ts'
 import { createConfirmAccountDeletionApp, tokensEqual } from './confirm-account-deletion/index.ts'
 import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
+import { hashDeletionToken } from './_shared/deletionToken.ts'
 
 type StripeConstructor = typeof Stripe
 
@@ -560,6 +561,84 @@ Deno.test('tokensEqual uses constant-time comparison', () => {
   assert.equal(tokensEqual('123456', '123456'), true)
   assert.equal(tokensEqual('123456', '123457'), false)
   assert.equal(tokensEqual('123456', '12345'), false)
+})
+
+Deno.test('hashDeletionToken is deterministic, 64-hex, and salted by user', async () => {
+  const a = await hashDeletionToken('123456', 'user_a')
+  const b = await hashDeletionToken('123456', 'user_a')
+  const c = await hashDeletionToken('123456', 'user_b')
+  assert.equal(a, b)
+  assert.match(a, /^[0-9a-f]{64}$/)
+  assert.notEqual(a, c)
+})
+
+Deno.test('confirm-account-deletion deletes account when hashed code matches', async () => {
+  const userId = 'user_del_ok'
+  const correctCode = '246802'
+  const storedHash = await hashDeletionToken(correctCode, userId)
+  let deletedUserId: string | null = null
+  let tokenDeleted = false
+
+  const adminClient = asSupabaseClient({
+    from: (table: string) => {
+      assert.equal(table, 'account_deletion_tokens')
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => Promise.resolve({
+              data: {
+                token: storedHash,
+                expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+                failed_attempts: 0,
+                locked_until: null,
+              },
+              error: null,
+            }),
+          }),
+        }),
+        delete: () => ({
+          eq: () => {
+            tokenDeleted = true
+            return Promise.resolve({ error: null })
+          },
+        }),
+      }
+    },
+    auth: {
+      admin: {
+        deleteUser: (id: string) => {
+          deletedUserId = id
+          return Promise.resolve({ data: { user: null }, error: null })
+        },
+      },
+    },
+  })
+
+  const app = createConfirmAccountDeletionApp({
+    env: testEnv,
+    createClient: (_url: string, key: string) => {
+      if (key === 'anon_test_123') {
+        return makeAuthClient({ id: userId, email: 'delok@test.com' })
+      }
+      return adminClient
+    },
+  })
+
+  const response = await app.fetch(new Request('http://localhost', {
+    method: 'POST',
+    headers: {
+      Origin: 'http://localhost:5173',
+      Authorization: 'Bearer token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ code: correctCode }),
+  }))
+
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.deleted, true)
+  assert.equal(tokenDeleted, true)
+  assert.equal(deletedUserId, userId)
 })
 
 Deno.test('confirm-account-deletion locks out after repeated wrong codes', async () => {

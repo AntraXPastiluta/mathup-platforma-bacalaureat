@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { hashDeletionToken } from '../_shared/deletionToken.ts'
 
 const MAX_FAILED_ATTEMPTS = 5
 const LOCKOUT_MINUTES = 15
@@ -111,7 +112,9 @@ export function createConfirmAccountDeletionApp(deps: Deps = {}) {
         )
       }
 
-      if (!tokensEqual(row.token, code)) {
+      // `row.token` este hash-ul stocat; comparăm cu hash-ul codului introdus (timp constant).
+      const providedHash = await hashDeletionToken(code, user.id)
+      if (!tokensEqual(row.token, providedHash)) {
         const nextAttempts = (row.failed_attempts ?? 0) + 1
         const lockoutUpdate: Record<string, unknown> = { failed_attempts: nextAttempts }
 

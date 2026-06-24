@@ -4,6 +4,7 @@ import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { sendEmailJsNotification } from '../_shared/emailjs.ts'
+import { hashDeletionToken } from '../_shared/deletionToken.ts'
 
 const RATE_LIMIT_COUNT = 3
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
@@ -89,13 +90,15 @@ export function createRequestAccountDeletionApp(deps: Deps = {}) {
       }
 
       const token = generateSixDigitCode()
+      // Stocăm doar hash-ul codului (SHA-256 legat de user_id); codul în clar pleacă pe email.
+      const tokenHash = await hashDeletionToken(token, user.id)
       const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MINUTES * 60 * 1000).toISOString()
 
       const { error: upsertError } = await adminClient
         .from('account_deletion_tokens')
         .upsert({
           user_id: user.id,
-          token,
+          token: tokenHash,
           expires_at: expiresAt,
           created_at: new Date().toISOString(),
           failed_attempts: 0,
