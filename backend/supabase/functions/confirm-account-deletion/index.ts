@@ -1,5 +1,4 @@
 import '@supabase/functions-js/edge-runtime'
-import { timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { type EnvSource, readEnv } from '../_shared/env.ts'
 import { createBaseApp, getCorsHeaders, jsonResponse, textResponse } from '../_shared/http.ts'
@@ -34,7 +33,12 @@ export function tokensEqual(expected: string, provided: string): boolean {
   const a = enc.encode(expected)
   const b = enc.encode(provided)
   if (a.length !== b.length) return false
-  return timingSafeEqual(a, b)
+
+  let difference = 0
+  for (let index = 0; index < a.length; index += 1) {
+    difference |= a[index] ^ b[index]
+  }
+  return difference === 0
 }
 
 export function createConfirmAccountDeletionApp(deps: Deps = {}) {

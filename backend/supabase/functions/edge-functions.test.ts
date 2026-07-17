@@ -11,6 +11,7 @@ import { createRequestAccountDeletionApp, generateSixDigitCode } from './request
 import { createConfirmAccountDeletionApp, tokensEqual } from './confirm-account-deletion/index.ts'
 import { createSubmitSupportRequestApp } from './submit-support-request/index.ts'
 import { hashDeletionToken } from './_shared/deletionToken.ts'
+import { capExpiresAt } from './_shared/premium.ts'
 
 type StripeConstructor = typeof Stripe
 
@@ -348,6 +349,21 @@ Deno.test('sync-premium-checkout activates entitlement for completed session', a
   assert.equal(response.status, 200)
   const payload = await response.json()
   assert.equal(payload.entitlement?.status, 'active')
+})
+
+Deno.test('an expired PREMIUM_SEASON_END does not expire a newly paid subscription', () => {
+  const subscriptionEnd = '2026-08-17T12:00:00.000Z'
+  assert.equal(
+    capExpiresAt(subscriptionEnd, { PREMIUM_SEASON_END: '2026-07-10T21:59:59.000Z' }),
+    subscriptionEnd,
+  )
+})
+
+Deno.test('a future PREMIUM_SEASON_END still caps the subscription period', () => {
+  assert.equal(
+    capExpiresAt('2026-09-17T12:00:00.000Z', { PREMIUM_SEASON_END: '2026-08-10T21:59:59.000Z' }),
+    '2026-08-10T21:59:59.000Z',
+  )
 })
 
 Deno.test('cancel-premium-subscription returns 404 when no entitlement exists', async () => {

@@ -3,14 +3,28 @@ import type Stripe from 'stripe'
 
 export function seasonEndIso(envSource?: EnvSource) {
   const configured = readEnv('PREMIUM_SEASON_END', envSource)
-  if (configured) return new Date(configured).toISOString()
-  const year = new Date().getUTCFullYear()
-  return new Date(Date.UTC(year, 6, 10, 21, 59, 59)).toISOString()
+  if (!configured) return null
+
+  const parsed = new Date(configured)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('PREMIUM_SEASON_END must be a valid date.')
+  }
+
+  return parsed.toISOString()
 }
 
 export function capExpiresAt(iso: string, envSource?: EnvSource) {
-  const seasonEnd = new Date(seasonEndIso(envSource)).getTime()
+  const seasonEndIsoValue = seasonEndIso(envSource)
+  if (!seasonEndIsoValue) return iso
+
+  const seasonEnd = new Date(seasonEndIsoValue).getTime()
   const candidate = new Date(iso).getTime()
+
+  // A stale season setting must never turn a newly-paid subscription into an
+  // already-expired entitlement.  Operators can still set a future season end
+  // deliberately; once it has passed, Stripe's own billing period is used.
+  if (seasonEnd <= Date.now()) return iso
+
   return new Date(Math.min(candidate, seasonEnd)).toISOString()
 }
 
